@@ -1,0 +1,13 @@
+# 秘密情報（コミット禁止）
+config.local.js
+.env
+.env.local
+supabase/.env
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/settings.json
+*.swp

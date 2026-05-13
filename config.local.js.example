@@ -1,0 +1,22 @@
+// config.local.js.example
+// このファイルをコピーして config.local.js を作成してください（.gitignore 済み）
+// Cert ID (Client Secret) はここに書かず Supabase Dashboard のシークレットに設定すること
+
+window.BA_CONFIG = {
+  // Supabase プロジェクト設定（Dashboard > Settings > API）
+  SUPABASE_URL:     'https://XXXXXXXXXXXXXX.supabase.co',
+  SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.YOUR_ANON_KEY',
+
+  // eBay Developer 設定（フロントエンドに置いて問題ない公開値）
+  EBAY_CLIENT_ID:   'StayGold-BRANDANA-PRD-7183f64d5-3fad581c',
+  EBAY_REDIRECT_URI: 'StayGold_-StayGold-BRANDA-kdbpfux',  // RuName
+
+  // Supabase Edge Functions ベース URL（省略可：SUPABASE_URL + /functions/v1 で自動導出）
+  // SUPABASE_EDGE_FUNCTION_URL: 'https://XXXXXXXXXXXXXX.supabase.co/functions/v1',
+};
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 【重要】Supabase Dashboard > Edge Functions > Secrets に以下を登録すること:
+//   EBAY_CLIENT_ID = StayGold-BRANDANA-PRD-7183f64d5-3fad581c
+//   EBAY_CERT_ID   = （Cert ID をここに入力）
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
