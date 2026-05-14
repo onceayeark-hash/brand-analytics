@@ -112,6 +112,7 @@
 
   function _hideAuthOverlay() {
     document.getElementById('auth-overlay')?.setAttribute('hidden', '');
+    document.dispatchEvent(new CustomEvent('ba:auth-state-change'));
   }
 
   function _setAuthMessage(id, msg, show = true) {
@@ -365,6 +366,21 @@
     },
 
     /**
+     * Googleでサインイン（Supabase OAuth）
+     * サインイン後は自動でコールバックURLにリダイレクトされSupabaseがセッションを処理する
+     */
+    async signInWithGoogle() {
+      if (!_supabase) throw new Error('[auth] Supabase 未設定');
+      const { error } = await _supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.href.split('?')[0],
+        },
+      });
+      if (error) throw error;
+    },
+
+    /**
      * eBay OAuth 認証を開始する
      * 未サインインの場合はオーバーレイを表示してガード
      */
@@ -522,13 +538,28 @@
       }
     });
 
-    // eBay で接続（サインイン画面 / connect panel 共通）
-    document.getElementById('btn-ebay-auth')?.addEventListener('click', () => auth.connectEbay());
+    // Googleでサインイン
+    document.getElementById('btn-google-auth')?.addEventListener('click', async () => {
+      _setBtnLoading('btn-google-auth', true);
+      try {
+        await auth.signInWithGoogle();
+      } catch (err) {
+        _setAuthMessage('auth-error', 'Googleサインインに失敗しました。再度お試しください。');
+        _setBtnLoading('btn-google-auth', false);
+      }
+    });
+
+    // eBay で接続（connect panel）
     document.getElementById('btn-ebay-oauth')?.addEventListener('click', () => auth.connectEbay());
 
     // ビュー切り替え
     document.getElementById('btn-to-signup')?.addEventListener('click', () => _showAuthOverlay('signup'));
     document.getElementById('btn-to-signin')?.addEventListener('click', () => _showAuthOverlay('signin'));
+
+    // サインアウト
+    document.getElementById('btn-signout')?.addEventListener('click', async () => {
+      await auth.signOut();
+    });
 
     // 無料機能のみ使う
     document.getElementById('btn-skip-free')?.addEventListener('click', () => {

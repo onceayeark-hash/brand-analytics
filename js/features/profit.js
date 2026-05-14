@@ -111,9 +111,9 @@
   // ─────────────────────────────────────
 
   /**
-   * 粗利益・粗利率を計算する
+   * 粗利益・粗利率・PPDを計算する
    * @param {Object} params
-   * @returns {{ grossProfit: number, profitRate: number, breakdown: Object }}
+   * @returns {{ grossProfitUsd: number, grossProfitJpy: number, profitRate: number, ppd: Object, breakdown: Object }}
    */
   function _calculate(params) {
     const {
@@ -129,6 +129,7 @@
       customsUsd,       // manual時のみ
       authServiceJpy,   // $500以上時
       usdJpy,
+      holdingDays,      // 在庫保有日数（PPD計算用）
     } = params;
 
     const selling = sellingPriceUsd;
@@ -177,10 +178,18 @@
     const grossProfitJpy = grossProfitUsd * usdJpy;
     const profitRate     = selling > 0 ? (grossProfitUsd / selling) * 100 : 0;
 
+    // ── PPD（1日あたり粗利益） ──
+    const days = holdingDays && holdingDays > 0 ? holdingDays : null;
+    const ppd = {
+      usd: days ? grossProfitUsd / days : null,
+      jpy: days ? grossProfitJpy / days : null,
+    };
+
     return {
       grossProfitUsd,
       grossProfitJpy,
       profitRate,
+      ppd,
       breakdown: {
         sellingUsd:         selling,
         ebayFeeUsd,
@@ -254,6 +263,23 @@
                 </div>
               </div>
 
+            </div>
+          </div>
+
+          <!-- PPD: 在庫保有日数 -->
+          <div class="card" style="margin-bottom:16px">
+            <div class="card-title">PPD（1日あたり粗利益）</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:end">
+              <div class="input-group">
+                <label class="input-label" for="p-holding-days">在庫保有日数</label>
+                <div class="input-wrap">
+                  <input class="input" id="p-holding-days" type="number" min="1" step="1" placeholder="例: 30">
+                  <div class="input-prefix" style="border-left:none;border-right:1px solid var(--border);border-radius:0 3px 3px 0">日</div>
+                </div>
+              </div>
+              <div style="font-size:10px;color:var(--text-muted);padding-bottom:4px;line-height:1.8">
+                仕入れから販売までの<br>平均日数を入力
+              </div>
             </div>
           </div>
 
@@ -420,6 +446,24 @@
             </table>
           </div>
 
+          <!-- PPD 結果 -->
+          <div class="card" style="margin-bottom:16px">
+            <div class="card-title">PPD（1日あたり粗利益）</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:8px">
+              <div>
+                <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);margin-bottom:4px">USD / 日</div>
+                <div class="card-value" style="font-size:20px" id="p-ppd-usd">—</div>
+              </div>
+              <div>
+                <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);margin-bottom:4px">JPY / 日</div>
+                <div class="card-value" style="font-size:20px" id="p-ppd-jpy">—</div>
+              </div>
+            </div>
+            <div style="font-size:10px;color:var(--text-muted)">
+              ※ 在庫保有日数を入力すると計算されます
+            </div>
+          </div>
+
           <!-- eBay 手数料率表示 -->
           <div class="card">
             <div class="card-title">適用手数料率</div>
@@ -489,8 +533,9 @@
     const shipVal  = parseFloat(root.querySelector('#p-ship-val')?.value)    || 0;
     const custMode = root.querySelector('#p-customs-mode')?.value  || 'manual';
     const custVal  = parseFloat(root.querySelector('#p-customs-val')?.value) || 0;
-    const authSvc  = parseFloat(root.querySelector('#p-auth-service')?.value) || DEFAULTS.authServiceJpy;
-    const rate     = parseFloat(root.querySelector('#p-rate')?.value)   || DEFAULTS.usdJpy;
+    const authSvc     = parseFloat(root.querySelector('#p-auth-service')?.value) || DEFAULTS.authServiceJpy;
+    const rate        = parseFloat(root.querySelector('#p-rate')?.value)   || DEFAULTS.usdJpy;
+    const holdingDays = parseFloat(root.querySelector('#p-holding-days')?.value) || 0;
     const above500 = price >= DEFAULTS.threshold500;
 
     // $500 境界UI切替
@@ -514,6 +559,7 @@
       customsUsd:   custVal,
       authServiceJpy: authSvc,
       usdJpy: rate,
+      holdingDays,
     });
 
     // 粗利益 表示
@@ -567,6 +613,23 @@
           </td>
         </tr>
       `;
+    }
+
+    // PPD 表示
+    const ppdUsdEl = root.querySelector('#p-ppd-usd');
+    const ppdJpyEl = root.querySelector('#p-ppd-jpy');
+    if (ppdUsdEl && ppdJpyEl) {
+      if (result.ppd.usd !== null) {
+        ppdUsdEl.textContent = `$${result.ppd.usd.toFixed(2)}`;
+        ppdUsdEl.style.color = result.ppd.usd >= 0 ? 'var(--green)' : 'var(--red)';
+        ppdJpyEl.textContent = `¥${Math.round(result.ppd.jpy).toLocaleString()}`;
+        ppdJpyEl.style.color = result.ppd.jpy >= 0 ? 'var(--green)' : 'var(--red)';
+      } else {
+        ppdUsdEl.textContent = '—';
+        ppdUsdEl.style.color = '';
+        ppdJpyEl.textContent = '—';
+        ppdJpyEl.style.color = '';
+      }
     }
 
     // 手数料率表示

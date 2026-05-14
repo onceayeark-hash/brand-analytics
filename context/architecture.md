@@ -14,9 +14,10 @@ js/
     auth.js                ← Supabase Auth + eBay OAuth 2.0
 
   features/
-    profit.js              ← 為替・利益計算機（FREE・STAGE1）✅完了
+    profit.js              ← 為替・利益計算機 + PPD（FREE・STAGE1）✅（PPDは未実装）
     sourcing.js            ← 仕入れメーター Go/No-Go（FREE・STAGE1）✅完了
-    dashboard.js           ← 健全性スコア + アラート（CONNECTED・STAGE1）
+    transactions.js        ← 取引記録入力 + 学習型手数料計算（FREE・STAGE1）★新規
+    dashboard.js           ← アカウントパフォーマンス指標表示 + 健全性シミュレーター + アラート（CONNECTED・STAGE1）
     finance.js             ← ファイナンス（CONNECTED・STAGE1）
     protection.js          ← アカウント保護（CONNECTED・STAGE1）
 
@@ -34,14 +35,41 @@ tasks/
   lessons.md               ← セッション間の学習記録（毎回読む）
 ```
 
-## 実装順序（STAGE1）
+## 実装順序（STAGE1 更新版）
 ```
 ① UI骨格    index.html + js/core/ 骨格     ← 完了
-② OAuth認証  js/core/auth.js               ← 次
-③ 利益計算機 js/features/profit.js         ← 完了
-④ 健全性    js/features/dashboard.js
-⑤ ファイナンス js/features/finance.js
-⑥ アカウント保護 js/features/protection.js
+② OAuth認証  js/core/auth.js               ← 完了
+③ 利益計算機 js/features/profit.js         ← 完了（PPD統合は④で）
+── PHASE 0: Supabase設定完成 ──────────────── ← 次（Anon Key修正・EF deploy・SQL適用）
+④ PPD統合   profit.js に在庫保有日数計算を追加
+⑤ 取引記録  js/features/transactions.js 新規実装（学習型手数料の土台）
+⑥ ダッシュボード js/features/dashboard.js（スコアなし版・指標+シミュレーター）
+⑦ ファイナンス js/features/finance.js
+⑧ アカウント保護 js/features/protection.js
+```
+
+## Supabase テーブル構成（学習型手数料対応）
+```sql
+-- 既存（schema_step7.sql で作成済み想定）
+ebay_tokens        -- 暗号化eBayトークン
+user_settings      -- access_tier 等
+
+-- 既存（schema_step7_5.sql で作成済み想定）
+feedback_templates -- フィードバックテンプレート5種
+
+-- 新規（schema_stage1_learning.sql で追加）
+transaction_logs   -- 取引記録（学習型手数料の元データ）
+  id               uuid PK
+  user_id          uuid FK → auth.users
+  sale_price_usd   numeric(10,2)
+  ebay_fee_usd     numeric(10,2)
+  payoneer_fee_usd numeric(10,2)
+  auth_service_jpy integer        -- 真贋サービス送料（$500以上のみ）
+  cost_price_jpy   integer        -- 仕入れ原価
+  received_jpy     integer        -- 実際の円受取額（為替乖離計算用）
+  exchange_rate    numeric(8,2)   -- 取引時のAPIレート
+  traded_at        date
+  created_at       timestamptz DEFAULT now()
 ```
 
 ## アクセス制御の実装方法

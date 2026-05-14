@@ -30,3 +30,6 @@
   - 新規コンポーネントは最初から 8dp Grid で設計する
 - [auth.js] _ensureValidToken のトークンリフレッシュを直接 eBay API に投げていた → Cert ID（Client Secret）はフロントに置けないため必ず Edge Function（ebay-token）経由にする
 - [init順序] BA.crypto.init() は async なので await が必要。await BA.crypto.init() → await BA.auth.init() の順を必ず守る
+- [設計変更] 健全性スコア（重み付き計算・S〜Dランク）を廃止 → 生数値表示＋閾値アラートのみに変更。理由：スコアのエビデンスがなく誤解を招く
+- [設計変更] 手数料をハードコード値から学習型に変更 → transaction_logs テーブルに実取引データを蓄積し、移動平均で手数料率を自動調整。対象：eBay FVF・Payoneer・真贋サービス送料・為替乖離。5件未満はフォールバック値を使う
+- [新ファイル] js/features/transactions.js を新規追加（取引記録入力UI + 学習型手数料計算エンジン）
