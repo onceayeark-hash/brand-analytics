@@ -327,11 +327,27 @@
   // ─────────────────────────────────────
   // メインレンダー
   // ─────────────────────────────────────
-  function _render(root) {
-    const records = BA.transactions?.getRecords?.() ?? [];
+  async function _render(root) {
+    root.innerHTML = `
+      <div style="text-align:center;padding:32px 20px;color:var(--text-muted);
+        font-family:var(--font-mono);font-size:11px">読み込み中...</div>`;
+
+    let records = [];
+    try {
+      records = await BA.transactions?.list?.() ?? [];
+    } catch {
+      records = BA.transactions?.getRecords?.() ?? [];
+    }
+
+    const syncBar = _isConnected() ? `
+      <div style="display:flex;justify-content:flex-end;margin-bottom:16px">
+        <button class="btn btn-secondary" id="finance-sync-btn"
+          style="font-size:11px;padding:5px 12px">↓ eBayと同期</button>
+      </div>` : '';
 
     if (records.length === 0) {
-      root.innerHTML = _renderEmpty() + (!_isConnected() ? _renderCTABanner() : '');
+      root.innerHTML = syncBar + _renderEmpty() + (!_isConnected() ? _renderCTABanner() : '');
+      _bindSyncBtn(root);
       return;
     }
 
@@ -340,6 +356,7 @@
     const feeBreak = FinanceEngine.computeFeeBreakdown(records);
 
     root.innerHTML = `
+      ${syncBar}
       <div style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted);
            margin-bottom:20px;letter-spacing:.06em">
         全${records.length}件 · 直近30日: ${kpi.count}件
@@ -353,6 +370,22 @@
       </p>
       ${!_isConnected() ? _renderCTABanner() : ''}
     `;
+    _bindSyncBtn(root);
+  }
+
+  function _bindSyncBtn(root) {
+    root.querySelector('#finance-sync-btn')?.addEventListener('click', async () => {
+      const btn = root.querySelector('#finance-sync-btn');
+      if (btn) { btn.textContent = '同期中...'; btn.disabled = true; }
+      try {
+        const result = await BA.transactions?.syncFromEbay?.();
+        const added  = result?.added ?? 0;
+        BA.notify?.toast?.(`eBay同期完了: ${added}件追加`, added > 0 ? 'success' : 'info');
+      } catch {
+        BA.notify?.toast?.('eBay同期に失敗しました', 'error');
+      }
+      await _render(root);
+    });
   }
 
   // ─────────────────────────────────────

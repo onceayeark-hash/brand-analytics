@@ -444,11 +444,74 @@
       </div>`;
   }
 
-  function _renderHealth(root) {
-    const data  = _loadHealth();
-    const total = parseInt(data.total) || 0;
+  // eBay seller_standards_profile レスポンスを内部形式にマッピング
+  function _mapApiProfile(profile) {
+    const program = Array.isArray(profile?.programs) ? profile.programs[0]
+                  : Array.isArray(profile?.program)  ? profile.program[0]
+                  : null;
+    if (!program) return null;
+
+    const totalTx = parseInt(
+      program.evaluationCycle?.evaluatedTransactionCount
+      ?? program.cycleSummary?.evaluatedTransactionCount
+      ?? 0
+    );
+    if (!totalTx) return null;
+
+    const KEY_MAP = {
+      'TRANSACTION_DEFECT_RATE':         'defect',
+      'CASES_WITHOUT_SELLER_RESOLUTION': 'cases',
+      'LATE_SHIPMENT_RATE':              'lateship',
+      'TRACKING_NOT_UPLOADED':           'tracking',
+      'ITEM_NOT_AS_DESCRIBED_RATE':      'inad',
+    };
+
+    const metrics = {};
+    for (const m of (program.metrics ?? [])) {
+      const key = KEY_MAP[m.metricKey];
+      if (!key) continue;
+      const rate = parseFloat(m.value ?? 0); // % 値（例: 0.82 = 0.82%）
+      metrics[key] = String(Math.round(rate * totalTx / 100));
+    }
+
+    return { total: String(totalTx), metrics };
+  }
+
+  async function _renderHealth(root) {
+    root.innerHTML = `
+      <div style="text-align:center;padding:32px 20px;color:var(--text-muted);
+        font-family:var(--font-mono);font-size:11px">読み込み中...</div>`;
+
+    const tier        = BA.auth?.getTier?.() ?? 'free';
+    const isConnected = tier === 'connected' || tier === 'premium';
+    const data        = _loadHealth();
+    let fromApi       = false;
+
+    // eBay未連携の場合はAPIを呼ばず即座に手動フォームを表示
+    if (isConnected) {
+      try {
+        const profile = await BA.api.getSellerStandardsProfile();
+        const mapped  = _mapApiProfile(profile);
+        if (mapped) {
+          if (mapped.total) data.total = mapped.total;
+          Object.assign(data.metrics, mapped.metrics);
+          _saveHealth(data);
+          fromApi = true;
+        }
+      } catch {
+        // API失敗 → 手動入力フォールバック（エラーログ出力しない）
+      }
+    }
+
+    const total         = parseInt(data.total) || 0;
+    const apiSourceNote = fromApi ? `
+      <div style="font-size:11px;color:var(--green);font-family:var(--font-mono);
+           margin-bottom:12px;padding:8px 12px;
+           background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2);
+           border-radius:6px">✓ eBay APIから自動取得しました</div>` : '';
 
     root.innerHTML = `
+      ${apiSourceNote}
       <div class="card" style="margin-bottom:16px">
         <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
           <div class="card-title" style="margin:0;white-space:nowrap">評価期間の総取引件数</div>
