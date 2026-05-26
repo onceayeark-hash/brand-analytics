@@ -65,7 +65,6 @@
       `display:inline-block;flex-shrink:0;margin-right:10px"></span>` +
       def.message + extra;
     el.style.display = 'flex';
-    document.documentElement.style.setProperty('--banner-h', '38px');
 
     document.dispatchEvent(new CustomEvent('ba:banner-change', { detail: { type } }));
   }
@@ -74,8 +73,7 @@
     if (_manualLock && !force) return;
     _active = null;
     const el = _el();
-    if (el) el.style.display = 'none';
-    document.documentElement.style.setProperty('--banner-h', '0px');
+    if (el) el.innerHTML = '';
 
     document.dispatchEvent(new CustomEvent('ba:banner-change', { detail: { type: null } }));
   }

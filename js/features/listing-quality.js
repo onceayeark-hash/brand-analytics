@@ -619,13 +619,18 @@
             </label>
           </div>
 
-          <button class="btn btn-primary" id="lq-check" style="width:100%">品質をチェック</button>
+          <button class="btn btn-primary" id="lq-check" style="margin-top:8px">品質をチェック</button>
         </div>
 
         <!-- 右: 結果 -->
-        <div id="lq-result">
-          <div class="card" style="text-align:center;padding:48px 20px;color:var(--text-muted);font-family:var(--font-mono);font-size:11px">
-            左のフォームに入力して<br>「品質をチェック」を押してください
+        <div id="lq-result" style="display:flex;flex-direction:column">
+          <div class="card" style="flex:1;display:flex;align-items:center;justify-content:center;min-height:400px">
+            <div style="text-align:center;color:var(--text-muted)">
+              <div style="font-size:32px;margin-bottom:12px">✏️</div>
+              <div style="font-family:var(--font-mono);font-size:11px;line-height:1.8">
+                左のフォームに入力して<br>「品質をチェック」を押してください
+              </div>
+            </div>
           </div>
         </div>
 
@@ -718,6 +723,15 @@
         const root = document.getElementById('listing-quality-root');
         if (root) _render(root);
       });
+    },
+    // auto-listing.js からリアルタイムスコアリングに使用
+    score(data) {
+      const result = _calcScore(data);
+      return { ...result, checks: _check2026(data) };
+    },
+    // ブランドオートコンプリートを外部フォームにアタッチ
+    attachAutocomplete(inputEl, onSelect) {
+      _attachAutocomplete(inputEl, onSelect || (() => {}));
     },
   };
 

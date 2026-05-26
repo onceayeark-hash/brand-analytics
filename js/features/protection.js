@@ -1,8 +1,6 @@
 /**
  * BRAND ANALYTICS — protection.js
- * アカウント保護（アラート + フィードバックテンプレート）
- * 未接続時はアラート部分を NO DATA 表示。
- * フィードバックテンプレートは常時表示（静的データ）。
+ * アカウント保護：アラートログ + フィードバックテンプレート（日英）
  */
 
 (function () {
@@ -10,106 +8,249 @@
 
   window.BA = window.BA || {};
 
-  const _alerts = [];
-
-  function _isConnected() {
-    const tier = BA.auth?.getTier?.() ?? 'free';
-    return tier === 'connected' || tier === 'premium';
-  }
+  // ─────────────────────────────────────
+  // アラートログ（最大50件・インメモリ）
+  // ─────────────────────────────────────
+  const _log = [];
 
   document.addEventListener('ba:alert', ({ detail }) => {
-    _alerts.unshift(detail);
-    if (_alerts.length > 50) _alerts.pop();
-    if (BA.nav?.getCurrentPanel?.() === 'protection') {
-      const root = document.getElementById('protection-root');
-      if (root) _render(root);
-    }
+    _log.unshift({ ...detail, ts: detail.ts ?? Date.now() });
+    if (_log.length > 50) _log.pop();
+    _patchAlertList();
   });
 
-  function _alertsSection() {
-    if (!_isConnected()) {
-      return `
-        <div class="card">
-          <div class="card-title">アラート</div>
-          <div style="margin-top:16px;display:flex;flex-direction:column;gap:8px">
-            ${['取引不良率', '遅延発送率', 'ケース開設', 'OAuth期限', 'API障害'].map(label => `
-              <div style="display:flex;align-items:center;gap:12px;padding:10px 12px;
-                          background:rgba(255,255,255,.03);border-radius:6px">
-                <div style="width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.12);flex-shrink:0"></div>
-                <span style="font-size:12px;color:var(--text-muted)">${label}</span>
-                <span style="margin-left:auto;font-family:var(--font-mono);font-size:11px;color:var(--text-muted)">---</span>
-              </div>
-            `).join('')}
-          </div>
-          <div style="margin-top:16px;padding:12px;border:1px solid rgba(232,201,106,.12);border-radius:6px;
-                      background:rgba(232,201,106,.04)">
-            <p style="font-size:11px;color:var(--text-secondary);text-align:center">
-              eBayを連携するとリアルタイムアラートが届きます
-            </p>
-            <div style="text-align:center;margin-top:10px">
-              <button class="btn btn-primary" style="font-size:12px;padding:8px 20px"
-                      onclick="BA.nav.showPanel('connect')">eBay連携 →</button>
-            </div>
-          </div>
-        </div>`;
-    }
-
-    const alertsHtml = _alerts.length
-      ? _alerts.slice(0, 10).map(a => `
-          <div class="alert-item ${a.severity === 'error' ? 'error' : 'warning'}">
-            <div class="alert-dot"></div>
-            <div class="alert-content">
-              <div class="alert-title">${a.type}</div>
-              <div class="alert-desc">${a.message ?? ''}</div>
-            </div>
-            <div class="alert-time">${new Date(a.timestamp).toLocaleTimeString('ja-JP')}</div>
-          </div>
-        `).join('')
-      : `<div style="color:var(--text-muted);font-size:12px;padding:16px 0;text-align:center">アラートはありません</div>`;
-
-    return `
-      <div class="card">
-        <div class="card-title">アラート</div>
-        <div id="protection-alert-list" style="margin-top:12px">${alertsHtml}</div>
-      </div>`;
+  function _patchAlertList() {
+    const el = document.getElementById('prot-alert-list');
+    if (el) el.innerHTML = _alertListHtml();
   }
 
-  function _templatesSection() {
-    const templates = [
-      { no: '01', label: 'ポジティブ返礼' },
-      { no: '02', label: 'INAD（商品説明相違）対応' },
-      { no: '03', label: 'INR（未着）対応' },
-      { no: '04', label: 'ニュートラル・改善宣言' },
-      { no: '05', label: '一般ネガティブ謝罪' },
+  // ─────────────────────────────────────
+  // フィードバックテンプレート（ハードコード fallback）
+  // Supabase の feedback_templates に同内容がある想定
+  // ─────────────────────────────────────
+  const TEMPLATES = [
+    {
+      no: '01', label: 'ポジティブ返礼',
+      ja: 'この度はご購入いただきありがとうございました。商品はご満足いただけましたでしょうか。またのご利用をお待ちしております。',
+      en: 'Thank you for your purchase! We hope you are completely satisfied with your item. We look forward to serving you again.',
+    },
+    {
+      no: '02', label: 'INAD（商品説明相違）対応',
+      ja: 'ご不便をおかけして誠に申し訳ございません。商品状態の説明が不十分でした。返品・全額返金の対応をいたします。',
+      en: 'We sincerely apologize for the inconvenience. The item description was not accurate enough. We will arrange a return and a full refund.',
+    },
+    {
+      no: '03', label: 'INR（未着）対応',
+      ja: 'ご連絡ありがとうございます。追跡番号をご確認の上、配送状況をご確認ください。解決されない場合は返金対応いたします。',
+      en: 'Thank you for contacting us. Please check the tracking number for the latest delivery status. If the issue is not resolved, we will issue a full refund.',
+    },
+    {
+      no: '04', label: 'ニュートラル・改善宣言',
+      ja: 'ご意見をいただきありがとうございます。今後のサービス向上に役立ててまいります。またのご利用を心よりお待ちしております。',
+      en: 'Thank you for your valuable feedback. We will use your comments to improve our service. We hope to serve you better in the future.',
+    },
+    {
+      no: '05', label: '一般ネガティブ謝罪',
+      ja: 'この度はご不満をおかけして大変申し訳ございませんでした。ご指摘の点を真摯に受け止め、改善に取り組んでまいります。',
+      en: 'We sincerely apologize for not meeting your expectations. We take your feedback very seriously and are committed to continuous improvement.',
+    },
+  ];
+
+  // ─────────────────────────────────────
+  // アラートリスト HTML
+  // ─────────────────────────────────────
+  const SEV = {
+    error:   { dot: 'var(--red)',      bg: 'var(--red-dim)'    },
+    warning: { dot: 'var(--yellow)',   bg: 'var(--yellow-dim)' },
+    info:    { dot: 'var(--gold-400)', bg: 'transparent'       },
+    ok:      { dot: 'var(--green)',    bg: 'var(--green-dim)'  },
+  };
+
+  function _alertListHtml() {
+    if (!_log.length) {
+      return `<div style="padding:16px 0;text-align:center;font-size:12px;
+        color:var(--text-muted);font-family:var(--font-mono)">アラートなし</div>`;
+    }
+    return _log.slice(0, 15).map(a => {
+      const s    = SEV[a.severity] ?? SEV.info;
+      const time = new Date(a.ts).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+      return `
+        <div style="display:flex;align-items:flex-start;gap:10px;padding:8px 12px;
+          background:${s.bg};border-radius:6px">
+          <div style="width:6px;height:6px;border-radius:50%;background:${s.dot};
+            flex-shrink:0;margin-top:5px"></div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:12px;color:var(--text-primary);font-weight:500">${a.type ?? '—'}</div>
+            ${a.message ? `<div style="font-size:11px;color:var(--text-muted);margin-top:2px">${a.message}</div>` : ''}
+          </div>
+          <div style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted);
+            white-space:nowrap;flex-shrink:0;padding-top:1px">${time}</div>
+        </div>`;
+    }).join('');
+  }
+
+  // ─────────────────────────────────────
+  // システム状態 HTML
+  // ─────────────────────────────────────
+  function _systemStatusHtml() {
+    const tier      = BA.auth?.getTier?.() ?? 'free';
+    const connected = tier === 'connected' || tier === 'premium';
+
+    // eBay OAuth行：状態により動的スタイル
+    const oauthAction = connected
+      ? `<span style="font-family:var(--font-mono);font-size:11px;font-weight:500;
+           color:var(--text-muted)">接続済み ✓</span>`
+      : `<button class="btn btn-primary" style="font-size:11px;padding:4px 12px;min-height:28px"
+           onclick="BA.nav?.showPanel?.('connect')">接続する</button>`;
+
+    const rows = [
+      { label: 'Supabase DB', ok: true,  okText: '正常',  ngText: 'エラー' },
+      { label: 'eBay API',    ok: true,  okText: '正常',  ngText: '障害中' },
     ];
 
+    return `<div style="display:flex;flex-direction:column;gap:6px">
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;
+        background:var(--bg-elevated);border-radius:6px">
+        <div style="width:6px;height:6px;border-radius:50%;flex-shrink:0;
+          background:${connected ? 'var(--green)' : 'var(--yellow)'}"></div>
+        <span style="font-size:12px;color:var(--text-secondary);flex:1">eBay OAuth</span>
+        ${oauthAction}
+      </div>
+      ${rows.map(r => `
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;
+          background:var(--bg-elevated);border-radius:6px">
+          <div style="width:6px;height:6px;border-radius:50%;flex-shrink:0;
+            background:${r.ok ? 'var(--green)' : 'var(--red)'}"></div>
+          <span style="font-size:12px;color:var(--text-secondary);flex:1">${r.label}</span>
+          <span style="font-family:var(--font-mono);font-size:11px;font-weight:500;
+            color:${r.ok ? 'var(--green)' : 'var(--red)'}">
+            ${r.ok ? r.okText : r.ngText}
+          </span>
+        </div>`).join('')}
+    </div>`;
+  }
+
+  // ─────────────────────────────────────
+  // テンプレートカード HTML
+  // ─────────────────────────────────────
+  function _templateCard(t) {
     return `
-      <div class="card">
-        <div class="card-title">フィードバックテンプレート</div>
-        <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px">
-          ${templates.map(t => `
-            <button class="btn btn-secondary" style="justify-content:flex-start;text-align:left">
-              <span style="font-family:var(--font-mono);color:var(--text-muted);margin-right:8px">${t.no}</span>
-              ${t.label}
-            </button>
-          `).join('')}
+      <div class="card" style="display:flex;flex-direction:column;gap:10px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-family:var(--font-mono);font-size:10px;color:var(--gold-400);
+            font-weight:600;background:rgba(200,146,78,.1);padding:2px 8px;
+            border-radius:4px;flex-shrink:0">${t.no}</span>
+          <span style="font-size:13px;font-weight:500;color:var(--text-primary)">${t.label}</span>
         </div>
-        <p style="margin-top:12px;font-size:10px;color:var(--text-muted)">
-          ※ 日英テンプレートはeBay返信時にご利用ください
-        </p>
+
+        <div style="border:1px solid var(--border);border-radius:6px;overflow:hidden">
+          <div style="padding:6px 12px;border-bottom:1px solid var(--border);
+            font-size:13px;font-weight:500;color:var(--text-secondary);
+            background:var(--bg-elevated)">日本語</div>
+          <div style="padding:10px 12px;font-size:11px;color:var(--text-secondary);
+            line-height:1.8">${t.ja}</div>
+        </div>
+
+        <div style="border:1px solid var(--border);border-radius:6px;overflow:hidden">
+          <div style="padding:6px 12px;border-bottom:1px solid var(--border);
+            font-size:13px;font-weight:500;color:var(--text-secondary);
+            background:var(--bg-elevated)">English</div>
+          <div style="padding:10px 12px;font-size:11px;color:var(--text-secondary);
+            line-height:1.8">${t.en}</div>
+        </div>
+
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-primary prot-save" data-no="${t.no}"
+            style="flex:1;font-size:12px">定型文を保存</button>
+          <button class="btn btn-secondary prot-copy" data-lang="en" data-no="${t.no}"
+            style="flex:1;font-size:12px">English をコピー</button>
+        </div>
       </div>`;
   }
 
+  // ─────────────────────────────────────
+  // メインレンダー
+  // ─────────────────────────────────────
   function _render(root) {
     root.innerHTML = `
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
-        ${_alertsSection()}
-        ${_templatesSection()}
-      </div>
-    `;
-    BA.notify?.clearBadge?.('protection-alert-count');
+      <div style="display:grid;grid-template-columns:360px 1fr;gap:16px;align-items:start">
+
+        <div style="display:flex;flex-direction:column;gap:16px">
+
+          <div class="card">
+            <div style="display:flex;align-items:center;justify-content:space-between;
+              margin-bottom:12px">
+              <div class="card-title" style="margin:0">アラートログ</div>
+              <button class="btn btn-ghost" id="prot-clear-btn"
+                style="font-size:11px;padding:4px 10px;min-height:28px">クリア</button>
+            </div>
+            <div id="prot-alert-list" style="display:flex;flex-direction:column;gap:6px">
+              ${_alertListHtml()}
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-title" style="margin-bottom:12px">システム状態</div>
+            ${_systemStatusHtml()}
+          </div>
+
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div class="card-title" style="padding:0 4px">フィードバックテンプレート</div>
+          ${TEMPLATES.map(_templateCard).join('')}
+          <p style="font-size:10px;color:var(--text-muted);text-align:center;margin-top:4px">
+            ※ eBay 返信時にコピーしてご利用ください
+          </p>
+        </div>
+
+      </div>`;
+
+    root.querySelectorAll('.prot-copy').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const t = TEMPLATES.find(t => t.no === btn.dataset.no);
+        if (!t) return;
+        const text = btn.dataset.lang === 'ja' ? t.ja : t.en;
+        navigator.clipboard?.writeText(text).then(() => {
+          const orig = btn.textContent;
+          btn.textContent = '✓ コピー完了';
+          btn.disabled = true;
+          setTimeout(() => { btn.textContent = orig; btn.disabled = false; }, 1800);
+        }).catch(() => {
+          BA.notify?.toast?.('クリップボードへのアクセスが拒否されました', 'error');
+        });
+      });
+    });
+
+    root.querySelectorAll('.prot-save').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const t = TEMPLATES.find(t => t.no === btn.dataset.no);
+        if (!t) return;
+        try {
+          const saved = JSON.parse(localStorage.getItem('ba_saved_templates') ?? '[]');
+          if (!saved.find(s => s.no === t.no)) {
+            saved.push({ no: t.no, label: t.label, ja: t.ja, en: t.en, savedAt: Date.now() });
+            localStorage.setItem('ba_saved_templates', JSON.stringify(saved));
+          }
+          const orig = btn.textContent;
+          btn.textContent = '✓ 保存しました';
+          btn.disabled = true;
+          setTimeout(() => { btn.textContent = orig; btn.disabled = false; }, 1800);
+        } catch {
+          BA.notify?.toast?.('保存に失敗しました', 'error');
+        }
+      });
+    });
+
+    root.querySelector('#prot-clear-btn')?.addEventListener('click', () => {
+      _log.length = 0;
+      _patchAlertList();
+    });
   }
 
+  // ─────────────────────────────────────
+  // 公開 API
+  // ─────────────────────────────────────
   window.BA.protection = {
     init() {
       document.addEventListener('ba:panel-show', ({ detail }) => {

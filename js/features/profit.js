@@ -209,8 +209,48 @@
   // UI 描画
   // ─────────────────────────────────────
 
+  const _HINT_KEY_PROFIT = 'ba_hint_profit';
+
+  function _tutorialBanner() {
+    try { if (localStorage.getItem(_HINT_KEY_PROFIT)) return ''; } catch {}
+    return `
+      <div id="profit-tut-banner" style="display:flex;align-items:flex-start;gap:12px;
+        padding:12px 16px;background:rgba(232,140,60,.08);
+        border:1px solid rgba(232,140,60,.2);border-radius:8px;margin-bottom:16px">
+        <span style="font-size:16px;color:var(--brand);flex-shrink:0;line-height:1.5">＋</span>
+        <div style="flex:1;font-size:13px;color:var(--text-secondary);line-height:1.7">
+          <strong style="color:var(--text-primary)">利益計算機の使い方</strong><br>
+          販売価格・手数料・送料・仕入原価を入力すると粗利益を自動計算します。
+          取引記録を5件入力すると、手数料率が実績値に自動更新されます。
+        </div>
+        <button id="profit-tut-close" aria-label="閉じる"
+          style="background:none;border:none;cursor:pointer;color:var(--text-muted);
+            font-size:18px;padding:0 0 0 8px;line-height:1;flex-shrink:0">×</button>
+      </div>`;
+  }
+
+  /** 費用内訳カード：未入力時の空状態HTML */
+  function _emptyBreakdown() {
+    const items = [
+      'eBay手数料',
+      'Promoted',
+      'Payoneer',
+      '送料',
+      '関税',
+      '真贋サービス',
+      '仕入れ原価',
+    ];
+    return items.map(label => `
+      <tr>
+        <td style="color:#999999;font-size:14px;padding:8px 0">${label}</td>
+        <td style="color:#999999;font-size:14px;text-align:right;padding:8px 0">—</td>
+      </tr>
+    `).join('');
+  }
+
   function _render(root) {
     root.innerHTML = `
+      ${_tutorialBanner()}
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start">
 
         <!-- LEFT: 入力フォーム -->
@@ -384,28 +424,6 @@
 
           </div>
 
-          <!-- 為替レート -->
-          <div class="card">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-              <div class="card-title" style="margin:0">為替レート</div>
-              <button class="btn btn-ghost" id="p-refresh-rate" style="font-size:10px;padding:4px 8px">
-                ↻ 更新
-              </button>
-            </div>
-            <div style="display:flex;align-items:center;gap:12px">
-              <div class="input-group" style="flex:1">
-                <label class="input-label" for="p-rate">1 USD =</label>
-                <div class="input-wrap">
-                  <input class="input" id="p-rate" type="number" min="1" step="0.01" value="150">
-                  <div class="input-prefix" style="border-left:none;border-right:1px solid var(--border);border-radius:0 3px 3px 0">JPY</div>
-                </div>
-              </div>
-              <div style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted);padding-top:20px" id="p-rate-updated">
-                手動入力
-              </div>
-            </div>
-          </div>
-
         </div>
 
         <!-- RIGHT: 計算結果 -->
@@ -441,7 +459,7 @@
             <div class="card-title">費用内訳</div>
             <table class="data-table" id="p-breakdown-table">
               <tbody>
-                <tr><td>—</td><td style="font-family:var(--font-mono);text-align:right">—</td></tr>
+                ${_emptyBreakdown()}
               </tbody>
             </table>
           </div>
@@ -465,7 +483,7 @@
           </div>
 
           <!-- eBay 手数料率表示 -->
-          <div class="card">
+          <div class="card" style="margin-bottom:16px">
             <div class="card-title">適用手数料率</div>
             <div style="font-family:var(--font-mono);font-size:24px;color:var(--amber);text-align:center;padding:8px 0" id="p-fee-rate-display">
               —
@@ -475,9 +493,36 @@
             </div>
           </div>
 
+          <!-- 為替レート -->
+          <div class="card">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+              <div class="card-title" style="margin:0">為替レート</div>
+              <button class="btn btn-ghost" id="p-refresh-rate" style="font-size:10px;padding:4px 8px">
+                ↻ 更新
+              </button>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px">
+              <div class="input-group" style="flex:1">
+                <label class="input-label" for="p-rate">1 USD =</label>
+                <div class="input-wrap">
+                  <input class="input" id="p-rate" type="number" min="1" step="0.01" value="150">
+                  <div class="input-prefix" style="border-left:none;border-right:1px solid var(--border);border-radius:0 3px 3px 0">JPY</div>
+                </div>
+              </div>
+              <div style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted);padding-top:20px" id="p-rate-updated">
+                手動入力
+              </div>
+            </div>
+          </div>
+
         </div>
       </div>
     `;
+
+    root.querySelector('#profit-tut-close')?.addEventListener('click', () => {
+      try { localStorage.setItem(_HINT_KEY_PROFIT, '1'); } catch {}
+      root.querySelector('#profit-tut-banner')?.remove();
+    });
 
     _bindEvents(root);
     _update(root);
@@ -613,6 +658,8 @@
           </td>
         </tr>
       `;
+    } else if (tbody) {
+      tbody.innerHTML = _emptyBreakdown();
     }
 
     // PPD 表示
@@ -641,6 +688,29 @@
   }
 
   // ─────────────────────────────────────
+  // 学習値をフォームに反映
+  // ─────────────────────────────────────
+
+  /**
+   * BA.transactions.getLearned() の結果をデフォルト値としてフォームに適用する。
+   * 学習済み（isFallback=false）の場合のみ反映し、フォールバック時は変更しない。
+   */
+  function _applyLearnedRates(root) {
+    const learned = BA.transactions?.getLearned?.();
+    if (!learned || learned.isFallback) return;
+
+    const promoInput   = root.querySelector('#p-promoted');
+    const payeerInput  = root.querySelector('#p-payoneer');
+    const authInput    = root.querySelector('#p-auth-service');
+
+    if (promoInput)  promoInput.value  = (learned.promotedRate  * 100).toFixed(2);
+    if (payeerInput) payeerInput.value = (learned.payoneerRate  * 100).toFixed(2);
+    if (authInput)   authInput.value   = learned.authServiceJpy;
+
+    _update(root);
+  }
+
+  // ─────────────────────────────────────
   // 公開API
   // ─────────────────────────────────────
   const profit = {
@@ -652,15 +722,13 @@
         _exchangeRate = DEFAULTS.usdJpy;
       }
 
-      // パネル表示時に初回レンダリング
       document.addEventListener('ba:panel-show', ({ detail }) => {
         if (detail.panelKey !== 'profit') return;
         const root = document.getElementById('profit-root');
         if (!root || _rendered) return;
         _rendered = true;
         _render(root);
-
-        // 取得済み為替レートをセット
+        _applyLearnedRates(root);
         const rateInput = root.querySelector('#p-rate');
         if (rateInput) {
           rateInput.value = _exchangeRate.toFixed(2);
@@ -668,11 +736,11 @@
         }
       });
 
-      // 利益計算機は FREE 機能なので初回から表示
       const root = document.getElementById('profit-root');
       if (root && !_rendered) {
         _rendered = true;
         _render(root);
+        _applyLearnedRates(root);
         const rateInput = root.querySelector('#p-rate');
         if (rateInput) rateInput.value = _exchangeRate.toFixed(2);
       }

@@ -22,10 +22,9 @@
   // 外部サービス一覧（新サービス追加時はここに追記）
   const SERVICES = [
     {
-      key:       'supabase',
-      label:     'Supabase',
-      statusUrl: 'https://status.supabase.com',
-      checkUrl:  () => `${window.BA_CONFIG?.SUPABASE_URL || ''}/auth/v1/health`,
+      key:      'supabase',
+      label:    'Supabase',
+      checkUrl: () => `${window.BA_CONFIG?.SUPABASE_URL || ''}/auth/v1/health`,
     },
     {
       key:       'ebay_api',

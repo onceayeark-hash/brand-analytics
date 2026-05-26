@@ -3,6 +3,14 @@
 > Claude Codeはセッション開始時にこのファイルを読み、同じ指摘を繰り返さないこと。
 > 修正・指摘があった場合は都度ここに追記する。
 
+> **【必須姿勢】** このファイルを読んだ後、過去の改善・修正履歴を「なぜそう変えたか」まで理解した上で実装に臨むこと。
+> 特に以下を自問すること：
+> - 今から書くコードは、過去の指摘をすべて満たしているか？
+> - グラフ・UIは `frontend-design` の水準を満たす視覚的インパクトがあるか？
+> - 利益計算・手数料ロジックは `finance-billing-ops` のパターンに沿っているか？
+> - 「とりあえず動く」ではなく「ユーザーが満足する」レベルか？
+> 過去の指摘を読み飛ばした実装は、やり直しになる。
+
 ---
 
 ## フォーマット
@@ -33,3 +41,70 @@
 - [設計変更] 健全性スコア（重み付き計算・S〜Dランク）を廃止 → 生数値表示＋閾値アラートのみに変更。理由：スコアのエビデンスがなく誤解を招く
 - [設計変更] 手数料をハードコード値から学習型に変更 → transaction_logs テーブルに実取引データを蓄積し、移動平均で手数料率を自動調整。対象：eBay FVF・Payoneer・真贋サービス送料・為替乖離。5件未満はフォールバック値を使う
 - [新ファイル] js/features/transactions.js を新規追加（取引記録入力UI + 学習型手数料計算エンジン）
+
+### 2026-05-23
+- [Skills強化] グラフ・計算系の品質に不満があったため、以下のSkillsを `context/skills.md` に追加導入した
+  - `frontend-design`：グラフ・UI実装時に `dashboard-builder` と必ず併用。「視覚的インパクト」を意識した設計を行う
+  - `finance-billing-ops`：利益計算・学習型手数料ロジックの実装前に必ず呼ぶ。計算パターンを確認してから書き始める
+  - `postgres-patterns`：transaction_logs等のDBスキーマ設計時に使用
+  - `market-research`：eBay市場・競合調査時に使用
+- [品質基準の引き上げ] ユーザーの要求水準は「動けばいい」ではなく「満足できる」レベル。グラフは見た目の説得力、計算は財務ロジックとしての正確性を優先すること
+
+### 2026-05-24
+- [設計哲学書] `context/design-philosophy.md` を新規作成。以降の実装は必ずこれを参照する
+- [テーマ] ライトテーマをデフォルトに変更確定。ダークは切り替えで残す
+- [グラフ] データ5件未満はグラフ非表示。件数メッセージを表示する（哲学書②参照）
+- [入力UI] ＋／－スピナーボタン全廃。テキスト直打ちに統一（哲学書③参照）
+- [数値表示] USD=$1,234.00、%=19.00%、ゼロ自動計算=—、マイナス=赤色（哲学書の表参照）
+- [レイアウト] max-width:1080px確定。padding:`max(40px, calc((100% - 1080px) / 2))`
+- [哲学書の運用] 哲学書は「実態の記録」。実装と食い違う場合は実装を優先し哲学書を更新する
+- [未定義事項] 哲学書に答えがない場合は独自判断せず確認フォーマットで必ず確認を求めること
+
+### 2026-05-24（続）
+- [ボタン設計] 全ボタンを4階層（Primary/Secondary/Ghost/Danger）に分類・統一 → design-philosophy.md ⑦に記載
+  - btn-secondary: オレンジ枠線・オレンジ文字に変更（以前は灰色枠）
+  - btn-danger: 新規追加（白背景・赤枠・赤文字）
+  - 「リセット」系は必ず btn-danger を使う
+  - Primaryは1画面1〜2個まで
+- [protection.js] 「日本語をコピー」廃止 → 「定型文を保存」(Primary)に変更。localStorage（ba_saved_templates）に保存
+- [ラベル規則] 全ボタンラベルを「動詞＋目的語」形式に統一。「OK」「はい」禁止
+- [レイアウト] 左起点化：.panel を padding:28px 40px + max-width:1160px に変更。calc()による中央浮きを廃止
+- [仕入れメーター] 右パネル空状態：「—」→ ⚡アイコン＋ガイドテキストに変更。条件ドット：未入力=グレー、入力済み=オレンジ✓（data-touched で判定）
+- [protection.js] eBay OAuth状態ボタン動的化：未接続=オレンジPrimary、接続済み=グレーテキスト表示
+- [protection.js] テンプレートラベル「日本語」「English」を 9px→13px、font-weight:500 に変更
+
+### 【確定】翻訳API: DeepL 採用（2026-05-23決定）
+- **決定**: DeepL API を採用（Google翻訳 API は不採用）
+- **理由**: 日本語の自然さ・文章品質・データ保護ポリシーの観点でDeepLが圧倒的に優位
+- **実装方式**: 短期 → ユーザー自身のAPIキー（localStorage）。Stripe実装後 → 開発者1キーで全ユーザー処理（サブスク料金に内包）
+
+### 2026-05-25
+- [dashboard.js] 健全性シミュレーター・問題件数入力欄の+/-ボタンを廃止（バグ修正）
+  - `type="number"` → `type="text" inputmode="numeric" pattern="[0-9]*"` に変更
+  - `<div class="input-wrap">` + `<div class="input-prefix">件</div>` 構造を廃止
+  - 「件」を `<span>` として入力欄の右隣（枠外）に配置
+  - width:80px のシンプルな `.input` に統一（他の入力欄と同スタイル）
+  - イベントハンドラ（parseInt）は変更不要・テキスト値でも動作確認済み
+  - 対象指標：取引不良率・未解決ケース率・遅延発送率・追跡情報なし率・INAD率（全5種）
+- [dashboard.js] KPIカード背景色統一：粗利益カードの `class="card highlight"` → `class="card"` に変更。白背景（#ffffff）に統一
+- [dashboard.js] 未入力値表示統一：`'---'`（三本線）→ `'—'`（全角横棒1本）に統一。`_jpy()` 関数と各カードfallback表示の全箇所を変更
+- [finance.js] ボタン競合修正：「eBay連携 →」を `btn-primary` → `btn-secondary` に変更。同一画面にPrimaryが2つ並ぶ状態を解消。「取引記録を追加する」のみPrimaryに統一
+- [tutorial.js / profit.js / transactions.js] チュートリアル表示方式をオーバーレイ→インラインバナーに全面移行
+  - tutorial.js: `_show()` を `return` で即時無効化（オーバーレイ廃止）
+  - profit.js: `_tutorialBanner()` を追加。`ba_hint_profit` キーでlocalStorage管理。×で閉じると再表示しない
+  - transactions.js: `_tutorialBanner()` を追加。`ba_hint_transactions` キーで管理
+  - バナースタイル: `rgba(232,140,60,.08)` 背景・オレンジ枠・左に＋アイコン・右に×ボタン
+- [profit.js] 為替レートカードを左パネル最下部→右パネル最下部（適用手数料率の下）に移動
+  - 右パネルの順番：粗利益→費用内訳→PPD→適用手数料率→為替レート
+  - イベントバインドは querySelector で引いているため移動後も変更不要
+- [profit.js] 費用内訳カード空状態を実装：`_emptyBreakdown()` 関数を追加。未入力時（price=0）は7項目をグレー(#999999)・14px・右に「—」で表示。入力後は実金額に切替。`_render()` のtbodyと `_update()` の `else if` 分岐の両方に適用
+- [listing-quality.js] 右パネル空状態：テキストを縦横中央揃えに変更。✏️アイコンをテキスト上に追加。`min-height:400px` + `flex` で左パネルと高さを揃える
+- [profit.js] 費用内訳カード空状態：`_emptyBreakdown()` 追加。未入力時（price=0）は7項目グレー表示。`_render()` のtbodyと `_update()` の `else if` 分岐で切替
+
+### 2026-05-25（続）
+- [settings.js] 新規作成。3セクション構成：
+  - セクション1：手数料・閾値設定（5項目・`ba_settings` にJSON保存・`ba:settings-changed` dispatch）
+  - セクション2：DeepL API設定（type="password"・接続テスト・`ba_deepl_key` 保存）
+  - セクション3：eBay接続管理（接続状態に応じてドット色・ボタン動的切替）
+  - `BA.settings.get()` で他モジュールから設定値取得可能
+  - index.html に `<script>` タグと `BA.settings?.init?.()` を追加済み

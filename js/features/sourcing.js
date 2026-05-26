@@ -107,74 +107,123 @@
 
         <!-- 右: 判定結果 -->
         <div>
-          <div class="card" style="margin-bottom:16px;text-align:center">
-            <div class="card-title" style="text-align:left">判定結果</div>
-            <div style="font-family:var(--font-mono);font-size:40px;font-weight:600;padding:20px 0" id="s-verdict-label">
-              —
+          <div class="card" style="margin-bottom:16px">
+            <div class="card-title">判定結果</div>
+            <div id="s-verdict-guide" style="display:flex;flex-direction:column;align-items:center;
+              justify-content:center;padding:24px 0;gap:10px;text-align:center">
+              <div style="font-size:32px;line-height:1">⚡</div>
+              <div style="font-size:12px;color:var(--text-muted);line-height:1.7">
+                粗利率・競合増加率・成約率を入力すると<br>Go / No-Go の判定が表示されます
+              </div>
             </div>
-            <div style="font-size:12px;color:var(--text-secondary)" id="s-verdict-desc">
-              データを入力してください
-            </div>
+            <div style="font-family:var(--font-mono);font-size:40px;font-weight:600;
+              text-align:center;padding:20px 0;display:none" id="s-verdict-label"></div>
+            <div style="font-size:12px;color:var(--text-secondary);text-align:center;
+              padding-bottom:8px;display:none" id="s-verdict-desc"></div>
           </div>
 
           <!-- 条件チェックリスト -->
           <div class="card">
             <div class="card-title">条件チェック</div>
             <div style="display:flex;flex-direction:column;gap:10px" id="s-conditions">
-              ${_conditionRow('s-c1', '粗利率', '未入力')}
-              ${_conditionRow('s-c2', '競合増加率', '未入力')}
-              ${_conditionRow('s-c3', '成約率', '未入力')}
+              ${_conditionRow('s-c1', '粗利率')}
+              ${_conditionRow('s-c2', '競合増加率')}
+              ${_conditionRow('s-c3', '成約率')}
             </div>
           </div>
         </div>
       </div>
     `;
 
-    root.querySelectorAll('input').forEach(el => el.addEventListener('input', () => _updateVerdict(root)));
+    root.querySelectorAll('input').forEach(el => el.addEventListener('input', () => {
+      el.dataset.touched = '1';
+      _updateVerdict(root);
+    }));
   }
 
-  function _conditionRow(id, label, status) {
+  function _conditionRow(id, label) {
     return `
       <div style="display:flex;align-items:center;gap:10px" id="${id}">
-        <div style="width:16px;height:16px;border-radius:50%;background:var(--bg-elevated);border:1px solid var(--border);flex-shrink:0"></div>
+        <div class="s-dot" style="width:16px;height:16px;border-radius:50%;
+          background:var(--bg-elevated);border:1.5px solid var(--border);
+          flex-shrink:0;display:flex;align-items:center;justify-content:center;
+          font-size:9px;color:transparent;transition:background-color .15s,border-color .15s"></div>
         <div style="flex:1;font-size:12px;color:var(--text-secondary)">${label}</div>
-        <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted)">${status}</div>
+        <div class="s-val" style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted)">未入力</div>
       </div>
     `;
   }
 
   function _updateVerdict(root) {
-    const profitRate       = parseFloat(root.querySelector('#s-profit')?.value)      || 0;
-    const competitorGrowth = parseFloat(root.querySelector('#s-competitors')?.value) || 0;
-    const sellRate         = parseFloat(root.querySelector('#s-sellrate')?.value)    || 0;
+    const profitInput = root.querySelector('#s-profit');
+    const compInput   = root.querySelector('#s-competitors');
+    const sellInput   = root.querySelector('#s-sellrate');
+
+    const profitRate       = parseFloat(profitInput?.value)  ?? 0;
+    const competitorGrowth = parseFloat(compInput?.value)    ?? 0;
+    const sellRate         = parseFloat(sellInput?.value)    ?? 0;
     const tProfit   = parseFloat(root.querySelector('#s-t-profit')?.value) || DEFAULTS.profitThreshold;
     const tComp     = parseFloat(root.querySelector('#s-t-comp')?.value)   || DEFAULTS.competitorThreshold;
     const tSell     = parseFloat(root.querySelector('#s-t-sell')?.value)   || DEFAULTS.sellRateThreshold;
 
-    const v = _verdict({ profitRate, competitorGrowth, sellRate, thresholds: { profit: tProfit, competitor: tComp, sellRate: tSell } });
+    // 入力済み判定（data-touched または値が 0 以外）
+    const touched = [
+      profitInput?.dataset.touched  === '1' || profitRate  !== 0,
+      compInput?.dataset.touched    === '1' || competitorGrowth !== 0,
+      sellInput?.dataset.touched    === '1' || sellRate    !== 0,
+    ];
+    const anyTouched = touched.some(Boolean);
 
-    const COLORS  = { go: 'var(--green)', no_go: 'var(--red)', caution: 'var(--yellow)' };
-    const LABELS  = { go: 'GO', no_go: 'NO-GO', caution: '要検討' };
-    const DESCS   = { go: '3条件すべて通過 — 仕入れ推奨です', no_go: '条件未達 — 見送りを推奨します', caution: '一部条件未達 — 慎重に判断してください' };
-
+    // 判定結果の表示切り替え
+    const guideEl   = root.querySelector('#s-verdict-guide');
     const verdictEl = root.querySelector('#s-verdict-label');
     const descEl    = root.querySelector('#s-verdict-desc');
-    if (verdictEl) { verdictEl.textContent = LABELS[v]; verdictEl.style.color = COLORS[v]; }
-    if (descEl)    descEl.textContent = DESCS[v];
 
-    // 条件ドット
-    const checks = [
-      [profitRate >= tProfit,       `${profitRate.toFixed(1)}% (≥${tProfit}%)`],
-      [competitorGrowth <= tComp,   `${competitorGrowth.toFixed(1)}% (≤${tComp}%)`],
-      [sellRate > tSell,            `${sellRate.toFixed(1)}% (>${tSell}%)`],
+    if (anyTouched) {
+      if (guideEl)   guideEl.style.display   = 'none';
+      if (verdictEl) verdictEl.style.display = 'block';
+      if (descEl)    descEl.style.display    = 'block';
+
+      const v = _verdict({ profitRate, competitorGrowth, sellRate, thresholds: { profit: tProfit, competitor: tComp, sellRate: tSell } });
+      const COLORS = { go: 'var(--green)', no_go: 'var(--red)', caution: 'var(--yellow)' };
+      const LABELS = { go: 'GO', no_go: 'NO-GO', caution: '要検討' };
+      const DESCS  = { go: '3条件すべて通過 — 仕入れ推奨です', no_go: '条件未達 — 見送りを推奨します', caution: '一部条件未達 — 慎重に判断してください' };
+      if (verdictEl) { verdictEl.textContent = LABELS[v]; verdictEl.style.color = COLORS[v]; }
+      if (descEl)    descEl.textContent = DESCS[v];
+    } else {
+      if (guideEl)   guideEl.style.display   = 'flex';
+      if (verdictEl) verdictEl.style.display = 'none';
+      if (descEl)    descEl.style.display    = 'none';
+    }
+
+    // 条件ドット（未入力=グレー、入力済み=オレンジ）
+    const inputValues = [
+      `${profitRate.toFixed(1)}% (≥${tProfit}%)`,
+      `${competitorGrowth.toFixed(1)}% (≤${tComp}%)`,
+      `${sellRate.toFixed(1)}% (>${tSell}%)`,
     ];
     ['s-c1', 's-c2', 's-c3'].forEach((id, i) => {
       const row = root.querySelector(`#${id}`);
       if (!row) return;
-      const dot = row.querySelector('div');
-      const val = row.querySelector('div:last-child');
-      if (dot) dot.style.background = checks[i][0] ? 'var(--green)' : 'var(--red)';
-      if (val) val.textContent = checks[i][1];
+      const dot = row.querySelector('.s-dot');
+      const val = row.querySelector('.s-val');
+      if (touched[i]) {
+        if (dot) {
+          dot.style.background   = 'var(--gold-400)';
+          dot.style.borderColor  = 'var(--gold-400)';
+          dot.style.color        = '#fff';
+          dot.textContent        = '✓';
+        }
+        if (val) { val.textContent = inputValues[i]; val.style.color = 'var(--text-secondary)'; }
+      } else {
+        if (dot) {
+          dot.style.background  = 'var(--bg-elevated)';
+          dot.style.borderColor = 'var(--border)';
+          dot.style.color       = 'transparent';
+          dot.textContent       = '';
+        }
+        if (val) { val.textContent = '未入力'; val.style.color = 'var(--text-muted)'; }
+      }
     });
   }
 

@@ -105,8 +105,10 @@
 
     document.getElementById('auth-view-signin')?.toggleAttribute('hidden', view !== 'signin');
     document.getElementById('auth-view-signup')?.toggleAttribute('hidden', view !== 'signup');
+    document.getElementById('auth-view-reset')?.toggleAttribute('hidden',  view !== 'reset');
+    document.getElementById('auth-view-new-password')?.toggleAttribute('hidden', view !== 'new-password');
 
-    const firstInput = overlay.querySelector('.auth-input');
+    const firstInput = overlay.querySelector(':not([hidden]) .auth-input');
     setTimeout(() => firstInput?.focus(), 100);
   }
 
@@ -264,6 +266,23 @@
         return;
       }
 
+      // PASSWORD_RECOVERY を確実に捕捉するため getSession() より先に登録
+      _supabase.auth.onAuthStateChange((event, session) => {
+        if (event === 'PASSWORD_RECOVERY') {
+          _showAuthOverlay('new-password');
+          return;
+        }
+        _user = session?.user ?? null;
+        if (!_user) {
+          _setTier('free');
+          _updateEbayStatusUI('disconnected');
+          BA.cache?.clear?.();
+          _showAuthOverlay();
+        } else {
+          _hideAuthOverlay();
+        }
+      });
+
       try {
         const { data: { session } } = await _supabase.auth.getSession();
 
@@ -294,18 +313,6 @@
           _setTier('free');
           _updateEbayStatusUI('disconnected');
         }
-
-        _supabase.auth.onAuthStateChange((_event, session) => {
-          _user = session?.user ?? null;
-          if (!_user) {
-            _setTier('free');
-            _updateEbayStatusUI('disconnected');
-            BA.cache?.clear?.();
-            _showAuthOverlay();
-          } else {
-            _hideAuthOverlay();
-          }
-        });
 
       } catch (err) {
         console.error('[auth] 初期化エラー:', err);
@@ -449,6 +456,28 @@
       BA.notify?.toast?.('eBay アカウントを連携しました', 'success');
     },
 
+    /**
+     * 新しいパスワードを設定する（PASSWORD_RECOVERY フロー完了時）
+     * @param {string} newPassword
+     */
+    async updatePassword(newPassword) {
+      if (!_supabase) throw new Error('[auth] Supabase 未設定');
+      const { error } = await _supabase.auth.updateUser({ password: newPassword });
+      if (error) throw error;
+    },
+
+    /**
+     * パスワードリセットメールを送信する
+     * @param {string} email
+     */
+    async resetPassword(email) {
+      if (!_supabase) throw new Error('[auth] Supabase 未設定');
+      const { error } = await _supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.href.split('?')[0],
+      });
+      if (error) throw error;
+    },
+
     /** eBay 連携を解除する */
     async disconnectEbay() {
       if (!_supabase || !_user) return;
@@ -466,6 +495,7 @@
 
     getTier()         { return _tier; },
     getUser()         { return _user; },
+    getSupabase()     { return _supabase; },
     isEbayConnected() { return _ebayTokens !== null; },
 
     /** ログアウト */
@@ -555,6 +585,72 @@
     // ビュー切り替え
     document.getElementById('btn-to-signup')?.addEventListener('click', () => _showAuthOverlay('signup'));
     document.getElementById('btn-to-signin')?.addEventListener('click', () => _showAuthOverlay('signin'));
+    document.getElementById('btn-to-reset')?.addEventListener('click', () => _showAuthOverlay('reset'));
+    document.getElementById('btn-reset-to-signin')?.addEventListener('click', () => _showAuthOverlay('signin'));
+
+    // パスワードリセット送信
+    document.getElementById('btn-reset-send')?.addEventListener('click', async () => {
+      const email = document.getElementById('reset-email')?.value?.trim();
+      _setAuthMessage('reset-error',   '', false);
+      _setAuthMessage('reset-success', '', false);
+
+      if (!email) {
+        _setAuthMessage('reset-error', 'メールアドレスを入力してください');
+        return;
+      }
+
+      _setBtnLoading('btn-reset-send', true);
+      try {
+        await auth.resetPassword(email);
+        _setAuthMessage('reset-success',
+          'リセット用のメールを送信しました。メール内のリンクからパスワードを変更してください。', true);
+      } catch (err) {
+        _setAuthMessage('reset-error', _translateAuthError(err.message));
+      } finally {
+        _setBtnLoading('btn-reset-send', false);
+      }
+    });
+
+    // Enterキー送信（リセット画面）
+    document.getElementById('reset-email')?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') document.getElementById('btn-reset-send')?.click();
+    });
+
+    // 新パスワード設定
+    document.getElementById('btn-update-password')?.addEventListener('click', async () => {
+      const newPassword     = document.getElementById('new-password-input')?.value;
+      const confirmPassword = document.getElementById('new-password-confirm')?.value;
+      _setAuthMessage('new-password-error',   '', false);
+      _setAuthMessage('new-password-success', '', false);
+
+      if (!newPassword || !confirmPassword) {
+        _setAuthMessage('new-password-error', '新しいパスワードを入力してください');
+        return;
+      }
+      if (newPassword.length < 8) {
+        _setAuthMessage('new-password-error', 'パスワードは8文字以上で入力してください');
+        return;
+      }
+      if (newPassword !== confirmPassword) {
+        _setAuthMessage('new-password-error', 'パスワードが一致しません');
+        return;
+      }
+
+      _setBtnLoading('btn-update-password', true);
+      try {
+        await auth.updatePassword(newPassword);
+        _setAuthMessage('new-password-success', 'パスワードを更新しました', true);
+        setTimeout(() => _showAuthOverlay('signin'), 1500);
+      } catch (err) {
+        _setAuthMessage('new-password-error', _translateAuthError(err.message));
+      } finally {
+        _setBtnLoading('btn-update-password', false);
+      }
+    });
+
+    document.getElementById('new-password-confirm')?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') document.getElementById('btn-update-password')?.click();
+    });
 
     // サインアウト
     document.getElementById('btn-signout')?.addEventListener('click', async () => {
@@ -585,7 +681,7 @@
     if (msg.includes('Invalid login credentials')) return 'メールアドレスまたはパスワードが正しくありません';
     if (msg.includes('Email not confirmed'))       return 'メールアドレスの確認が完了していません。確認メールをご確認ください';
     if (msg.includes('User already registered'))   return 'このメールアドレスはすでに登録されています';
-    if (msg.includes('Password should be'))        return 'パスワードは6文字以上で入力してください';
+    if (msg.includes('Password should be'))        return 'パスワードは8文字以上で入力してください';
     if (msg.includes('rate limit'))                return 'しばらく時間をおいてから再度お試しください';
     return msg;
   }

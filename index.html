@@ -4,24 +4,35 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>BRAND ANALYTICS</title>
+  <!-- テーマFOUC防止: CSSより前に実行 -->
+  <script>(function(){try{var t=localStorage.getItem('ba_theme');if(t!=='dark')document.documentElement.setAttribute('data-theme','light')}catch{}})()</script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&family=Cormorant+Garamond:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
   <style>
     :root {
-      --navy-950: #030810;
-      --navy-900: #050d1a;
-      --navy-800: #091527;
-      --navy-700: #0e2040;
-      --navy-600: #132b55;
-      --navy-500: #1a3a6e;
-      --gold-300: #f0d98a;
-      --gold-400: #e8c96a;
-      --gold-500: #c9a84c;
-      --gold-600: #a8863c;
-      --gold-glow: rgba(200,168,76,0.18);
-      --gold-dim:  rgba(200,168,76,0.10);
-      --gold-line: rgba(200,168,76,0.15);
+      /* ── ニュートラルグレースケール ── */
+      --navy-950: #111213;
+      --navy-900: #202124;
+      --navy-800: #292b2d;
+      --navy-700: #35383b;
+      --navy-600: #444749;
+      --navy-500: #56595c;
+      /* ── アンバーアクセント ── */
+      --gold-300: #e8c078;
+      --gold-400: #d4974f;
+      --gold-500: #c8924e;
+      --gold-600: #a87840;
+      --gold-glow:   rgba(200,146,78,0.18);
+      --gold-dim:    rgba(200,146,78,0.10);
+      --gold-hover:  rgba(200,146,78,0.05);
+      --gold-active: rgba(200,146,78,0.08);
+      --z-base:    1;
+      --z-sidebar: 10;
+      --z-header:  20;
+      --z-toast:   100;
+      --z-overlay: 200;
+      --gold-line: rgba(200,146,78,0.15);
       --green:     #4ece8a;
       --green-dim: rgba(78,206,138,0.12);
       --red:       #e85454;
@@ -30,115 +41,130 @@
       --blue-dim:  rgba(91,141,217,0.12);
       --yellow:    #f5c842;
       --yellow-dim:rgba(245,200,66,0.10);
-      --text-primary:   #f0e8d5;
-      --text-secondary: #8fa8c8;
-      --text-muted:     #4a6080;
-      --bg-card:     rgba(13,30,60,0.75);
-      --bg-elevated: rgba(19,43,85,0.60);
-      --bg-input:    rgba(9,21,39,0.80);
-      --border:        rgba(200,168,76,0.15);
-      --border-hover:  rgba(200,168,76,0.35);
+      /* ── テキスト・背景 ── */
+      --text-primary:   #e4e4e4;
+      --text-secondary: #9a9a9a;
+      --text-muted:     #606368;
+      --bg-card:     rgba(41,43,45,0.85);
+      --bg-elevated: rgba(52,55,59,0.70);
+      --bg-input:    rgba(17,18,19,0.85);
+      --border:        rgba(200,146,78,0.15);
+      --border-hover:  rgba(200,146,78,0.35);
       --sidebar-w: 240px;
       --header-h:  64px;
-      --banner-h:  0px;
       --touch-target: 44px;
-      --font-serif: 'Cormorant Garamond', Georgia, serif;
-      --font-sans:  'BIZ UDPGothic', 'Meiryo', 'メイリオ', 'DM Sans', system-ui, sans-serif;
+      --font-sans:  'BIZ UDPGothic', 'Meiryo', 'メイリオ', system-ui, sans-serif;
       --font-mono:  'IBM Plex Mono', monospace;
       --ease:   cubic-bezier(0.4,0,0.2,1);
       --t-fast: 150ms;
       --t-base: 250ms;
       --blur-card:   blur(12px);
       --blur-header: blur(16px);
-      --shadow-card: 0 4px 24px rgba(0,0,0,0.45);
+      --shadow-card: 0 4px 24px rgba(0,0,0,0.55);
+      /* ── 追加トークン ── */
+      --green-dark: #228a55;
+      --red-dark:   #b02828;
+      --on-amber:   #1e1512;
+      --green-border:  rgba(78,206,138,0.22);
+      --red-border:    rgba(232,84,84,0.22);
+      --yellow-border: rgba(245,200,66,0.20);
+      --blue-border:   rgba(91,141,217,0.22);
+      --scrollbar-thumb:       rgba(200,146,78,0.08);
+      --scrollbar-thumb-hover: rgba(200,146,78,0.18);
     }
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
     html,body{height:100%;overflow:hidden}
-    body{font-family:var(--font-sans);background:var(--navy-900);color:var(--text-primary);font-size:13px;line-height:1.5;-webkit-font-smoothing:antialiased}
+    body{font-family:var(--font-sans);background:var(--navy-900);color:var(--text-primary);font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased}
     body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
-      background:radial-gradient(ellipse 80% 50% at 15% 8%,rgba(26,58,110,.40) 0%,transparent 60%),
-                 radial-gradient(ellipse 60% 40% at 85% 80%,rgba(200,168,76,.07) 0%,transparent 55%)}
-    body::after{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;
+      background:radial-gradient(ellipse 80% 50% at 15% 8%,rgba(200,146,78,.10) 0%,transparent 60%),
+                 radial-gradient(ellipse 60% 40% at 85% 80%,rgba(200,146,78,.05) 0%,transparent 55%)}
+    body::after{content:'';position:fixed;inset:0;z-index:var(--z-overlay);pointer-events:none;
       background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.02'/%3E%3C/svg%3E")}
-    #app{display:grid;grid-template-areas:"banner banner" "sidebar header" "sidebar main";grid-template-columns:var(--sidebar-w) 1fr;grid-template-rows:var(--banner-h) var(--header-h) 1fr;height:100vh;position:relative;z-index:1}
-    #status-banner{grid-area:banner;display:none;align-items:center;justify-content:center;font-size:12px;font-family:var(--font-sans);color:var(--text-secondary);background:rgba(245,200,66,.05);border-bottom:1px solid rgba(245,200,66,.18);padding:0 24px;overflow:hidden;z-index:20;transition:all var(--t-base) var(--ease)}
+    #app{display:grid;grid-template-areas:"sidebar header" "sidebar main";grid-template-columns:var(--sidebar-w) 1fr;grid-template-rows:var(--header-h) 1fr;height:100vh;position:relative;z-index:1}
+    #status-banner{flex:1;display:flex;align-items:center;justify-content:center;font-size:12px;font-family:var(--font-sans);color:var(--yellow);padding:0 16px;gap:8px;overflow:hidden;pointer-events:none}
+    #status-banner:not(:empty){pointer-events:auto}
+    #status-banner .banner-dot{width:5px;height:5px;border-radius:50%;background:var(--yellow);flex-shrink:0}
 
     /* SIDEBAR */
-    #sidebar{grid-area:sidebar;background:rgba(9,21,39,.95);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin}
+    #sidebar{grid-area:sidebar;background:rgba(16,17,18,.97);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin}
     .sidebar-logo{height:var(--header-h);padding:0 14px;display:flex;align-items:center;border-bottom:1px solid var(--border);flex-shrink:0;gap:10px;overflow:hidden}
     .logo-img{width:34px;height:34px;object-fit:contain;flex-shrink:0}
     .logo-text{font-family:var(--font-sans);font-size:.78rem;font-weight:600;letter-spacing:.06em;color:var(--gold-400);white-space:nowrap;line-height:1;overflow:hidden;text-overflow:ellipsis;min-width:0}
-    .logo-text small{display:block;font-family:var(--font-mono);font-size:8px;font-weight:400;letter-spacing:.14em;color:var(--text-muted);margin-top:3px}
+    .logo-text small{display:block;font-family:var(--font-mono);font-size:11px;font-weight:400;letter-spacing:.14em;color:var(--text-muted);margin-top:3px}
     .nav-section{padding:16px 0 12px;border-bottom:1px solid var(--border);flex-shrink:0}
     .nav-section:last-of-type{border-bottom:none}
-    .nav-section-label{font-family:var(--font-mono);font-size:9px;font-weight:500;letter-spacing:.15em;text-transform:uppercase;color:var(--gold-500);padding:0 20px 8px;opacity:.75}
-    .nav-item{display:flex;align-items:center;gap:8px;padding:10px 16px;cursor:pointer;transition:all var(--t-fast) var(--ease);position:relative;border:none;background:none;width:100%;text-align:left;color:var(--text-secondary);font-family:var(--font-sans);font-size:13px;font-weight:400;line-height:1;border-left:2px solid transparent;min-height:var(--touch-target)}
-    .nav-item:hover:not(.locked){color:var(--text-primary);background:rgba(200,168,76,.05);border-left-color:rgba(200,168,76,.25)}
-    .nav-item.active{color:var(--gold-400);background:rgba(200,168,76,.08);border-left-color:var(--gold-400)}
+    .nav-section-label{font-family:var(--font-mono);font-size:11px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--gold-500);padding:0 20px 8px;opacity:.75}
+    .nav-item{display:flex;align-items:center;gap:8px;padding:10px 16px;cursor:pointer;transition:background-color var(--t-fast) var(--ease),border-color var(--t-fast) var(--ease),color var(--t-fast) var(--ease),opacity var(--t-fast) var(--ease);position:relative;border:none;background:none;width:100%;text-align:left;color:var(--text-secondary);font-family:var(--font-sans);font-size:14px;font-weight:400;line-height:1;border-left:2px solid transparent;min-height:var(--touch-target)}
+    .nav-item:hover:not(.locked){color:var(--text-primary);background:var(--gold-hover);border-left-color:var(--border-hover)}
+    .nav-item.active{color:var(--gold-400);background:var(--gold-active);border-left-color:var(--gold-400)}
     .nav-item.locked{opacity:.45;cursor:pointer}
     [data-tier="connected"] .nav-item.locked,[data-tier="premium"] .nav-item.locked{opacity:1;cursor:pointer;pointer-events:auto}
     [data-tier="connected"] .nav-item.locked .lock-icon,[data-tier="premium"] .nav-item.locked .lock-icon{display:none}
-    .lock-icon{margin-left:auto;font-size:9px;opacity:.5}
+    .lock-icon{margin-left:auto;font-size:11px;opacity:.5}
+    .nav-new-badge{width:7px;height:7px;border-radius:50%;background:var(--gold-400);margin-left:auto;flex-shrink:0;box-shadow:0 0 6px rgba(212,151,79,.6);animation:badge-pulse 2s ease-in-out infinite}
+    @keyframes badge-pulse{0%,100%{opacity:1;box-shadow:0 0 6px rgba(212,151,79,.5)}50%{opacity:.6;box-shadow:0 0 12px rgba(212,151,79,.8)}}
     .nav-icon{width:14px;height:14px;flex-shrink:0;opacity:.55}
     .nav-item.active .nav-icon,.nav-item:hover:not(.locked) .nav-icon{opacity:1}
-    .nav-alert-badge{margin-left:auto;background:var(--red);color:#fff;font-family:var(--font-mono);font-size:9px;font-weight:500;padding:1px 5px;border-radius:8px;min-width:16px;text-align:center;display:none}
-    .sidebar-footer{margin-top:auto;padding:16px 20px;border-top:1px solid var(--border);flex-shrink:0}
-    .sidebar-footer-text{font-family:var(--font-mono);font-size:10px;color:var(--text-muted);line-height:1.8}
+    .nav-alert-badge{margin-left:auto;background:var(--red);color:#fff;font-family:var(--font-mono);font-size:11px;font-weight:500;padding:1px 5px;border-radius:8px;min-width:16px;text-align:center;display:none}
+    .sidebar-footer{margin-top:auto;padding:12px 0 16px;border-top:1px solid var(--border);flex-shrink:0}
+    .sidebar-footer-text{font-family:var(--font-mono);font-size:11px;color:var(--text-muted);line-height:1.8;padding:0 20px}
 
     /* HEADER */
-    #header{grid-area:header;display:flex;align-items:center;justify-content:space-between;padding:0 24px;background:rgba(5,13,26,.92);backdrop-filter:var(--blur-header);-webkit-backdrop-filter:var(--blur-header);border-bottom:1px solid var(--border);position:relative;z-index:10}
+    #header{grid-area:header;display:flex;align-items:center;justify-content:space-between;padding:0 24px;background:rgba(14,11,8,.90);backdrop-filter:var(--blur-header);-webkit-backdrop-filter:var(--blur-header);border-bottom:1px solid var(--border);position:relative;z-index:10}
     .breadcrumb{font-family:var(--font-mono);font-size:11px;color:var(--text-muted);letter-spacing:.04em}
     .breadcrumb span{color:var(--text-secondary)}
     .header-right{display:flex;align-items:center;gap:12px}
-    #stale-warning{display:none;align-items:center;gap:8px;font-family:var(--font-mono);font-size:10px;color:var(--yellow);background:var(--yellow-dim);border:1px solid rgba(245,200,66,.20);padding:3px 10px;border-radius:3px;white-space:nowrap}
+    #stale-warning{display:none;align-items:center;gap:8px;font-family:var(--font-mono);font-size:11px;color:var(--yellow);background:var(--yellow-dim);border:1px solid rgba(245,200,66,.20);padding:3px 10px;border-radius:3px;white-space:nowrap}
     #stale-warning.visible{display:flex}
     .conn-status{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text-secondary)}
     .status-dot{width:6px;height:6px;border-radius:50%;background:var(--text-muted);flex-shrink:0}
     .status-dot.connected{background:var(--green);box-shadow:0 0 6px var(--green);animation:pulse 2.5s infinite}
     .status-dot.error{background:var(--red)}
     @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
-    .tier-badge{font-family:var(--font-mono);font-size:9px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;padding:3px 10px;border-radius:20px}
+    .tier-badge{font-family:var(--font-mono);font-size:11px;font-weight:500;letter-spacing:.10em;text-transform:uppercase;padding:3px 10px;border-radius:20px}
     .tier-badge.free{color:var(--text-muted);background:rgba(255,255,255,.04);border:1px solid var(--border)}
-    .tier-badge.connected{color:var(--gold-400);background:var(--gold-dim);border:1px solid rgba(200,168,76,.30)}
+    .tier-badge.connected{color:var(--gold-400);background:var(--gold-dim);border:1px solid rgba(200,146,78,.30)}
     .tier-badge.premium{color:var(--blue);background:var(--blue-dim);border:1px solid rgba(91,141,217,.25)}
     #btn-connect-header{display:flex}
     [data-tier="connected"] #btn-connect-header,[data-tier="premium"] #btn-connect-header{display:none}
 
     /* MAIN */
     #main{grid-area:main;overflow-y:auto;background:transparent;position:relative;z-index:1}
-    .panel{display:none;padding:32px;min-height:calc(100vh - var(--header-h));animation:fadeUp var(--t-base) var(--ease)}
+    .panel{display:none;padding:28px 40px;max-width:1160px;min-height:calc(100vh - var(--header-h));animation:fadeUp var(--t-base) var(--ease)}
+    #panel-connect,#panel-settings{padding:40px max(48px,calc((100% - 600px) / 2))}
     .panel.active{display:block}
     @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-    .panel-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;gap:16px}
-    .panel-title{font-family:var(--font-sans);font-size:1.4rem;font-weight:600;color:var(--text-primary);letter-spacing:.01em;line-height:1}
+    .panel-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:18px;gap:16px}
+    .panel-title{font-family:var(--font-sans);font-size:24px;font-weight:700;color:var(--text-primary);letter-spacing:.01em;line-height:1}
     .panel-subtitle{font-size:12px;color:var(--text-muted);margin-top:6px}
     .gold-line{height:1px;background:linear-gradient(90deg,transparent,var(--gold-500),transparent);margin:0 0 24px;opacity:.35}
 
     /* CARDS */
-    .card{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:20px 24px;position:relative;overflow:hidden;backdrop-filter:var(--blur-card);-webkit-backdrop-filter:var(--blur-card);transition:border-color var(--t-base) var(--ease);box-shadow:var(--shadow-card)}
-    .card:hover{border-color:rgba(200,168,76,.32)}
-    .card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--gold-600),var(--gold-400),var(--gold-600));opacity:0;transition:opacity var(--t-base) var(--ease)}
-    .card:hover::before{opacity:1}
-    .card.highlight{border-color:rgba(200,168,76,.30);background:linear-gradient(135deg,rgba(200,168,76,.07),rgba(200,168,76,.02))}
-    .card.highlight::before{opacity:.6}
-    .card-title{font-family:var(--font-mono);font-size:10px;font-weight:500;letter-spacing:.10em;text-transform:uppercase;color:var(--text-muted);margin-bottom:12px}
-    .card-value{font-family:var(--font-sans);font-size:1.8rem;font-weight:700;color:var(--text-primary);line-height:1;margin-bottom:4px}
+    .card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:16px 20px;position:relative;overflow:hidden;transition:border-color var(--t-base) var(--ease);box-shadow:var(--shadow-card)}
+    .card:hover{border-color:rgba(200,146,78,.32)}
+    .card::before{content:none}
+    .card.highlight{border-color:rgba(200,146,78,.30);background:linear-gradient(135deg,rgba(200,146,78,.07),rgba(200,146,78,.02))}
+    .card.highlight::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:var(--gold-500);opacity:.6}
+    .card-title{font-family:var(--font-mono);font-size:11px;font-weight:500;letter-spacing:.10em;text-transform:uppercase;color:var(--text-muted);margin-bottom:12px}
+    .card-value{font-family:var(--font-sans);font-size:1.8rem;font-weight:700;color:var(--text-primary);line-height:1;margin-bottom:4px;font-variant-numeric:tabular-nums}
     .card-value.gold{color:var(--gold-400)}.card-value.green{color:var(--green)}.card-value.red{color:var(--red)}.card-value.blue{color:var(--blue)}
     .card-sub{font-size:12px;color:var(--text-secondary)}
     .card-change{font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:3px;margin-top:6px}
     .card-change.up{color:var(--green)}.card-change.down{color:var(--red)}
-    .grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-bottom:20px}
-    .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:20px}
-    .grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:20px}
+    .grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:16px}
+    .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}
+    .grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
 
     /* FORMS */
     .input-group{display:flex;flex-direction:column;gap:4px}
-    .input-label{font-family:var(--font-mono);font-size:10px;font-weight:500;color:var(--gold-500);letter-spacing:.08em;text-transform:uppercase}
-    .input{background:var(--bg-input);border:1px solid var(--border);border-radius:6px;padding:10px 16px;font-family:var(--font-sans);font-size:13px;color:var(--text-primary);width:100%;min-height:var(--touch-target);transition:border-color var(--t-fast) var(--ease);outline:none}
-    .input:focus{border-color:var(--gold-500)}
+    .input-label{font-family:var(--font-mono);font-size:11px;font-weight:500;color:var(--gold-500);letter-spacing:.07em;text-transform:uppercase}
+    .input{background:var(--bg-input);border:1px solid var(--border);border-radius:8px;padding:11px 16px;font-family:var(--font-sans);font-size:14px;color:var(--text-primary);width:100%;min-height:var(--touch-target);transition:border-color var(--t-fast) var(--ease);outline:none}
+    .input:focus{border-color:var(--gold-500);box-shadow:0 0 0 3px rgba(200,146,78,.08)}
     .input::placeholder{color:var(--text-muted)}
+    input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+    input[type=number]{-moz-appearance:textfield}
     .input-wrap{display:flex;align-items:stretch}
-    .input-prefix{background:var(--bg-elevated);border:1px solid var(--border);border-right:none;border-radius:6px 0 0 6px;padding:0 10px;display:flex;align-items:center;font-family:var(--font-mono);font-size:12px;color:var(--text-muted)}
+    .input-prefix{background:var(--bg-elevated);border:1px solid var(--border);border-right:none;border-radius:8px 0 0 8px;padding:0 12px;display:flex;align-items:center;font-family:var(--font-mono);font-size:12px;color:var(--text-muted);white-space:nowrap}
     .input-wrap .input{border-radius:0 6px 6px 0}
     .select{background:var(--bg-input);border:1px solid var(--border);border-radius:6px;padding:10px 16px;font-family:var(--font-sans);font-size:13px;color:var(--text-primary);width:100%;min-height:var(--touch-target);cursor:pointer;outline:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6' fill='none' stroke='%234a6080' stroke-width='1.5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center}
     .select:focus{border-color:var(--gold-500)}
@@ -146,22 +172,25 @@
     input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--gold-400);border:2px solid var(--navy-900);cursor:pointer}
 
     /* BUTTONS */
-    .btn{font-family:var(--font-sans);font-size:13px;font-weight:600;letter-spacing:.03em;padding:0 24px;min-height:var(--touch-target);border-radius:6px;border:none;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px;transition:all var(--t-fast) var(--ease);line-height:1}
-    .btn-primary{background:linear-gradient(135deg,var(--gold-500),var(--gold-600));color:var(--navy-900)}
-    .btn-primary:hover{opacity:.88;box-shadow:0 4px 20px rgba(200,168,76,.35)}
-    .btn-secondary{background:transparent;color:var(--text-primary);border:1px solid var(--border)}
-    .btn-secondary:hover{border-color:var(--border-hover);background:var(--gold-dim)}
-    .btn-ghost{background:transparent;color:var(--text-secondary);border:none}
-    .btn-ghost:hover{color:var(--text-primary);background:rgba(255,255,255,.03)}
+    .btn{font-family:var(--font-sans);font-size:14px;font-weight:600;letter-spacing:.03em;padding:0 26px;min-height:var(--touch-target);border-radius:8px;border:none;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px;transition:background-color var(--t-fast) var(--ease),border-color var(--t-fast) var(--ease),color var(--t-fast) var(--ease),box-shadow var(--t-fast) var(--ease),opacity var(--t-fast) var(--ease);line-height:1}
+    .btn:focus-visible{outline:2px solid var(--gold-400);outline-offset:2px}
+    .btn-primary{background:linear-gradient(135deg,#e06418,#c44e0c);color:#fff}
+    .btn-primary:hover{opacity:.90;box-shadow:0 4px 20px rgba(224,100,24,.42)}
+    .btn-secondary{background:var(--bg-card);color:var(--gold-400);border:1px solid var(--gold-400)}
+    .btn-secondary:hover{background:var(--gold-dim);border-color:var(--gold-500);color:var(--gold-500)}
+    .btn-ghost{background:transparent;color:var(--text-muted);border:none}
+    .btn-ghost:hover{color:var(--text-secondary);background:var(--gold-dim)}
+    .btn-danger{background:var(--bg-card);color:var(--red);border:1px solid var(--red)}
+    .btn-danger:hover{background:var(--red-dim);border-color:var(--red)}
 
     /* RESULT BOX */
-    .result-box{background:linear-gradient(135deg,rgba(200,168,76,.08),rgba(200,168,76,.02));border:1px solid rgba(200,168,76,.30);border-radius:8px;padding:20px 24px;margin-bottom:24px;}
+    .result-box{background:linear-gradient(135deg,rgba(200,146,78,.08),rgba(200,146,78,.02));border:1px solid rgba(200,146,78,.30);border-radius:8px;padding:20px 24px;margin-bottom:24px;}
     .result-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px}
-    .result-label{font-family:var(--font-mono);font-size:10px;color:var(--text-muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px}
-    .result-val{font-family:var(--font-sans);font-size:1.45rem;font-weight:700;color:var(--gold-400);line-height:1.1}
+    .result-label{font-family:var(--font-mono);font-size:11px;color:var(--text-muted);letter-spacing:.05em;text-transform:uppercase;margin-bottom:4px}
+    .result-val{font-family:var(--font-sans);font-size:1.45rem;font-weight:700;color:var(--gold-400);line-height:1.1;font-variant-numeric:tabular-nums}
 
     /* DISCLAIMER */
-    .disclaimer{display:inline-flex;align-items:center;gap:5px;font-family:var(--font-mono);font-size:10px;color:var(--text-muted);background:rgba(255,255,255,.02);border:1px solid var(--border);padding:3px 9px;border-radius:3px;white-space:nowrap}
+    .disclaimer{display:inline-flex;align-items:center;gap:5px;font-family:var(--font-mono);font-size:11px;color:var(--text-muted);background:rgba(255,255,255,.02);border:1px solid var(--border);padding:3px 9px;border-radius:3px;white-space:nowrap}
     .disclaimer::before{content:'ⓘ';opacity:.5}
 
     /* SCORE RING */
@@ -171,39 +200,39 @@
     .score-ring-fill{fill:none;stroke:var(--gold-500);stroke-width:8;stroke-linecap:round;stroke-dasharray:362;stroke-dashoffset:362;transition:stroke-dashoffset 1.1s var(--ease)}
     .score-ring-fill.green{stroke:var(--green)}.score-ring-fill.red{stroke:var(--red)}
     .score-ring-label{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
-    .score-rank{font-family:var(--font-sans);font-size:36px;font-weight:700;line-height:1}
+    .score-rank{font-family:var(--font-sans);font-size:32px;font-weight:700;line-height:1}
     .score-score{font-family:var(--font-mono);font-size:11px;color:var(--text-secondary)}
 
     /* METER */
     .meter{height:4px;background:var(--navy-600);border-radius:2px;overflow:hidden}
     .meter-fill{height:100%;border-radius:2px;transition:width .65s var(--ease)}
-    .meter-fill.green{background:linear-gradient(90deg,#2ea861,var(--green))}
+    .meter-fill.green{background:linear-gradient(90deg,var(--green-dark),var(--green))}
     .meter-fill.amber{background:linear-gradient(90deg,var(--gold-600),var(--gold-400))}
-    .meter-fill.red{background:linear-gradient(90deg,#c03030,var(--red))}
+    .meter-fill.red{background:linear-gradient(90deg,var(--red-dark),var(--red))}
 
     /* TAGS */
-    .tag{font-family:var(--font-mono);font-size:10px;padding:2px 8px;border-radius:3px;display:inline-block}
-    .tag.go{color:var(--green);background:var(--green-dim);border:1px solid rgba(78,206,138,.22)}
-    .tag.no-go{color:var(--red);background:var(--red-dim);border:1px solid rgba(232,84,84,.22)}
-    .tag.caution{color:var(--yellow);background:var(--yellow-dim);border:1px solid rgba(245,200,66,.22)}
+    .tag{font-family:var(--font-mono);font-size:11px;padding:2px 8px;border-radius:3px;display:inline-block}
+    .tag.go{color:var(--green);background:var(--green-dim);border:1px solid var(--green-border)}
+    .tag.no-go{color:var(--red);background:var(--red-dim);border:1px solid var(--red-border)}
+    .tag.caution{color:var(--yellow);background:var(--yellow-dim);border:1px solid var(--yellow-border)}
 
     /* ALERTS */
     .alert-item{display:flex;align-items:flex-start;gap:12px;padding:12px 16px;border-radius:6px;border:1px solid;margin-bottom:8px}
-    .alert-item.warning{background:var(--yellow-dim);border-color:rgba(245,200,66,.20)}
-    .alert-item.error{background:var(--red-dim);border-color:rgba(232,84,84,.22)}
-    .alert-item.info{background:var(--blue-dim);border-color:rgba(91,141,217,.22)}
+    .alert-item.warning{background:var(--yellow-dim);border-color:var(--yellow-border)}
+    .alert-item.error{background:var(--red-dim);border-color:var(--red-border)}
+    .alert-item.info{background:var(--blue-dim);border-color:var(--blue-border)}
     .alert-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;margin-top:5px}
     .alert-item.warning .alert-dot{background:var(--yellow)}.alert-item.error .alert-dot{background:var(--red)}.alert-item.info .alert-dot{background:var(--blue)}
     .alert-content{flex:1}.alert-title{font-family:var(--font-mono);font-size:11px;font-weight:500;color:var(--text-primary)}
     .alert-desc{font-size:12px;color:var(--text-secondary);margin-top:2px}
-    .alert-time{font-family:var(--font-mono);font-size:10px;color:var(--text-muted);flex-shrink:0}
+    .alert-time{font-family:var(--font-mono);font-size:11px;color:var(--text-muted);flex-shrink:0}
 
     /* DATA TABLE */
-    .data-table{width:100%;border-collapse:collapse;font-size:13px}
-    .data-table th{font-family:var(--font-mono);font-size:10px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted);text-align:left;padding:8px 12px;border-bottom:1px solid var(--border)}
-    .data-table td{padding:12px;border-bottom:1px solid var(--border);color:var(--text-secondary)}
+    .data-table{width:100%;border-collapse:collapse;font-size:14px}
+    .data-table th{font-family:var(--font-mono);font-size:11px;font-weight:500;letter-spacing:.07em;text-transform:uppercase;color:var(--text-muted);text-align:left;padding:8px 12px;border-bottom:1px solid var(--border)}
+    .data-table td{padding:12px;border-bottom:1px solid var(--border);color:var(--text-secondary);font-variant-numeric:tabular-nums}
     .data-table tr:last-child td{border-bottom:none}
-    .data-table tr:hover td{background:rgba(200,168,76,.025);color:var(--text-primary)}
+    .data-table tr:hover td{background:rgba(200,146,78,.025);color:var(--text-primary)}
 
     /* SKELETON */
     .skeleton{background:linear-gradient(90deg,var(--bg-elevated) 25%,rgba(255,255,255,.03) 50%,var(--bg-elevated) 75%);background-size:200% 100%;animation:shimmer 1.6s infinite;border-radius:4px}
@@ -212,25 +241,96 @@
     /* TOAST */
     #toast-container{position:fixed;bottom:24px;right:24px;display:flex;flex-direction:column;gap:8px;z-index:1000}
     .toast{font-family:var(--font-sans);font-size:12px;padding:12px 20px;border-radius:6px;border:1px solid;background:var(--bg-card);backdrop-filter:var(--blur-card);box-shadow:var(--shadow-card);animation:toastIn 200ms var(--ease);max-width:360px}
-    .toast.success{color:var(--green);border-color:rgba(78,206,138,.25)}.toast.error{color:var(--red);border-color:rgba(232,84,84,.25)}
-    .toast.warning{color:var(--yellow);border-color:rgba(245,200,66,.22)}.toast.info{color:var(--blue);border-color:rgba(91,141,217,.22)}
+    .toast.success{color:var(--green);border-color:var(--green-border)}.toast.error{color:var(--red);border-color:var(--red-border)}
+    .toast.warning{color:var(--yellow);border-color:var(--yellow-border)}.toast.info{color:var(--blue);border-color:var(--blue-border)}
     @keyframes toastIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 
     /* CONNECT SCREEN */
     .connect-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:calc(100vh - var(--header-h) - 80px);text-align:center;padding:40px}
-    .connect-icon{width:60px;height:60px;background:var(--gold-dim);border:1px solid rgba(200,168,76,.30);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:20px}
-    .connect-title{font-family:var(--font-sans);font-size:1.4rem;font-weight:600;color:var(--text-primary);margin-bottom:12px}
-    .connect-desc{font-size:13px;color:var(--text-secondary);max-width:400px;line-height:1.9;margin-bottom:24px}
+    .connect-icon{width:60px;height:60px;background:rgba(230,100,20,.12);border:1px solid rgba(230,100,20,.30);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:20px;color:#e66414}
+    .connect-title{font-family:var(--font-sans);font-size:24px;font-weight:600;color:var(--text-primary);margin-bottom:12px}
+    .connect-desc{font-size:12px;color:var(--text-secondary);max-width:400px;line-height:1.9;margin-bottom:24px}
 
     /* TOOLTIP */
     [data-tip]{position:relative}
-    [data-tip]:hover::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:var(--bg-card);border:1px solid var(--border);color:var(--text-secondary);font-family:var(--font-mono);font-size:10px;padding:4px 10px;border-radius:4px;white-space:nowrap;z-index:100;box-shadow:var(--shadow-card)}
+    [data-tip]::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:var(--bg-card);border:1px solid var(--border);color:var(--text-secondary);font-family:var(--font-mono);font-size:11px;padding:4px 10px;border-radius:4px;white-space:nowrap;z-index:var(--z-toast);box-shadow:var(--shadow-card);pointer-events:none;opacity:0;transition:opacity var(--t-fast) var(--ease)}
+    [data-tip]:hover::after{opacity:1;transition-delay:800ms}
+    [data-tip]:focus-visible::after{opacity:1;transition-delay:0ms}
 
     /* SCROLLBAR */
     ::-webkit-scrollbar{width:4px;height:4px}
     ::-webkit-scrollbar-track{background:transparent}
-    ::-webkit-scrollbar-thumb{background:rgba(255,255,255,.07);border-radius:2px}
-    ::-webkit-scrollbar-thumb:hover{background:rgba(200,168,76,.15)}
+    ::-webkit-scrollbar-thumb{background:var(--scrollbar-thumb);border-radius:2px}
+    ::-webkit-scrollbar-thumb:hover{background:var(--scrollbar-thumb-hover)}
+
+    /* ── ライトテーマ（eBay準拠値）────────────────────────────── */
+    [data-theme="light"] {
+      --navy-900: #ffffff;
+      --navy-800: #f7f7f7;
+      --navy-700: #eeeeee;
+      --navy-600: #e0e0e0;
+      --navy-500: #cccccc;
+      --gold-300: #cf8540;
+      --gold-400: #c06820;
+      --gold-500: #a85a18;
+      --gold-600: #8e4a10;
+      --gold-glow:   rgba(192,104,32,0.12);
+      --gold-dim:    rgba(192,104,32,0.08);
+      --gold-hover:  rgba(192,104,32,0.06);
+      --gold-active: rgba(192,104,32,0.09);
+      --gold-line:   rgba(192,104,32,0.18);
+      --text-primary:   #191919;
+      --text-secondary: #555555;
+      --text-muted:     #767676;
+      --bg-card:     #ffffff;
+      --bg-elevated: #f7f7f7;
+      --bg-input:    #ffffff;
+      --border:        rgba(0,0,0,0.12);
+      --border-hover:  rgba(0,0,0,0.28);
+      --yellow-dim:rgba(245,200,66,0.14);
+      --shadow-card: 0 1px 8px rgba(0,0,0,0.10);
+      --scrollbar-thumb:       rgba(0,0,0,0.12);
+      --scrollbar-thumb-hover: rgba(0,0,0,0.25);
+      --font-sans: Arial, 'Meiryo', 'メイリオ', sans-serif;
+    }
+    /* ライトモード: サイドバーは常にダーク維持 */
+    [data-theme="light"] #sidebar {
+      background: rgba(16,17,18,.98);
+      --text-primary:   #e4e4e4;
+      --text-secondary: #a89880;
+      --text-muted:     #5e4e3c;
+      --gold-400: #d4974f;
+      --gold-500: #c8924e;
+      --gold-300: #e8c078;
+      --border:       rgba(200,146,78,0.15);
+      --border-hover: rgba(200,146,78,0.35);
+      --gold-hover:   rgba(200,146,78,0.05);
+      --gold-active:  rgba(200,146,78,0.08);
+    }
+    [data-theme="light"] body {
+      font-family: Arial, 'Meiryo', 'メイリオ', sans-serif;
+    }
+    [data-theme="light"] body::before {
+      background: none;
+    }
+    [data-theme="light"] #header {
+      background: rgba(255,255,255,0.97);
+      border-bottom-color: rgba(0,0,0,0.12);
+    }
+
+    /* ── テーマ切り替えトランジション ── */
+    body,#main,.card,#header,.panel,.btn-secondary,.btn-danger,.select {
+      transition:background-color .22s ease,color .22s ease !important;
+    }
+
+    /* ── テーマトグルボタン（サイドバー内） ── */
+    .theme-toggle{background:none;border:none;border-radius:6px;width:100%;min-height:36px;display:flex;align-items:center;justify-content:flex-start;gap:8px;padding:0 16px;cursor:pointer;color:var(--text-muted);font-family:var(--font-sans);font-size:12px;font-weight:400;transition:color var(--t-fast) var(--ease),background var(--t-fast) var(--ease)}
+    .theme-toggle:hover{color:var(--text-primary);background:var(--gold-hover)}
+    .theme-toggle svg{flex-shrink:0;opacity:.7}
+    .theme-toggle .icon-sun{display:none}
+    .theme-toggle .icon-moon{display:block}
+    [data-theme="light"] .theme-toggle .icon-sun{display:block}
+    [data-theme="light"] .theme-toggle .icon-moon{display:none}
 
     /* RESPONSIVE */
     @media(max-width:1100px){:root{--sidebar-w:200px}}
@@ -247,8 +347,6 @@
 
 <body>
 <div id="app">
-
-  <div id="status-banner" role="status" aria-live="polite"></div>
 
   <aside id="sidebar">
     <div class="sidebar-logo">
@@ -272,6 +370,14 @@
       <button class="nav-item" data-panel="listing-quality" id="nav-listing-quality">
         <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M13 2H3a1 1 0 00-1 1v10a1 1 0 001 1h10a1 1 0 001-1V3a1 1 0 00-1-1z"/><path d="M5 8h6M5 5h2M5 11h4"/></svg>
         <span>リスティング品質</span>
+      </button>
+      <button class="nav-item" data-panel="transactions" id="nav-transactions">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 4h14M4 1v3M12 1v3M3 8h4M3 11h2"/><rect x="1" y="4" width="14" height="11" rx="1"/></svg>
+        <span>取引記録</span>
+      </button>
+      <button class="nav-item" data-panel="auto-listing" id="nav-auto-listing">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10 2H3a1 1 0 00-1 1v10a1 1 0 001 1h10a1 1 0 001-1V6z"/><path d="M10 2v4h4M6 9h4M6 12h2"/><path d="M11 11l2 2 3-3" stroke-linecap="round"/></svg>
+        <span>自動出品</span>
       </button>
     </nav>
 
@@ -309,14 +415,21 @@
     </nav>
 
     <div class="sidebar-footer">
-      <div class="sidebar-footer-text" id="sidebar-version">v0.1.0-alpha<br>STAGE1 実装中</div>
+      <button class="theme-toggle" id="btn-theme-toggle" aria-label="テーマ切り替え">
+        <svg class="icon-moon" viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M14.26 10.4a6 6 0 0 1-8.66-8.66A7 7 0 1 0 14.26 10.4z"/></svg>
+        <svg class="icon-sun" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="8" cy="8" r="3" fill="currentColor" stroke="none"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.5 3.5l1.4 1.4M11.1 11.1l1.4 1.4M3.5 12.5l1.4-1.4M11.1 4.9l1.4-1.4" stroke-linecap="round"/></svg>
+        <span>テーマ切替</span>
+      </button>
+      <button class="btn btn-ghost" id="btn-signout" style="width:100%;justify-content:flex-start;padding:0 16px;min-height:36px;font-size:12px;border-radius:6px;gap:8px">
+        <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true" style="flex-shrink:0;opacity:.7"><path d="M6 2H2a1 1 0 00-1 1v10a1 1 0 001 1h4M11 11l3-3-3-3M6 8h8"/></svg>
+        <span>サインアウト</span>
+      </button>
+      <div class="sidebar-footer-text" id="sidebar-version" style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">v0.1.0-alpha<br>STAGE1 実装中</div>
     </div>
   </aside>
 
   <header id="header">
-    <nav class="breadcrumb" aria-label="現在地">
-      BRAND ANALYTICS / <span id="current-page-title">利益計算機</span>
-    </nav>
+    <div id="status-banner" role="status" aria-live="polite"></div>
     <div class="header-right">
       <div id="stale-warning" role="status" aria-live="polite">
         ※<span id="stale-hours">—</span>時間前のデータを表示中（最新データ取得失敗）
@@ -327,7 +440,6 @@
       </div>
       <div class="tier-badge free" id="tier-badge">FREE</div>
       <button class="btn btn-primary" id="btn-connect-header" onclick="BA.nav?.showPanel('connect')">eBay を連携する</button>
-      <button class="btn btn-ghost" id="btn-signout" style="font-size:12px;padding:0 12px;color:var(--text-muted);border:1px solid var(--border)" title="サインアウト">サインアウト</button>
     </div>
   </header>
 
@@ -342,7 +454,7 @@
         <div class="disclaimer" data-tip="実際の手数料はeBay管理画面で確認してください">シミュレーション値・実際の損益は取引記録による</div>
       </div>
       <div class="gold-line"></div>
-      <div id="profit-root"><div class="card" style="text-align:center;padding:48px 20px;color:var(--text-muted);font-family:var(--font-mono);font-size:11px;">profit.js 初期化中...</div></div>
+      <div id="profit-root"></div>
     </section>
 
     <section class="panel" id="panel-sourcing" aria-labelledby="panel-sourcing-title">
@@ -354,7 +466,7 @@
         <div class="disclaimer" data-tip="デフォルト値は設定から変更可能">暫定デフォルト値・実績に応じて変更推奨</div>
       </div>
       <div class="gold-line"></div>
-      <div id="sourcing-root"><div class="card" style="text-align:center;padding:48px 20px;color:var(--text-muted);font-family:var(--font-mono);font-size:11px;">sourcing.js 初期化中...</div></div>
+      <div id="sourcing-root"></div>
     </section>
 
     <section class="panel" id="panel-listing-quality" aria-labelledby="panel-listing-quality-title">
@@ -366,12 +478,36 @@
         <div class="disclaimer" data-tip="eBay公式の採点ではありません">参考スコア・実際の審査はeBay基準による</div>
       </div>
       <div class="gold-line"></div>
-      <div id="listing-quality-root"><div class="card" style="text-align:center;padding:48px 20px;color:var(--text-muted);font-family:var(--font-mono);font-size:11px;">listing-quality.js 初期化中...</div></div>
+      <div id="listing-quality-root"></div>
+    </section>
+
+    <section class="panel" id="panel-auto-listing" aria-labelledby="panel-auto-listing-title">
+      <div class="panel-header">
+        <div>
+          <h1 class="panel-title" id="panel-auto-listing-title">自動出品</h1>
+          <p class="panel-subtitle">フォーム入力 → リスティング品質リアルタイムチェック → eBay出品</p>
+        </div>
+        <div class="disclaimer" data-tip="eBay出品には別途アカウント連携が必要です">下書き保存・プレビューは連携前から利用可</div>
+      </div>
+      <div class="gold-line"></div>
+      <div id="auto-listing-root"></div>
+    </section>
+
+    <section class="panel" id="panel-transactions" aria-labelledby="panel-transactions-title">
+      <div class="panel-header">
+        <div>
+          <h1 class="panel-title" id="panel-transactions-title">取引記録</h1>
+          <p class="panel-subtitle">実取引データを蓄積して手数料計算の精度を自動向上（5件以上でフォールバック解除）</p>
+        </div>
+        <div class="disclaimer" data-tip="手数料率は実績の移動平均で計算されます">シミュレーション値・実際の損益は取引記録による</div>
+      </div>
+      <div class="gold-line"></div>
+      <div id="transactions-root"></div>
     </section>
 
     <section class="panel" id="panel-connect" aria-labelledby="panel-connect-title">
       <div class="connect-screen">
-        <div class="connect-icon">🔗</div>
+        <div class="connect-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg></div>
         <h1 class="connect-title" id="panel-connect-title">eBay アカウントを連携する</h1>
         <p class="connect-desc">eBay OAuth 認証を行うと、アカウントの健全性スコア・ファイナンスレポート・アカウント保護機能が利用できます。</p>
         <button class="btn btn-primary" id="btn-ebay-oauth" style="font-size:14px;padding:12px 32px;letter-spacing:.04em;">eBay で認証する →</button>
@@ -382,7 +518,7 @@
     <section class="panel" id="panel-dashboard" aria-labelledby="panel-dashboard-title">
       <div class="panel-header"><div><h1 class="panel-title" id="panel-dashboard-title">ダッシュボード</h1><p class="panel-subtitle">アカウント全体の概況・直近30日</p></div></div>
       <div class="gold-line"></div>
-      <div id="dashboard-root"><div class="card" style="text-align:center;padding:48px 20px;color:var(--text-muted);font-family:var(--font-mono);font-size:11px;">dashboard.js 初期化中...</div></div>
+      <div id="dashboard-root"></div>
     </section>
 
     <section class="panel" id="panel-health" aria-labelledby="panel-health-title">
@@ -390,31 +526,31 @@
         <div><h1 class="panel-title" id="panel-health-title">アカウントパフォーマンス</h1><p class="panel-subtitle">eBay セラーパフォーマンス指標（直近30日）</p></div>
       </div>
       <div class="gold-line"></div>
-      <div id="health-root"><div class="card" style="text-align:center;padding:48px 20px;color:var(--text-muted);font-family:var(--font-mono);font-size:11px;">dashboard.js（健全性）初期化中...</div></div>
+      <div id="health-root"></div>
     </section>
 
     <section class="panel" id="panel-finance" aria-labelledby="panel-finance-title">
       <div class="panel-header"><div><h1 class="panel-title" id="panel-finance-title">ファイナンス</h1><p class="panel-subtitle">売上・手数料・Payoneer 精算レポート</p></div></div>
       <div class="gold-line"></div>
-      <div id="finance-root"><div class="card" style="text-align:center;padding:48px 20px;color:var(--text-muted);font-family:var(--font-mono);font-size:11px;">finance.js 初期化中...</div></div>
+      <div id="finance-root"></div>
     </section>
 
     <section class="panel" id="panel-protection" aria-labelledby="panel-protection-title">
       <div class="panel-header"><div><h1 class="panel-title" id="panel-protection-title">アカウント保護</h1><p class="panel-subtitle">アラート・フィードバックテンプレート・VeRO モニタリング</p></div></div>
       <div class="gold-line"></div>
-      <div id="protection-root"><div class="card" style="text-align:center;padding:48px 20px;color:var(--text-muted);font-family:var(--font-mono);font-size:11px;">protection.js 初期化中...</div></div>
+      <div id="protection-root"></div>
     </section>
 
     <section class="panel" id="panel-settings" aria-labelledby="panel-settings-title">
       <div class="panel-header"><div><h1 class="panel-title" id="panel-settings-title">設定</h1><p class="panel-subtitle">閾値・手数料率・表示言語・eBay 接続管理</p></div></div>
       <div class="gold-line"></div>
-      <div id="settings-root"><div class="card" style="text-align:center;padding:48px 20px;color:var(--text-muted);font-family:var(--font-mono);font-size:11px;">settings.js 初期化中...</div></div>
+      <div id="settings-root"></div>
     </section>
 
     <section class="panel" id="panel-admin" aria-labelledby="panel-admin-title">
       <div class="panel-header"><div><h1 class="panel-title" id="panel-admin-title">管理者パネル</h1><p class="panel-subtitle">サービス死活監視・エラーログ</p></div></div>
       <div class="gold-line"></div>
-      <div id="admin-root"><div class="card" style="text-align:center;padding:48px 20px;color:var(--text-muted);font-family:var(--font-mono);font-size:11px;">admin.js 初期化中...</div></div>
+      <div id="admin-root"></div>
     </section>
 
   </main>
@@ -432,15 +568,20 @@
 
   <div class="auth-wrap">
 
-    <div class="auth-logo" aria-hidden="true">
-      <assets/brand-analytics-logo.png" alt="" class="auth-logo-img">
-      <p class="auth-logo-sub">eBay Seller Intelligence Platform</p>
+    <div class="auth-logo">
+      <div style="display:flex;align-items:center;justify-content:center;gap:14px">
+        <img src="assets/logo-transparent.png" alt="logo" style="height:51px;width:51px;object-fit:contain;filter:drop-shadow(0 0 14px rgba(212,151,79,.35))">
+        <div style="font-family:var(--font-sans);font-size:1.17rem;font-weight:600;letter-spacing:.06em;color:var(--gold-400);line-height:1;text-align:left">
+          BRAND ANALYTICS
+          <small style="display:block;font-family:var(--font-mono);font-size:12px;font-weight:400;letter-spacing:.14em;color:var(--text-muted);margin-top:5px">eBay SELLER PLATFORM</small>
+        </div>
+      </div>
     </div>
 
     <!-- ── サインインビュー ── -->
     <div class="auth-card" id="auth-view-signin">
       <h2 class="auth-heading" id="auth-heading">サインイン</h2>
-      <p class="auth-sub">アカウントにアクセスして、販売データの分析を始めましょう。</p>
+      <p class="auth-sub">eBayセラーのための<br>収益管理・分析プラットフォーム</p>
 
       <div id="auth-error" class="auth-msg auth-msg--error" role="alert" hidden></div>
 
@@ -457,6 +598,10 @@
             <svg class="eye-off-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
           </button>
         </div>
+      </div>
+
+      <div style="text-align:right;margin:-4px 0 12px">
+        <button class="auth-link" id="btn-to-reset" type="button" style="font-size:12px;opacity:.75">パスワードをお忘れですか？</button>
       </div>
 
       <button class="auth-btn auth-btn--primary" id="btn-signin" type="button">サインイン</button>
@@ -512,6 +657,49 @@
       </div>
     </div>
 
+    <!-- ── パスワードリセットビュー ── -->
+    <div class="auth-card" id="auth-view-reset" hidden>
+      <h2 class="auth-heading">パスワードをリセット</h2>
+      <p class="auth-sub">登録済みのメールアドレスを入力してください。リセット用のリンクをお送りします。</p>
+
+      <div id="reset-error"   class="auth-msg auth-msg--error"   role="alert"  hidden></div>
+      <div id="reset-success" class="auth-msg auth-msg--success" role="status" hidden></div>
+
+      <div class="auth-field">
+        <label class="auth-label" for="reset-email">メールアドレス</label>
+        <input type="email" id="reset-email" class="auth-input" placeholder="your@email.com" autocomplete="email">
+      </div>
+
+      <button class="auth-btn auth-btn--primary" id="btn-reset-send" type="button">リセットメールを送信</button>
+
+      <div class="auth-links">
+        <button class="auth-link" id="btn-reset-to-signin" type="button">サインインに戻る</button>
+      </div>
+    </div>
+
+    <!-- ── 新パスワード設定ビュー ── -->
+    <div class="auth-card" id="auth-view-new-password" hidden>
+      <h2 class="auth-heading">新しいパスワードを設定</h2>
+      <p class="auth-sub">メールリンクから遷移しました。新しいパスワードを入力してください。</p>
+
+      <div id="new-password-error"   class="auth-msg auth-msg--error"   role="alert"  hidden></div>
+      <div id="new-password-success" class="auth-msg auth-msg--success" role="status" hidden></div>
+
+      <div class="auth-field">
+        <label class="auth-label" for="new-password-input">新しいパスワード</label>
+        <input type="password" id="new-password-input" class="auth-input"
+               placeholder="8文字以上" autocomplete="new-password">
+      </div>
+
+      <div class="auth-field">
+        <label class="auth-label" for="new-password-confirm">パスワード確認</label>
+        <input type="password" id="new-password-confirm" class="auth-input"
+               placeholder="もう一度入力してください" autocomplete="new-password">
+      </div>
+
+      <button class="auth-btn auth-btn--primary" id="btn-update-password" type="button">パスワードを更新する</button>
+    </div>
+
   </div><!-- /.auth-wrap -->
 </div><!-- /#auth-overlay -->
 
@@ -521,6 +709,12 @@
     position:fixed;inset:0;z-index:2000;
     display:flex;align-items:center;justify-content:center;
     padding:24px;
+    /* 常にダーク背景なのでテーマに依存しない文字色を強制 */
+    --text-primary:   #e4e4e4;
+    --text-secondary: #9a9a9a;
+    --text-muted:     #707070;
+    --gold-400:       #d4974f;
+    --gold-500:       #c8924e;
   }
   .auth-overlay[hidden]{display:none}
 
@@ -537,33 +731,34 @@
 
   /* ロゴ — margin-bottom: 40px (8×5) */
   .auth-logo{text-align:center;margin-bottom:40px}
-  .auth-logo-img{height:72px;width:auto;filter:drop-shadow(0 0 16px rgba(232,201,106,.25))}
+  .auth-logo-img{height:72px;width:auto;filter:drop-shadow(0 0 16px rgba(212,151,79,.25))}
   .auth-logo-sub{
     font-family:var(--font-mono);font-size:10px;letter-spacing:.22em;
     text-transform:uppercase;color:var(--text-muted);margin-top:8px;
   }
 
-  /* カード — padding: 40px (8×5) */
+  /* カード — padding: 52px 40px (上下52px = 8×6.5) */
   .auth-card{
     background:rgba(255,255,255,.04);
-    border:1px solid rgba(232,201,106,.15);
+    border:1px solid rgba(212,151,79,.15);
     border-radius:16px;
-    padding:40px;
+    padding:52px 40px;
     backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
     position:relative;overflow:hidden;
   }
   .auth-card::before{
     content:'';position:absolute;top:0;left:0;right:0;height:2px;
-    background:linear-gradient(90deg,transparent,rgba(232,201,106,.6),transparent);
+    background:linear-gradient(90deg,transparent,rgba(212,151,79,.6),transparent);
   }
 
   /* 見出し — margin-bottom: 8px */
   .auth-heading{
-    font-family:var(--font-sans);font-size:1.6rem;font-weight:500;
-    color:var(--text-primary);letter-spacing:.04em;margin-bottom:8px;text-align:center;
+    font-family:var(--font-sans);font-size:2rem;font-weight:600;
+    color:var(--text-primary);letter-spacing:.02em;margin-bottom:16px;text-align:center;
   }
   .auth-sub{
-    font-size:13px;color:var(--text-muted);line-height:1.6;margin-bottom:32px;
+    font-size:15px;color:var(--text-primary);line-height:1.7;
+    text-align:center;margin-bottom:32px;
   }
 
   /* メッセージ — padding: 12px 16px (8×1.5, 8×2) */
@@ -591,7 +786,7 @@
   .auth-input{
     height:44px;
     background:rgba(255,255,255,.04);
-    border:1px solid rgba(232,201,106,.12);
+    border:1px solid rgba(212,151,79,.12);
     border-radius:8px;
     padding:0 16px;
     font-family:var(--font-sans);font-size:14px;
@@ -600,7 +795,7 @@
   }
   .auth-input::placeholder{color:rgba(240,232,208,.25)}
   .auth-input:focus{
-    border-color:rgba(232,201,106,.4);
+    border-color:rgba(212,151,79,.4);
     background:rgba(255,255,255,.06);
   }
   .auth-input-wrap{position:relative;display:flex;align-items:center}
@@ -613,7 +808,7 @@
     color:rgba(240,232,208,.35);
     transition:color var(--t-base) var(--ease);
   }
-  .auth-eye-btn:hover{color:rgba(232,201,106,.8)}
+  .auth-eye-btn:hover{color:rgba(212,151,79,.8)}
   .auth-hint{
     font-family:var(--font-mono);font-size:10px;letter-spacing:.06em;
     color:rgba(240,232,208,.35);margin-top:2px;
@@ -629,13 +824,13 @@
     margin-top:8px;
   }
   .auth-btn--primary{
-    background:linear-gradient(135deg,rgba(232,201,106,.15),rgba(201,168,76,.1));
-    border:1px solid rgba(201,168,76,.8);
-    color:var(--gold-400);
+    background:linear-gradient(135deg,#e06418,#c44e0c);
+    border:none;
+    color:#fff;
   }
   .auth-btn--primary:hover{
-    background:linear-gradient(135deg,rgba(232,201,106,.22),rgba(201,168,76,.16));
-    box-shadow:0 0 24px rgba(232,201,106,.16);
+    opacity:.90;
+    box-shadow:0 4px 20px rgba(224,100,24,.42);
     transform:translateY(-1px);
   }
   .auth-btn--primary:disabled{opacity:.5;cursor:not-allowed;transform:none}
@@ -660,7 +855,7 @@
     margin:24px 0;
   }
   .auth-divider::before,.auth-divider::after{
-    content:'';flex:1;height:1px;background:rgba(232,201,106,.1);
+    content:'';flex:1;height:1px;background:rgba(212,151,79,.1);
   }
   .auth-divider span{
     font-family:var(--font-mono);font-size:10px;letter-spacing:.1em;
@@ -681,6 +876,13 @@
     transition:color var(--t-fast) var(--ease);
   }
   .auth-link:hover{color:var(--gold-400)}
+  #btn-skip-free{
+    font-size:14px;
+    color:var(--text-secondary);
+    text-decoration:underline;
+    text-underline-offset:3px;
+  }
+  #btn-skip-free:hover{color:var(--gold-400)}
   .auth-links-sep{color:var(--text-muted);font-size:12px;opacity:.5}
 
   /* ローディング状態 */
@@ -708,17 +910,23 @@
 <script src="js/core/api.js"></script>
 <script src="js/core/monitor.js"></script>
 <script src="js/core/auth.js"></script>
+<script src="js/features/transactions.js"></script>
 <script src="js/features/profit.js"></script>
 <script src="js/features/sourcing.js"></script>
 <script src="js/features/dashboard.js"></script>
 <script src="js/features/finance.js"></script>
 <script src="js/features/protection.js"></script>
 <script src="js/features/listing-quality.js"></script>
+<script src="js/features/auto-listing.js"></script>
 <script src="js/features/admin.js"></script>
+<script src="js/features/settings.js"></script>
 <script src="js/ui/nav.js"></script>
 <script src="js/ui/charts.js"></script>
 <script src="js/ui/notify.js"></script>
 <script src="js/ui/status-banner.js"></script>
+<script src="js/ui/tutorial.js"></script>
+<script src="js/ui/whats-new.js"></script>
+<script src="js/ui/theme.js"></script>
 
 <script src="config.local.js"></script>
 <script>
@@ -755,6 +963,17 @@
     BA.notify?.init?.();
     BA.admin?.init?.();
     BA.listingQuality?.init?.();
+    await BA.transactions?.init?.();
+    BA.profit?.init?.();
+    BA.sourcing?.init?.();
+    BA.autoListing?.init?.();
+    BA.dashboard?.init?.();
+    BA.finance?.init?.();
+    BA.protection?.init?.();
+    BA.settings?.init?.();
+    BA.tutorial?.init?.();
+    BA.whatsNew?.init?.();
+    BA.theme?.init?.();
 
     // 6. パスワード表示トグル
     document.querySelectorAll('.auth-eye-btn').forEach(btn => {
