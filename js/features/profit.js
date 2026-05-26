@@ -135,9 +135,10 @@
     const selling = sellingPriceUsd;
     const above500 = selling >= DEFAULTS.threshold500;
 
-    // ── eBay 手数料 ──
-    const feeRate = EBAY_FEE[plan]?.[category] ?? EBAY_FEE.basic.other;
-    const ebayFeeUsd = selling * feeRate;
+    // ── eBay 手数料（FVF Cap: $750）──
+    const FVF_CAP_USD = 750;
+    const feeRate    = EBAY_FEE[plan]?.[category] ?? EBAY_FEE.basic.other;
+    const ebayFeeUsd = Math.min(selling * feeRate, FVF_CAP_USD);
 
     // ── Promoted Listings ──
     const promotedUsd = selling * (promotedRate || 0);
