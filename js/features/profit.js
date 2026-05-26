@@ -449,6 +449,11 @@
               <div class="card-value" style="font-size:20px" id="p-result-rate">0.0%</div>
             </div>
 
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+              <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-secondary)">ROI</div>
+              <div class="card-value" style="font-size:20px" id="p-result-roi">—</div>
+            </div>
+
             <div class="meter">
               <div class="meter-fill green" id="p-profit-meter" style="width:0%"></div>
             </div>
@@ -620,6 +625,19 @@
     if (usdEl) { usdEl.textContent = `$${profitUsd.toFixed(2)}`; usdEl.style.color = color; }
     if (jpyEl) { jpyEl.textContent = `¥${Math.round(profitJpy).toLocaleString()}`; jpyEl.style.color = color; }
     if (rateEl) { rateEl.textContent = `${profitRate.toFixed(1)}%`; rateEl.style.color = color; }
+
+    // ROI 表示（仕入れ原価 > 0 の場合のみ計算）
+    const roiEl = root.querySelector('#p-result-roi');
+    if (roiEl) {
+      if (cost > 0) {
+        const roi = (profitJpy / cost) * 100;
+        roiEl.textContent = `${roi.toFixed(2)}%`;
+        roiEl.style.color = roi >= 0 ? 'var(--green)' : 'var(--red)';
+      } else {
+        roiEl.textContent = '—';
+        roiEl.style.color = '';
+      }
+    }
 
     // メーターバー
     const meterFill = root.querySelector('#p-profit-meter');
