@@ -1,6 +1,6 @@
 /**
  * BRAND ANALYTICS — settings.js
- * 設定ページ（手数料・閾値 / DeepL API / eBay接続管理）
+ * 設定ページ（手数料・閾値 / eBay接続管理）
  */
 
 (function () {
@@ -9,7 +9,6 @@
   window.BA = window.BA || {};
 
   const SETTINGS_KEY = 'ba_settings';
-  const DEEPL_KEY    = 'ba_deepl_key';
 
   const DEFAULTS = {
     targetMargin:    25,
@@ -74,29 +73,6 @@
   }
 
   // ─────────────────────────────────────
-  // セクション2：DeepL API設定
-  // ─────────────────────────────────────
-  function _renderSection2() {
-    let savedKey = '';
-    try { savedKey = localStorage.getItem(DEEPL_KEY) || ''; } catch {}
-
-    return `
-      <div class="card" style="margin-bottom:24px">
-        <div class="card-title">DeepL API設定</div>
-        <div class="input-group" style="margin-bottom:12px">
-          <label class="input-label" for="s-deepl-key">APIキー</label>
-          <input class="input" id="s-deepl-key" type="password"
-            placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx:fx"
-            value="${savedKey}" style="width:100%">
-        </div>
-        <div style="display:flex;align-items:center;gap:12px">
-          <button class="btn btn-secondary" id="s-deepl-test">接続テスト</button>
-          <span id="s-deepl-status" style="font-size:13px"></span>
-        </div>
-      </div>`;
-  }
-
-  // ─────────────────────────────────────
   // セクション3：eBay接続管理
   // ─────────────────────────────────────
   function _renderSection3() {
@@ -138,7 +114,6 @@
     const data = _load();
     root.innerHTML =
       _renderSection1(data) +
-      _renderSection2() +
       _renderSection3();
     _bindEvents(root);
   }
@@ -154,36 +129,6 @@
         data[key]  = parseFloat(e.target.value) || 0;
         _save(data);
       });
-    });
-
-    // セクション2：DeepL APIキーの即時保存
-    root.querySelector('#s-deepl-key')?.addEventListener('input', e => {
-      try { localStorage.setItem(DEEPL_KEY, e.target.value.trim()); } catch {}
-    });
-
-    // セクション2：接続テスト
-    root.querySelector('#s-deepl-test')?.addEventListener('click', async () => {
-      const key    = root.querySelector('#s-deepl-key')?.value?.trim();
-      const status = root.querySelector('#s-deepl-status');
-      if (!key) {
-        if (status) { status.textContent = '✗ APIキーを入力してください'; status.style.color = '#ef4444'; }
-        return;
-      }
-      if (status) { status.textContent = '接続中...'; status.style.color = 'var(--text-muted)'; }
-      try {
-        const res = await fetch('https://api-free.deepl.com/v2/translate', {
-          method:  'POST',
-          headers: { 'Authorization': `DeepL-Auth-Key ${key}`, 'Content-Type': 'application/json' },
-          body:    JSON.stringify({ text: ['test'], target_lang: 'JA' }),
-        });
-        if (res.ok) {
-          if (status) { status.textContent = '✓ 接続成功'; status.style.color = '#22c55e'; }
-        } else {
-          if (status) { status.textContent = '✗ 接続失敗（APIキーを確認してください）'; status.style.color = '#ef4444'; }
-        }
-      } catch {
-        if (status) { status.textContent = '✗ 接続失敗（APIキーを確認してください）'; status.style.color = '#ef4444'; }
-      }
     });
 
     // セクション3：eBay連携ボタン
