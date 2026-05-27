@@ -914,6 +914,7 @@
 <script src="js/core/api.js"></script>
 <script src="js/core/monitor.js"></script>
 <script src="js/core/auth.js"></script>
+<script src="js/core/claude.js"></script>
 <script src="js/features/transactions.js"></script>
 <script src="js/features/profit.js"></script>
 <script src="js/features/sourcing.js"></script>
@@ -946,6 +947,7 @@
 
     // 3. Supabaseセッション復元・tier設定
     await BA.auth?.init?.();
+    BA.claude?.init?.();
 
     // 4. eBay OAuthコールバック検出（eBayからのリダイレクト後）
     const params = new URLSearchParams(window.location.search);
