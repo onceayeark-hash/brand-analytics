@@ -25,9 +25,18 @@
       const totalEbayFeeUsd  = recent.reduce((s, r) => s + parseFloat(r.ebay_fee_usd     || 0), 0);
       const totalPromoUsd    = recent.reduce((s, r) => s + parseFloat(r.promoted_fee_usd || 0), 0);
       const totalPayUsd      = recent.reduce((s, r) => s + parseFloat(r.payoneer_fee_usd || 0), 0);
-      const totalFeesUsd     = totalEbayFeeUsd + totalPromoUsd + totalPayUsd;
-      const netPayoutUsd     = totalSalesUsd - totalFeesUsd;
-      const effectiveFeeRate = totalSalesUsd > 0 ? totalFeesUsd / totalSalesUsd : 0;
+      const totalFeesUsd = totalEbayFeeUsd + totalPromoUsd + totalPayUsd;
+      const netPayoutUsd = totalSalesUsd - totalFeesUsd;
+
+      // 実効手数料率: 真贋費用をUSD換算して加算（送料・関税は transaction_logs 未記録のため除外）
+      let totalAuthUsd = 0;
+      for (const r of recent) {
+        if (!r.auth_service_incl) continue;
+        const jpy  = r.auth_service_jpy ?? 0;
+        const rate = r.exchange_rate    ?? 0;
+        if (jpy > 0 && rate > 0) totalAuthUsd += jpy / rate;
+      }
+      const effectiveFeeRate = totalSalesUsd > 0 ? (totalFeesUsd + totalAuthUsd) / totalSalesUsd : 0;
 
       return { totalSalesUsd, totalFeesUsd, netPayoutUsd, effectiveFeeRate, count: recent.length };
     },
@@ -95,10 +104,10 @@
   // ─────────────────────────────────────
   function _renderKPI(kpi) {
     const cards = [
-      { label: '直近30日 売上',  sub: 'gross sales', val: _usd(kpi.totalSalesUsd),    color: 'var(--gold-400)' },
-      { label: 'eBay手数料合計', sub: 'total fees',  val: _usd(kpi.totalFeesUsd),     color: 'var(--red)'      },
-      { label: 'Payoneer入金額', sub: 'net payout',  val: _usd(kpi.netPayoutUsd),     color: 'var(--green)'    },
-      { label: '実効手数料率',   sub: '実績平均',     val: _pct(kpi.effectiveFeeRate), color: 'var(--text-primary)' },
+      { label: '直近30日 売上',            sub: 'gross sales', val: _usd(kpi.totalSalesUsd),    color: 'var(--gold-400)' },
+      { label: 'eBay手数料合計',           sub: 'total fees',  val: _usd(kpi.totalFeesUsd),     color: 'var(--red)'      },
+      { label: '推定Payoneer入金額（概算）', sub: 'net payout',  val: _usd(kpi.netPayoutUsd),     color: 'var(--green)',   note: '※実際の着金額とは異なる場合があります' },
+      { label: '実効手数料率',             sub: '全費用/売上',  val: _pct(kpi.effectiveFeeRate), color: 'var(--text-primary)' },
     ];
 
     return `
@@ -114,6 +123,7 @@
               ${c.val}
             </div>
             <div style="font-size:10px;color:var(--text-muted)">${c.sub}</div>
+            ${c.note ? `<div style="font-size:9px;color:var(--text-muted);margin-top:4px;line-height:1.4;opacity:.8">${c.note}</div>` : ''}
             <div style="position:absolute;bottom:0;left:0;right:0;height:3px;
                         background:linear-gradient(90deg,${c.color},transparent);opacity:.4"></div>
           </div>`).join('')}
@@ -317,7 +327,7 @@
                   display:flex;align-items:center;justify-content:space-between;
                   gap:16px;flex-wrap:wrap">
         <span style="font-size:12px;color:var(--text-secondary)">
-          eBayを連携すると売上・手数料データが自動取得されます
+          eBayを連携すると自動取得できます
         </span>
         <button class="btn btn-secondary" style="font-size:12px;padding:8px 20px;white-space:nowrap"
                 onclick="BA.nav.showPanel('connect')">eBay連携 →</button>
@@ -339,14 +349,15 @@
       records = BA.transactions?.getRecords?.() ?? [];
     }
 
-    const syncBar = _isConnected() ? `
+    const connected = _isConnected(); // レンダリング全体で状態を統一
+    const syncBar = connected ? `
       <div style="display:flex;justify-content:flex-end;margin-bottom:16px">
         <button class="btn btn-secondary" id="finance-sync-btn"
           style="font-size:11px;padding:5px 12px">↓ eBayと同期</button>
       </div>` : '';
 
     if (records.length === 0) {
-      root.innerHTML = syncBar + _renderEmpty() + (!_isConnected() ? _renderCTABanner() : '');
+      root.innerHTML = syncBar + _renderEmpty() + (!connected ? _renderCTABanner() : '');
       _bindSyncBtn(root);
       return;
     }
@@ -368,7 +379,7 @@
          border:1px solid rgba(255,255,255,.04);border-radius:6px">
         ※ シミュレーション値・実際の損益は取引記録による
       </p>
-      ${!_isConnected() ? _renderCTABanner() : ''}
+      ${!connected ? _renderCTABanner() : ''}
     `;
     _bindSyncBtn(root);
   }
