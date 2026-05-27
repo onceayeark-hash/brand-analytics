@@ -54,8 +54,26 @@
 
     let grossJpy = 0;
     for (const r of thisMonth) {
-      const authCost = r.auth_service_incl ? (r.auth_service_jpy ?? 0) : 0;
-      grossJpy += (r.received_jpy ?? 0) - (r.cost_price_jpy ?? 0) - authCost;
+      const saleUsd     = r.sale_price_usd   ?? 0;
+      const ebayUsd     = r.ebay_fee_usd     ?? 0;
+      const promotedUsd = r.promoted_fee_usd ?? 0;
+      const payoneerUsd = r.payoneer_fee_usd ?? 0;
+      const authJpy     = r.auth_service_incl ? (r.auth_service_jpy ?? 0) : 0;
+      const costJpy     = r.cost_price_jpy   ?? 0;
+      const rate        = r.exchange_rate    ?? 0;
+      const receivedJpy = r.received_jpy     ?? 0;
+
+      // USD→JPY: exchange_rateがあれば手数料を個別差引・なければreceived_jpy（実受取額）使用
+      let netJpy;
+      if (rate > 0) {
+        netJpy = (saleUsd - ebayUsd - promotedUsd - payoneerUsd) * rate;
+      } else if (receivedJpy > 0) {
+        netJpy = receivedJpy;
+      } else {
+        netJpy = 0;
+      }
+
+      grossJpy += netJpy - authJpy - costJpy;
     }
 
     const daysPassed = Math.max(1, now.getDate());
@@ -143,7 +161,7 @@
             color:${grossColor};font-variant-numeric:tabular-nums">
             ${stats.count > 0 ? _jpy(stats.grossJpy) : '<span style="color:var(--text-muted)">—</span>'}
           </div>
-          <div style="font-size:11px;color:var(--text-muted)">手数料・仕入・認証費差引後</div>
+          <div style="font-size:11px;color:var(--text-muted)">eBay/Promoted/Payoneer・認証費・仕入差引後</div>
         </div>
 
         <div class="card" style="text-align:center">
