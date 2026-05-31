@@ -483,9 +483,37 @@ eBay各国マーケットプレイスの競合出品データを
 | セルスルー率（成約率） | 手動入力（Terapeak参照） | 同上 |
 | 平均送料 | 手動入力（Terapeak参照） | 同上 |
 
-Terapeak CSVエクスポートは非対応のため
-手動入力をUI上でサポートする設計とする。
-Terapeak API・Marketplace Insights API：実装対象外（恒久決定）
+---
+
+## 競合リサーチ・成約データ取得方針（確定・2026-05-31）
+
+### データ取得の優先順位
+
+① STAGE3：Terapeak CSV × Claude分析（最優先・最強コスパ）
+　・ユーザーがTerapeakでCSV出力 → アップロード → Claude自動分析
+　・コスト0・精度最高（Terapeak本体データ）・実装容易
+　・成約率・PPD・価格帯を自動分析してサマリー生成
+
+② STAGE3同時進行：「消えた出品」追跡（サイレント稼働）
+　・Browse APIで毎日検索 → 消えた出品IDを成約と判定
+　・6ヶ月後に自前成約データベースが完成
+　・ユーザーが増えるほど精度向上（集合知）
+
+③ Growth Check後：Marketplace Insights API申請
+　・eBay公式の成約データAPI・審査通過後に即申請
+
+④ STAGE4：ZIK Analytics API
+　・Terapeakを持っていないユーザー向けの代替手段として位置づけ
+　・メインはTerapeak CSVルートで割り切る
+
+### 競合リサーチの限界値
+・仕入れ判断まで（何を・いくらで・どの国で・いつ仕入れるか）
+・出品後の動向はツール全体の他機能（自動出品・値下げ・健全性）が担う
+
+### 廃止・変更
+・「Terapeak API・Marketplace Insights API：実装対象外（恒久決定）」は撤回
+　→ Marketplace Insights APIはGrowth Check後に申請する
+・ZIK Analytics APIはSTAGE4でTerapeak非保有者向け代替として実装
 
 ---
 
@@ -587,9 +615,11 @@ Claudeが統合して国別横断サマリーを自動生成する。
 
 #### STAGE4での拡張予定
 
-ZIK Analytics APIとの統合を検討。
-ユーザーがAPIキーを設定することで
-Terapeak同等の成約データを自動取得できる設計にする。
+ZIK Analytics APIとの統合を実装。
+Terapeakを持っていないユーザー向けの代替手段として位置づける。
+メインの成約データ取得はTerapeak CSVルート（STAGE3実装）で完結させ、
+ZIK APIはあくまで補完的な選択肢として提供する。
+ユーザーがAPIキーを設定することでTerapeak同等の成約データを自動取得できる設計にする。
 設定ページ（settings）に「ZIK Analytics連携」セクションを追加予定。
 
 ---
@@ -1234,5 +1264,96 @@ function openEbay(path) {
 アクティブでない項目も読める明るさに修正。
 該当：js/ui/nav.js または関連CSS
 
-*最終更新: 2026-05-27 | 自動出品仕様確定・全文整理*
+*最終更新: 2026-05-31 | 自動出品実装方針追記*
+
+---
+
+## 自動出品機能の実装方針（確定・2026-05-31）
+
+### 難易度評価（Claude Code評価）
+- タイトル自動生成：★★☆☆☆（Claude APIに投げるだけ）
+- Item Specifics自動補完：★★★☆☆（Taxonomy API + Claude）
+- VeROリスクスキャン：★★☆☆☆
+- Sell Inventory APIでの実際の出品：★★★★★（最大の山）
+
+### 出品の3ステップ（必須）
+① createOrReplaceInventoryItem（商品情報登録）
+② createOffer（価格・ポリシー・カテゴリ設定）
+③ publishOffer（実際に出品）
+
+### 実装順序（確定）
+STEP 1：Compatible Application Growth Check申請（先決・絶対条件）
+STEP 2：カテゴリ選択 + Item Specifics取得
+STEP 3：Claude APIで自動補完 + 確認画面
+STEP 4：createOrReplaceInventoryItem
+STEP 5：createOffer + publishOffer
+STEP 6：VeRO・品質チェック・下書き
+STEP 7：写真URL・EPS API
+
+### 重要な設計原則
+・AI提案 → セラー確認 → OK → 出品の人間確認フローを絶対に維持する
+・1件出品できれば残りは拡張という進め方で進む
+・サンドボックスと本番の動作が一致しないことがあるため
+　最終確認は必ず本番APIで行う
+・審査が通ってから実装開始という順序を守る
+
+---
+
+## Compatible Application Growth Check 申請ノウハウ（2026-06-01）
+
+申請先：https://developer.ebay.com/grow/application-growth-check
+
+### 申請前に必ず揃えるもの
+
+| 項目 | 必須度 | 備考 |
+|---|---|---|
+| eBay OAuthが本番で動作すること | 必須 | 動かないと審査デモができない |
+| プライバシーポリシーのURL | 必須 | 審査フォームに入力欄あり |
+| 利用規約のURL | 強く推奨 | |
+| アプリのスクリーンショット | 推奨 | 主要画面5〜10枚 |
+| 機能説明の英語サマリー | 推奨 | 審査はeBayの英語チームが行う |
+
+### 審査説明文（英語・そのまま使える）
+
+**Short description（1〜2文）:**
+> BRAND ANALYTICS is a revenue management and account health tool for Japanese eBay sellers. It helps sellers accurately calculate profits, monitor account performance, and manage their eBay business — all in one place.
+
+**Detailed description（審査フォームの詳細欄）:**
+> This tool uses the eBay Finances API, seller_standards_profile API, and Browse API to help Japanese sellers understand their own data more clearly. It is not a competing marketplace. The purpose is to support eBay seller success by providing profit simulation, account health monitoring, competitive research, and AI-assisted listing optimization. All user data is handled with AES-GCM 256-bit encryption and Supabase Row Level Security. Client credentials are stored exclusively in server-side Edge Functions and never exposed to the frontend.
+
+**日本語メモ（説明の骨格）:**
+- 日本人eBayセラー向けの収益管理・アカウント健全性ツール
+- Finances API・seller_standards_profile APIを使ってセラーが自分のデータを把握できる
+- 競合マーケットプレイスの構築ではなく、eBayセラーの成功支援が目的
+- Client Secretはフロントに置かずEdge Functionのみで使用
+- AES-GCM 256bitでトークンを暗号化・Supabase RLSでユーザーデータを分離
+
+### 審査で評価されるポイント（優先順）
+
+1. **APIの正規利用**：スクレイピングなし・競合サービスでないこと
+2. **セキュリティ**：Client Secretのサーバーサイド管理・暗号化
+3. **ユーザー保護**：プライバシーポリシー・データ分離
+4. **eBayへの貢献**：セラーが成功する = eBayの売上が増える構図
+5. **動作するアプリ**：OAuth含め実際に動くデモが見せられること
+
+### 審査の現実的なシナリオ
+
+- 一発通過：50%
+- 追加情報提出を求められて通過：25%
+- 条件付き承認（一部スコープのみ）：15%
+- 却下：10%（主な理由はコードではなくドキュメント不備）
+
+### 申請タイミング（推奨）
+
+```
+eBay OAuth本番テスト完了
+       ↓
+プライバシーポリシー・利用規約を作成
+       ↓
+申請（← ここ）
+       ↓
+審査期間：1〜4週間が目安
+       ↓
+承認後：sell.inventoryスコープ追加・自動出品実装開始
+```
 

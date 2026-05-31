@@ -16,6 +16,7 @@
     minSellRate:     30,
     payoneerRate:    2,
     authServiceJpy:  1500,
+    sound_enabled:   true,
   };
 
   // ─────────────────────────────────────
@@ -73,6 +74,41 @@
   }
 
   // ─────────────────────────────────────
+  // セクション2：通知・サウンド
+  // ─────────────────────────────────────
+  function _renderSection2(data) {
+    const on = data.sound_enabled !== false;
+    return `
+      <div class="card" style="margin-bottom:24px">
+        <div class="card-title">通知・サウンド</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 0">
+          <div>
+            <div style="font-size:14px;color:var(--text-primary)">効果音</div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:2px">
+              eBay連携成功時などに短いチャイムを再生します
+            </div>
+          </div>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;flex-shrink:0">
+            <span id="s-sound-label" style="font-size:12px;color:var(--text-muted);min-width:20px;text-align:right">${on ? 'ON' : 'OFF'}</span>
+            <div style="position:relative;width:36px;height:20px;flex-shrink:0">
+              <input type="checkbox" id="s-sound-enabled"
+                style="opacity:0;position:absolute;inset:0;cursor:pointer;margin:0;z-index:1"
+                ${on ? 'checked' : ''}>
+              <div id="s-sound-track"
+                style="position:absolute;inset:0;border-radius:10px;
+                  background:${on ? 'var(--gold-500)' : 'var(--navy-600)'};
+                  transition:background .2s;pointer-events:none"></div>
+              <div id="s-sound-thumb"
+                style="position:absolute;top:2px;left:${on ? '18px' : '2px'};
+                  width:16px;height:16px;border-radius:50%;background:#fff;
+                  transition:left .2s;pointer-events:none"></div>
+            </div>
+          </label>
+        </div>
+      </div>`;
+  }
+
+  // ─────────────────────────────────────
   // セクション3：eBay接続管理
   // ─────────────────────────────────────
   function _renderSection3() {
@@ -114,6 +150,7 @@
     const data = _load();
     root.innerHTML =
       _renderSection1(data) +
+      _renderSection2(data) +
       _renderSection3();
     _bindEvents(root);
   }
@@ -129,6 +166,22 @@
         data[key]  = parseFloat(e.target.value) || 0;
         _save(data);
       });
+    });
+
+    // セクション2：サウンドトグル
+    root.querySelector('#s-sound-enabled')?.addEventListener('change', e => {
+      const data = _load();
+      data.sound_enabled = e.target.checked;
+      _save(data);
+      const on = e.target.checked;
+      const label = root.querySelector('#s-sound-label');
+      const track = root.querySelector('#s-sound-track');
+      const thumb = root.querySelector('#s-sound-thumb');
+      if (label) label.textContent = on ? 'ON' : 'OFF';
+      if (track) track.style.background = on ? 'var(--gold-500)' : 'var(--navy-600)';
+      if (thumb) thumb.style.left = on ? '18px' : '2px';
+      // ONにした瞬間にテスト再生
+      if (on) BA.sound?.playSuccess?.();
     });
 
     // セクション3：eBay連携ボタン

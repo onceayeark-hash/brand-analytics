@@ -97,7 +97,7 @@
     .nav-item{display:flex;align-items:center;gap:8px;padding:10px 16px;cursor:pointer;transition:background-color var(--t-fast) var(--ease),border-color var(--t-fast) var(--ease),color var(--t-fast) var(--ease),opacity var(--t-fast) var(--ease);position:relative;border:none;background:none;width:100%;text-align:left;color:var(--text-secondary);font-family:var(--font-sans);font-size:14px;font-weight:400;line-height:1;border-left:2px solid transparent;min-height:var(--touch-target)}
     .nav-item:hover:not(.locked){color:var(--text-primary);background:var(--gold-hover);border-left-color:var(--border-hover)}
     .nav-item.active{color:var(--gold-400);background:var(--gold-active);border-left-color:var(--gold-400)}
-    .nav-item.locked{opacity:.45;cursor:pointer}
+    .nav-item.locked{opacity:.65;cursor:pointer}
     [data-tier="connected"] .nav-item.locked,[data-tier="premium"] .nav-item.locked{opacity:1;cursor:pointer;pointer-events:auto}
     [data-tier="connected"] .nav-item.locked .lock-icon,[data-tier="premium"] .nav-item.locked .lock-icon{display:none}
     .lock-icon{margin-left:auto;font-size:11px;opacity:.5}
@@ -118,9 +118,15 @@
     #stale-warning.visible{display:flex}
     .conn-status{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text-secondary)}
     .status-dot{width:6px;height:6px;border-radius:50%;background:var(--text-muted);flex-shrink:0}
-    .status-dot.connected{background:var(--green);box-shadow:0 0 6px var(--green);animation:pulse 2.5s infinite}
+    .status-dot.connected{background:var(--green);animation:dot-glow 2.5s ease-in-out infinite}
     .status-dot.error{background:var(--red)}
-    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+    @keyframes dot-glow{
+      0%,100%{box-shadow:0 0 3px 1px rgba(78,206,138,0.35);opacity:1}
+      50%{box-shadow:0 0 8px 3px rgba(78,206,138,0.70);opacity:0.85}
+    }
+    @media(prefers-reduced-motion:reduce){
+      .status-dot.connected{animation:none;box-shadow:0 0 4px rgba(78,206,138,0.5)}
+    }
     .tier-badge{font-family:var(--font-mono);font-size:11px;font-weight:500;letter-spacing:.10em;text-transform:uppercase;padding:3px 10px;border-radius:20px}
     .tier-badge.free{color:var(--text-muted);background:rgba(255,255,255,.04);border:1px solid var(--border)}
     .tier-badge.connected{color:var(--gold-400);background:var(--gold-dim);border:1px solid rgba(200,146,78,.30)}
@@ -240,7 +246,7 @@
     @keyframes shimmer{from{background-position:200% 0}to{background-position:-200% 0}}
 
     /* TOAST */
-    #toast-container{position:fixed;bottom:24px;right:24px;display:flex;flex-direction:column;gap:8px;z-index:1000}
+    #toast-container{position:fixed;bottom:24px;right:24px;display:flex;flex-direction:column;gap:8px;z-index:9000}
     .toast{font-family:var(--font-sans);font-size:12px;padding:12px 20px;border-radius:6px;border:1px solid;background:var(--bg-card);backdrop-filter:var(--blur-card);box-shadow:var(--shadow-card);animation:toastIn 200ms var(--ease);max-width:360px}
     .toast.success{color:var(--green);border-color:var(--green-border)}.toast.error{color:var(--red);border-color:var(--red-border)}
     .toast.warning{color:var(--yellow);border-color:var(--yellow-border)}.toast.info{color:var(--blue);border-color:var(--blue-border)}
@@ -299,8 +305,8 @@
       background: rgba(16,17,18,.98);
       --font-sans: 'BIZ UDPGothic', 'Meiryo', 'メイリオ', system-ui, sans-serif;
       --text-primary:   #e4e4e4;
-      --text-secondary: #a89880;
-      --text-muted:     #5e4e3c;
+      --text-secondary: #c8b4a0;
+      --text-muted:     #8a7a6a;
       --gold-400: #d4974f;
       --gold-500: #c8924e;
       --gold-300: #e8c078;
@@ -929,6 +935,7 @@
 <script src="js/ui/charts.js"></script>
 <script src="js/ui/notify.js"></script>
 <script src="js/ui/status-banner.js"></script>
+<script src="js/ui/sound.js"></script>
 <script src="js/ui/tour.js"></script>
 <script src="js/ui/tutorial.js"></script>
 <script src="js/ui/whats-new.js"></script>
@@ -978,6 +985,7 @@
     BA.finance?.init?.();
     BA.protection?.init?.();
     BA.settings?.init?.();
+    BA.sound?.init?.();
     BA.tour?.init?.();
     BA.whatsNew?.init?.();
     BA.theme?.init?.();

@@ -154,37 +154,45 @@
         transition:background .2s"></span>`
     ).join('');
 
-    _els.card.innerHTML = `
-      <div style="font-family:var(--font-mono,'IBM Plex Mono',monospace);font-size:11px;
-        color:rgba(200,146,78,0.9);letter-spacing:.08em;text-transform:uppercase;
-        margin-bottom:10px;line-height:1">
-        ${step.title}
-      </div>
-      <div style="font-size:13px;color:var(--text-secondary,#9a9a9a);line-height:1.75;
-        margin-bottom:18px">
-        ${step.body}
-      </div>
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
-        <div style="display:flex;gap:5px;align-items:center;flex-shrink:0">${dots}</div>
-        <div style="display:flex;gap:8px;align-items:center;flex-wrap:nowrap;flex-shrink:0">
-          <button id="tour-skip-btn"
-            style="font-family:inherit;font-size:12px;color:var(--text-muted,#606368);
-              background:none;border:none;cursor:pointer;padding:4px 8px;border-radius:4px">
+    // スキップボタンは最終ステップでは不要（「さっそく使う」が同じ役割）
+    const skipBtn = !isLast
+      ? `<button id="tour-skip-btn"
+            style="position:absolute;top:0;right:0;font-family:inherit;font-size:11px;
+              color:var(--text-muted,#606368);background:none;border:none;cursor:pointer;
+              padding:3px 6px;border-radius:4px;line-height:1.6">
             スキップ
-          </button>
-          ${_step > 0
-            ? `<button id="tour-prev-btn" class="btn btn-secondary"
-                style="padding:0 14px;min-height:36px;font-size:13px">← 戻る</button>`
-            : ''}
-          <button id="tour-next-btn" class="btn btn-primary"
-            style="padding:0 16px;min-height:36px;font-size:13px">
-            ${isLast ? 'さっそく使う' : '次へ →'}
-          </button>
+          </button>`
+      : '';
+
+    _els.card.innerHTML = `
+      <div style="position:relative">
+        ${skipBtn}
+        <div style="font-family:var(--font-mono,'IBM Plex Mono',monospace);font-size:11px;
+          color:rgba(200,146,78,0.9);letter-spacing:.08em;text-transform:uppercase;
+          margin-bottom:10px;line-height:1;${!isLast ? 'padding-right:52px' : ''}">
+          ${step.title}
+        </div>
+        <div style="font-size:13px;color:var(--text-secondary,#9a9a9a);line-height:1.75;
+          margin-bottom:18px">
+          ${step.body}
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+          <div style="display:flex;gap:5px;align-items:center;flex-shrink:0">${dots}</div>
+          <div style="display:flex;gap:8px;align-items:center;flex-shrink:0">
+            ${_step > 0
+              ? `<button id="tour-prev-btn" class="btn btn-secondary"
+                  style="padding:0 14px;min-height:36px;font-size:13px">← 戻る</button>`
+              : ''}
+            <button id="tour-next-btn" class="btn btn-primary"
+              style="padding:0 16px;min-height:36px;font-size:13px">
+              ${isLast ? 'さっそく使う' : '次へ →'}
+            </button>
+          </div>
         </div>
       </div>
     `;
 
-    _els.card.querySelector('#tour-skip-btn').addEventListener('click', _done);
+    _els.card.querySelector('#tour-skip-btn')?.addEventListener('click', _done);
     _els.card.querySelector('#tour-prev-btn')?.addEventListener('click', _prev);
     _els.card.querySelector('#tour-next-btn').addEventListener('click', isLast ? _done : _next);
   }

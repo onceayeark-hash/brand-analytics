@@ -374,6 +374,7 @@
       _setTier('connected');
       _updateEbayStatusUI('connected');
       BA.notify?.toast?.('eBay アカウントを連携しました', 'success');
+      document.dispatchEvent(new CustomEvent('ba:ebay-connected'));
     },
 
     async updatePassword(newPassword) {
