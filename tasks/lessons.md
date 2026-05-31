@@ -101,6 +101,14 @@
 - [listing-quality.js] 右パネル空状態：テキストを縦横中央揃えに変更。✏️アイコンをテキスト上に追加。`min-height:400px` + `flex` で左パネルと高さを揃える
 - [profit.js] 費用内訳カード空状態：`_emptyBreakdown()` 追加。未入力時（price=0）は7項目グレー表示。`_render()` のtbodyと `_update()` の `else if` 分岐で切替
 
+### 2026-05-29
+- [tutorial.js → tour.js] オンボーディングをインラインバナーからプロダクトツアー形式に変更
+  - `js/ui/tour.js` 新規作成（`window.BA.tour`）
+  - index.html: `BA.tutorial?.init?.()` → `BA.tour?.init?.()` に差し替え
+  - スポットライト実装：4パネルフレーム方式（z-index上書きなし・sidebar内要素にも対応）
+  - design-philosophy.md ⑭ を改訂（オーバーレイ禁止 → プロダクトツアー採用に変更）
+  - デバッグ時は Console で `BA.tour.reset()` → ページリロードでツアーが再表示される
+
 ### 2026-05-25（続）
 - [settings.js] 新規作成。3セクション構成：
   - セクション1：手数料・閾値設定（5項目・`ba_settings` にJSON保存・`ba:settings-changed` dispatch）

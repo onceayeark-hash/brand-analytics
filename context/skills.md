@@ -1,28 +1,129 @@
-# 自動適用 Skills
+# スキル管理ガイド（Claude・ユーザー共用）
+> このファイルは Claude の自動スキル選定ルールと、ユーザー向けのスキル一覧を兼ねる。
+> 「どのスキルが何をするか」を把握したいときはここを読む。
 
-## トークン管理（常時）
-- **token-budget-advisor**: 複雑な質問の前に回答深度(1〜4)を提示する
-- **context-budget**: コンテキスト使用量が多い場合に警告・整理を促す
+---
 
-## 実装フロー（用途別に自動起動）
-| タイミング | Skill |
+## 使用スキル一覧（brand-analytics 有効 22個）
+
+### 【A】常時稼働（すべての作業で自動適用）
+
+| スキル | 何をするか | 発動条件 |
+|---|---|---|
+| `everything-claude-code:token-budget-advisor` | 複雑な質問の前に回答深度を提示 | 常時 |
+| `everything-claude-code:context-budget` | コンテキスト残量が少ないとき警告 | 常時 |
+
+---
+
+### 【B】実装プロセス（作業の流れに沿って自動発動）
+
+| スキル | 何をするか | 発動条件 |
+|---|---|---|
+| `superpowers:brainstorming` | 新機能・コンポーネントの要件と設計を整理する | 新機能の検討・設計議論の開始時 |
+| `superpowers:writing-plans` | 多ステップ実装の計画書を作成する | spec・要件が揃ったとき・コード着手前 |
+| `everything-claude-code:plan` | 設計をユーザーと確認してから実装を開始する | 新機能実装前（writing-plans の後） |
+| `everything-claude-code:feature-dev` | 機能コードを構造的に実装する | 実際にコードを書くとき |
+| `superpowers:verification-before-completion` | 完了宣言前に動作確認コマンドを必ず実行する | 「実装完了」と言う前 |
+| `code-review:code-review` | コードの正確性・品質・セキュリティをレビュー | コード完成後（必須） |
+| `superpowers:requesting-code-review` | コードレビューを正式に依頼する手順 | 主要機能の実装完了時 |
+| `superpowers:receiving-code-review` | レビューフィードバックを正しく受け取る手順 | レビュー結果を受けたとき |
+| `superpowers:systematic-debugging` | バグ・テスト失敗・予期しない動作を体系的に調査 | エラー・バグ報告を受けたとき |
+
+---
+
+### 【C】UI・フロントエンド（画面実装時に自動発動）
+
+| スキル | 何をするか | 発動条件 |
+|---|---|---|
+| `ui-ux-pro-max` | プロレベルのUI/UX設計知識を適用する | UI新規実装・レイアウト改善時（最初に呼ぶ） |
+| `frontend-design:frontend-design` | グラフ・データ可視化の視覚設計を強化する | グラフ・チャート・ダッシュボード実装時 |
+| `everything-claude-code:dashboard-builder` | KPIカード・メトリクス表示を設計する | ダッシュボード・グラフ実装時（frontend-designと併用） |
+| `everything-claude-code:frontend-patterns` | UIコンポーネントのパターンを適用する | UIコンポーネント新規実装時 |
+
+**UI衝突ルール：**
+- `ui-ux-pro-max` と `frontend-design` は**両方呼ぶ**（互いを補完する）
+- `design-philosophy.md` の内容がすべてのUIスキルより**最優先**
+- 3つが衝突したら → `design-philosophy.md` ＞ `ui-ux-pro-max` ＞ `frontend-design` の順
+
+---
+
+### 【D】eBay・ビジネスロジック（専門領域の実装時）
+
+| スキル | 何をするか | 発動条件 |
+|---|---|---|
+| `everything-claude-code:api-connector-builder` | eBay API接続・認証・リトライ処理を設計する | eBay API接続の実装時 |
+| `everything-claude-code:finance-billing-ops` | 利益計算・手数料ロジックのパターンを確認する | 利益計算・手数料・学習型手数料の実装前（必須） |
+| `everything-claude-code:market-research` | 競合・市場データの調査手法を適用する | eBayカテゴリ・競合・市場データ調査時 |
+| `everything-claude-code:deep-research` | eBay API仕様の詳細調査を行う | eBay APIの仕様調査・不明点解消時 |
+| `everything-claude-code:claude-api` | Claude API / Anthropic SDK の実装を最適化する | claude.js・call-claude Edge Functionの実装時 |
+
+---
+
+### 【E】データベース・セキュリティ（インフラ実装時）
+
+| スキル | 何をするか | 発動条件 |
+|---|---|---|
+| `everything-claude-code:postgres-patterns` | Supabase/PostgreSQLのスキーマ設計を最適化する | DBスキーマ設計・マイグレーション作成時 |
+| `everything-claude-code:security-review` | auth.js・OAuth・暗号化のセキュリティを検証する | auth.js・crypto.js・トークン処理を含む変更後（必須） |
+
+---
+
+### 【F】セッション管理（会話の開始・終了時）
+
+| スキル | 何をするか | 発動条件 |
+|---|---|---|
+| `everything-claude-code:resume-session` | 前回セッションの状態を復元する | セッション開始時（ユーザーが `/resume-session` で明示） |
+| `everything-claude-code:save-session` | 現在のセッション状態を保存する | セッション終了時（ユーザーが `/save-session` で明示） |
+
+---
+
+## スキル発動の優先順位
+
+複数のスキルが同時に該当する場合：
+
+```
+1. 【A】常時稼働スキル（常に適用）
+2. 【B】プロセススキル（作業フローを決める）
+3. 【C/D/E】実装スキル（具体的な作業を強化）
+```
+
+**例：新しいダッシュボード画面を作るとき**
+```
+① superpowers:brainstorming（要件整理）
+② superpowers:writing-plans（計画書作成）
+③ ui-ux-pro-max（UI設計）
+④ frontend-design + dashboard-builder（グラフ実装）
+⑤ feature-dev（コーディング）
+⑥ code-review（完成後レビュー）
+⑦ verification-before-completion（完了確認）
+```
+
+---
+
+## スキル使用時の通知ルール
+
+スキルを呼んだとき、以下の形式で必ずアナウンスする：
+
+```
+▶ [スキル名] を使用：[理由1行]
+```
+
+例：`▶ ui-ux-pro-max を使用：ダッシュボードカードのレイアウト改善のため`
+
+---
+
+## 使用しないスキル（brand-analytics 対象外）
+
+以下のスキルは誤発動を防ぐため、このプロジェクトでは**呼ばない**：
+
+| カテゴリ | スキル群 |
 |---|---|
-| 新機能の実装前 | `plan` → 設計を確認してから実装開始 |
-| eBay API接続の実装時 | `api-connector-builder` |
-| ダッシュボード・グラフ実装時 | `dashboard-builder` + `frontend-design` |
-| グラフUIの視覚設計・レイアウト改善時 | `frontend-design` |
-| 機能コードを書くとき | `feature-dev` |
-| コード完成後 | `code-review` |
-| auth.js・OAuth・暗号化の実装後 | `security-review`（必須） |
-| eBay APIの仕様調査 | `deep-research` |
-| UIコンポーネント実装時 | `frontend-patterns` |
-| 取引記録・学習型手数料・利益計算の実装時 | `finance-billing-ops` |
-| transaction_logs・DBスキーマ設計時 | `postgres-patterns` |
-| eBayカテゴリ・競合・市場データ調査時 | `market-research` |
+| 他言語 | java-*, kotlin-*, swift-*, rust-*, go-*, cpp-*, perl-*, dart-* |
+| 他フレームワーク | django-*, laravel-*, springboot-*, nextjs-*, nuxt4-* |
+| 無関係業界 | healthcare-*, hipaa-*, defi-*, energy-procurement, logistics-*, customs-* |
+| 無関係ツール | vercel:*(本番デプロイ時以外), figma:*(Figma未使用), video-editing, manim-video |
 
-## ルール
-1. `security-review` は auth.js・crypto.js・トークン処理を含む変更に**必ず**実行する
-2. `plan` を省略して実装を開始しない
-3. 回答深度はデフォルト **50%（Moderate）**。ユーザーが指定した場合はそれに従う
-4. グラフ・チャート実装時は `frontend-design` を必ず併用し、視覚的インパクトを優先する
-5. 利益計算・手数料ロジックの実装時は `finance-billing-ops` を先に呼び、計算パターンを確認してから実装する
+---
+
+*v2.0: 2026-05-31 全面改訂（529スキル→22スキル選定・ユーザー可読形式・衝突ルール追加）*
+*v1.0: 2026-05-24 初版（Claude向け指示書のみ）*

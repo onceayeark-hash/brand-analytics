@@ -443,7 +443,7 @@
         <span id="ebay-status-text">未接続</span>
       </div>
       <div class="tier-badge free" id="tier-badge">FREE</div>
-      <button class="btn btn-primary" id="btn-connect-header" onclick="BA.nav?.showPanel('connect')">eBay を連携する</button>
+      <button class="btn btn-primary" id="btn-connect-header" onclick="BA.auth?.connectEbay?.()">eBay を連携する</button>
     </div>
   </header>
 
@@ -929,6 +929,7 @@
 <script src="js/ui/charts.js"></script>
 <script src="js/ui/notify.js"></script>
 <script src="js/ui/status-banner.js"></script>
+<script src="js/ui/tour.js"></script>
 <script src="js/ui/tutorial.js"></script>
 <script src="js/ui/whats-new.js"></script>
 <script src="js/ui/theme.js"></script>
@@ -977,7 +978,7 @@
     BA.finance?.init?.();
     BA.protection?.init?.();
     BA.settings?.init?.();
-    BA.tutorial?.init?.();
+    BA.tour?.init?.();
     BA.whatsNew?.init?.();
     BA.theme?.init?.();
 

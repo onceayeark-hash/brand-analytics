@@ -1,98 +1,69 @@
 ﻿# BRAND ANALYTICS｜現在地ノート
-最終更新：2026/05/26
+最終更新：2026/05/30
 
 ---
 
 ## 今やっていること
-競合リサーチ機能の設計方針を確定
-→ CLAUDE.mdのSTAGE3仕様を書き直し済み
-→ 次はROI表示から実装フェーズへ
+② eBay OAuthテスト → 🔄 進行中
+　→ serveo.net（固定URL）で再開予定
+　→ 次回開始コマンド：
+　　 ssh -R brand-analytics:80:localhost:5500 serveo.net
+　→ 固定URL：https://brand-analytics.serveo.net
 
----
+## 次回セッション開始前に必ず実施
+・Supabase Dashboard → Authentication → URL Configuration
+　- Site URL：https://brand-analytics.serveo.net
+　- Redirect URLs：https://brand-analytics.serveo.net/**
+・eBay Developer Portal → RuName vplsttzs の Auth accepted URL
+　→ https://brand-analytics.serveo.net/ に更新
+
+## 確定したeBay設定値
+- 使用RuName：StayGold_-StayGold-BRANDA-vplsttzs（OAuth用・新規作成）
+- 旧RuName（kdbpfux）：Auth'n'Auth専用のため使用しない
+- Client ID（生産）：StayGold-BRANDANA-PRD-7183f64d5-3fad581c
+- config.local.js：EBAY_REDIRECT_URI更新済み（vplsttzs）
 
 ## 次にやること（優先順）
 
-① ROI表示を利益計算機に追加
-　→ CLAUDE.mdに仕様記載済み
-　→ 黒いClaudeに実装指示を出す
-　→ 難易度低・今すぐできる
+① eBay OAuthテスト完了（最優先）
+　→ serveo.net起動
+　→ サインイン → 「eBayを連携する」
+　→ URLに ?code=XXX&state=YYY が返れば成功
 
-② 費用内訳カードの空状態表示を実装
-　→ CLAUDE.mdに仕様記載済み
-　→ 黒いClaudeに実装指示を出す
+② STAGE2：ベストオファーシミュレーター
+③ STAGE2：返品コスト計算
+④ 送料・関税テーブル設定
+⑤ プライバシーポリシー・利用規約の作成
+⑥ Compatible Application Growth Check申請
+⑦ 17TRACK API連携（STAGE2後半）
+⑧ SpeedPAK送料請求CSVインポート（STAGE2後半）
 
-③ 設定ページのコンテンツを実装
-　→ CLAUDE.mdに仕様記載済み
-　→ 黒いClaudeに実装指示を出す
+## 完了済み（STAGE1）
+✅ 認証バグ2件修正
+✅ ROI表示
+✅ 費用内訳カード空状態表示
+✅ 設定ページ実装・DeepL削除
+✅ P-01 eBay手数料Cap修正
+✅ Finances API接続
+✅ Supabaseスキーマ PHASE 0完了
+✅ D-01：粗利計算式修正
+✅ D-02：健全性API接続確認
+✅ F-01〜F-03：ファイナンス表示修正
+✅ ダーク/ライトモード統一
 
-④ P-01：eBay手数料の上限Cap（$750）修正
-　→ 高額商品で計算誤差が出るため早期対応推奨
-
-⑤ api.js の実装
-　→ Finances API接続の前提条件
-
-⑥ cache.js の実装
-　→ Finances API接続の前提条件
-
-⑦ Supabaseスキーマの適用（PHASE 0）
-　→ ユーザー側作業
-
-⑧ Finances API接続（X-01）
-　→ transactions・dashboard・financeが自動化
-
----
-
-## 直近の決定事項
-- DeepL API採用確定
-- ファイル管理ルール確立
-- NOW.md・ISSUES.mdをセッション引継ぎ用として運用
-- eBay Trading APIはスコープ申請不要と確認
-
-## 2026/05/26 競合リサーチ設計確定
-- Terapeak CSV：エクスポート不可（恒久確定）
-- Marketplace Insights API：実装対象外（恒久確定）
-- Terapeak専用API：一般公開なし（恒久確定）
-- STAGE3設計：Browse API（自動）＋手動補完のハイブリッド方式
-- STAGE4候補：ZIK Analytics API統合
-
-## 2026/05/26 追加実装機能確定（既記載）
-- ROI表示（即時実装）
-- ベストオファーシミュレーション（STAGE2前半）
-- 返品コスト計算（STAGE2前半）
-- 自動値下げ機能（STAGE2後半・Trading API利用）
-- 発送料自動計算・SpeedPAK連携（STAGE2後半）
-- 競合リサーチ・国別選択（STAGE3・Browse API方式）
-
-## 2026/05/26 デザインセッション完了内容
-- design-philosophy.mdに⑫〜⑮を追記
-- CLAUDE.mdに費用内訳・設定ページの仕様を追記
-- デザイン修正6件を完了
-
----
+## 完了済み（STAGE2着手）
+✅ Claude API統合基盤実装
+✅ VS Codeインストール・brand-analytics接続済み
+✅ cloudflared導入済み（npx cloudflared tunnel --url http://localhost:5500）
 
 ## 未解決・保留中
-- 自動出品：STAGE2まで本格実装なし
-- Payoneer直接連携：現実的でないと判断済み
-- FedEx/DHL APIの申請：STAGE2後半着手時に実施
+- eBay OAuthテスト未完了（serveo.netで次回再開）
+- 自動出品STAGE2着手時：他社ツール参考画像確認後に設計
 - ZIK Analytics API統合：STAGE4検討
-
----
+- FedEx/DHL API申請：STAGE2後半着手時
 
 ## 懸念点
-- api.js・cache.jsが未実装のためFinances API接続がまだできない
-- Supabase PHASE 0（スキーマ適用）がユーザー側で未完了
-
----
-
-## 機能別評価サマリー
-| 機能 | 価値 | 優先度 |
-|------|------|--------|
-| サインイン・認証 | 高 | ✅ バグ2件修正済み |
-| 利益計算機・PPD | 高 | ROI追加が次の一手 |
-| 仕入れメーター | 低〜中 | STAGE3完成で価値向上 |
-| 取引記録 | 中 | Finances API後に再設計 |
-| ダッシュボード | 中 | 粗利計算式修正が最優先 |
-| ファイナンス | 中 | Finances API後に価値最大化 |
-| アカウント保護 | 低 | 実態修正・差別化再設計 |
-| 自動出品 | 未完 | STAGE2で本格実装 |
-| 競合リサーチ | 未実装 | STAGE3・Browse API方式で設計確定 |
+- D-02：tracking指標キー名（TRACKING_NOT_UPLOADED）→OAuth接続後に実機確認
+- D-04：送料・関税カラム未追加（DDP対応・スキーマ拡張が必要）
+- Compatible Application Growth Check申請→SaaS公開前に必須
+　https://developer.ebay.com/grow/application-growth-check

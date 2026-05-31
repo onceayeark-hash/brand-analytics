@@ -15,9 +15,6 @@
 
   window.BA = window.BA || {};
 
-  // ─────────────────────────────────────
-  // 設定（window.BA_CONFIG から注入）
-  // ─────────────────────────────────────
   function _getConfig() {
     const cfg = window.BA_CONFIG || {};
     const supabaseUrl = cfg.SUPABASE_URL || '';
@@ -25,8 +22,8 @@
       supabaseUrl,
       supabaseKey:     cfg.SUPABASE_ANON_KEY || '',
       ebayClientId:    cfg.EBAY_CLIENT_ID || 'StayGold-BRANDANA-PRD-7183f64d5-3fad581c',
-      // RuName を redirect_uri として使用（eBay Developer Portal に登録済み）
-      ebayRedirectUri: cfg.EBAY_REDIRECT_URI || 'StayGold_-StayGold-BRANDA-kdbpfux',
+      // #1 修正: フォールバックRuNameを有効なvplsttzsに変更（kdbpfuxは廃棄済み）
+      ebayRedirectUri: cfg.EBAY_REDIRECT_URI || 'StayGold_-StayGold-BRANDA-vplsttzs',
       ebayScope: [
         'https://api.ebay.com/oauth/api_scope',
         'https://api.ebay.com/oauth/api_scope/sell.analytics.readonly',
@@ -34,23 +31,16 @@
         'https://api.ebay.com/oauth/api_scope/sell.fulfillment',
         'https://api.ebay.com/oauth/api_scope/sell.account',
       ].join(' '),
-      // Edge Function ベースURL（SUPABASE_URL + /functions/v1 で自動導出）
       edgeFunctionBase: cfg.SUPABASE_EDGE_FUNCTION_URL
                      || (supabaseUrl ? `${supabaseUrl}/functions/v1` : ''),
     };
   }
 
-  // ─────────────────────────────────────
-  // プライベート変数
-  // ─────────────────────────────────────
   let _supabase   = null;
   let _user       = null;
   let _tier       = 'free';
-  let _ebayTokens = null;  // { accessToken, refreshToken, expiresAt }（復号済み）
+  let _ebayTokens = null;
 
-  // ─────────────────────────────────────
-  // Supabase クライアント初期化
-  // ─────────────────────────────────────
   function _initSupabase() {
     const cfg = _getConfig();
     if (!cfg.supabaseUrl || !cfg.supabaseKey) {
@@ -64,15 +54,10 @@
     return window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseKey);
   }
 
-  // ─────────────────────────────────────
-  // 内部ユーティリティ
-  // ─────────────────────────────────────
-
   function _setTier(tier) {
     _tier = tier;
     document.documentElement.setAttribute('data-tier', tier);
     BA.nav?.setTier?.(tier);
-
     const badge = document.getElementById('tier-badge');
     if (badge) {
       badge.className = `tier-badge ${tier}`;
@@ -94,20 +79,14 @@
     BA.notify?.alert?.(type, detail);
   }
 
-  // ─────────────────────────────────────
-  // Auth Overlay 制御
-  // ─────────────────────────────────────
-
   function _showAuthOverlay(view = 'signin') {
     const overlay = document.getElementById('auth-overlay');
     if (!overlay) return;
     overlay.removeAttribute('hidden');
-
     document.getElementById('auth-view-signin')?.toggleAttribute('hidden', view !== 'signin');
     document.getElementById('auth-view-signup')?.toggleAttribute('hidden', view !== 'signup');
     document.getElementById('auth-view-reset')?.toggleAttribute('hidden',  view !== 'reset');
     document.getElementById('auth-view-new-password')?.toggleAttribute('hidden', view !== 'new-password');
-
     const firstInput = overlay.querySelector(':not([hidden]) .auth-input');
     setTimeout(() => firstInput?.focus(), 100);
   }
@@ -131,15 +110,10 @@
     btn.disabled = loading;
   }
 
-  // ─────────────────────────────────────
-  // eBay OAuth ヘルパー
-  // ─────────────────────────────────────
-
   function _buildEbayAuthUrl() {
     const cfg   = _getConfig();
     const state = _generateState();
     sessionStorage.setItem('ba_oauth_state', state);
-
     const params = new URLSearchParams({
       client_id:     cfg.ebayClientId,
       redirect_uri:  cfg.ebayRedirectUri,
@@ -158,7 +132,6 @@
 
   async function _saveEbayTokens(tokens) {
     if (!_supabase || !_user) throw new Error('[auth] Supabase 未接続');
-
     const encrypted = await BA.crypto.encrypt(JSON.stringify(tokens));
     const { error } = await _supabase
       .from('ebay_tokens')
@@ -166,20 +139,17 @@
         { user_id: _user.id, token_data: encrypted, updated_at: new Date().toISOString() },
         { onConflict: 'user_id' }
       );
-
     if (error) throw new Error(`[auth] トークン保存失敗: ${error.message}`);
     _ebayTokens = tokens;
   }
 
   async function _loadEbayTokens() {
     if (!_supabase || !_user) return null;
-
     const { data, error } = await _supabase
       .from('ebay_tokens')
       .select('token_data')
       .eq('user_id', _user.id)
       .single();
-
     if (error || !data) return null;
     try {
       const decrypted = await BA.crypto.decrypt(data.token_data);
@@ -190,26 +160,20 @@
     }
   }
 
-  /** アクセストークンの有効期限を確認し、期限切れなら Edge Function でリフレッシュ */
   async function _ensureValidToken() {
     if (!_ebayTokens) return null;
-
     const bufferMs = 5 * 60 * 1000;
     if (_ebayTokens.expiresAt - Date.now() > bufferMs) {
       return _ebayTokens.accessToken;
     }
-
     console.debug('[auth] アクセストークン期限切れ — Edge Function でリフレッシュ中...');
     try {
       if (!_supabase || !_user) throw new Error('Supabase 未接続');
-
       const { data: { session } } = await _supabase.auth.getSession();
       const jwt = session?.access_token;
       if (!jwt) throw new Error('Supabase セッション切れ');
-
       const cfg = _getConfig();
       if (!cfg.edgeFunctionBase) throw new Error('edgeFunctionBase が未設定');
-
       const response = await fetch(`${cfg.edgeFunctionBase}/ebay-token`, {
         method: 'POST',
         headers: {
@@ -221,25 +185,23 @@
           refreshToken: _ebayTokens.refreshToken,
         }),
       });
-
       if (!response.ok) {
         const err = await response.json().catch(() => ({}));
         throw new Error(`リフレッシュ失敗 (${response.status}): ${err.error || ''}`);
       }
-
       const data = await response.json();
       const newTokens = {
         accessToken:  data.access_token,
         refreshToken: data.refresh_token || _ebayTokens.refreshToken,
         expiresAt:    Date.now() + data.expires_in * 1000,
       };
-
       await _saveEbayTokens(newTokens);
       return newTokens.accessToken;
-
     } catch (err) {
       console.error('[auth] トークンリフレッシュ失敗:', err);
       _fireAlert('OAUTH_EXPIRED');
+      // #2 #3 修正: リフレッシュ失敗時はUIとtierをexpired状態に固定し、
+      // 後続のuser_settings読み込みで'connected'に上書きされないようreturnで抜ける
       _updateEbayStatusUI('expired');
       _setTier('free');
       _ebayTokens = null;
@@ -247,26 +209,16 @@
     }
   }
 
-  // ─────────────────────────────────────
-  // 公開API
-  // ─────────────────────────────────────
   const auth = {
 
-    /**
-     * 初期化: Supabase セッション確認 → eBay トークン復元 → tier 設定
-     * Supabase 未設定 / 未サインイン時はオーバーレイを表示
-     */
     async init() {
       _supabase = _initSupabase();
-
       if (!_supabase) {
         _setTier('free');
         _updateEbayStatusUI('disconnected');
         _showAuthOverlay();
         return;
       }
-
-      // PASSWORD_RECOVERY を確実に捕捉するため getSession() より先に登録
       _supabase.auth.onAuthStateChange((event, session) => {
         if (event === 'PASSWORD_RECOVERY') {
           _showAuthOverlay('new-password');
@@ -285,14 +237,12 @@
 
       try {
         const { data: { session } } = await _supabase.auth.getSession();
-
         if (!session) {
           _setTier('free');
           _updateEbayStatusUI('disconnected');
           _showAuthOverlay();
           return;
         }
-
         _user = session.user;
         _hideAuthOverlay();
 
@@ -300,7 +250,10 @@
         if (tokens) {
           _ebayTokens = tokens;
           if (Date.now() > tokens.expiresAt) {
-            await _ensureValidToken();
+            // #2 #3 修正: リフレッシュ失敗時はnullが返る。
+            // nullの場合はuser_settings読み込みをスキップしてfree/disconnectedを維持する
+            const validToken = await _ensureValidToken();
+            if (!validToken) return;
           }
           const { data: settings } = await _supabase
             .from('user_settings')
@@ -319,25 +272,18 @@
         _fireAlert('SUPABASE_ERROR');
         _setTier('free');
         _updateEbayStatusUI('error');
+        _showAuthOverlay();
       }
     },
 
-    /**
-     * メール/パスワードでサインイン
-     * @param {string} email
-     * @param {string} password
-     */
     async signIn(email, password) {
       if (!_supabase) throw new Error('[auth] Supabase 未設定');
-
       const { data, error } = await _supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
-
       _user = data.user;
       _setTier('free');
       _updateEbayStatusUI('disconnected');
       _hideAuthOverlay();
-
       const tokens = await _loadEbayTokens();
       if (tokens) {
         _ebayTokens = tokens;
@@ -351,18 +297,10 @@
       }
     },
 
-    /**
-     * 新規登録
-     * @param {string} email
-     * @param {string} password
-     * @returns {Promise<{needsConfirmation: boolean}>}
-     */
     async signUp(email, password) {
       if (!_supabase) throw new Error('[auth] Supabase 未設定');
-
       const { data, error } = await _supabase.auth.signUp({ email, password });
       if (error) throw error;
-
       if (data.session) {
         _user = data.user;
         _setTier('free');
@@ -372,25 +310,19 @@
       return { needsConfirmation: true };
     },
 
-    /**
-     * Googleでサインイン（Supabase OAuth）
-     * サインイン後は自動でコールバックURLにリダイレクトされSupabaseがセッションを処理する
-     */
     async signInWithGoogle() {
       if (!_supabase) throw new Error('[auth] Supabase 未設定');
+      // #6 修正: hash(#)も除去してredirectToにfragmentが残らないようにする
+      const cleanUrl = window.location.href.split('?')[0].split('#')[0];
       const { error } = await _supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: window.location.href.split('?')[0],
+          redirectTo: cleanUrl,
         },
       });
       if (error) throw error;
     },
 
-    /**
-     * eBay OAuth 認証を開始する
-     * 未サインインの場合はオーバーレイを表示してガード
-     */
     connectEbay() {
       if (!_user) {
         _showAuthOverlay('signin');
@@ -400,31 +332,22 @@
       window.location.href = _buildEbayAuthUrl();
     },
 
-    /**
-     * OAuth コールバック処理（index.html の DOMContentLoaded から呼ぶ）
-     * @param {string} code  - eBay から返された認証コード
-     * @param {string} state - CSRF 検証用
-     */
     async handleOAuthCallback(code, state) {
       const savedState = sessionStorage.getItem('ba_oauth_state');
       sessionStorage.removeItem('ba_oauth_state');
-
       if (state !== savedState) {
         throw new Error('[auth] OAuth state 不一致 — CSRF の可能性があります');
       }
       if (!_supabase || !_user) {
         throw new Error('[auth] Supabase 未接続またはサインイン未完了');
       }
-
       const { data: { session } } = await _supabase.auth.getSession();
       const jwt = session?.access_token;
       if (!jwt) throw new Error('[auth] セッショントークンが取得できません');
-
       const cfg = _getConfig();
       if (!cfg.edgeFunctionBase) {
         throw new Error('[auth] edgeFunctionBase 未設定 — config.local.js を確認してください');
       }
-
       const response = await fetch(`${cfg.edgeFunctionBase}/ebay-token`, {
         method: 'POST',
         headers: {
@@ -437,51 +360,50 @@
           redirectUri: cfg.ebayRedirectUri,
         }),
       });
-
       if (!response.ok) {
         const err = await response.json().catch(() => ({}));
         throw new Error(`[auth] トークン交換失敗 (${response.status}): ${err.error || ''}`);
       }
-
       const data = await response.json();
       const tokens = {
         accessToken:  data.access_token,
         refreshToken: data.refresh_token,
         expiresAt:    Date.now() + data.expires_in * 1000,
       };
-
       await _saveEbayTokens(tokens);
       _setTier('connected');
       _updateEbayStatusUI('connected');
       BA.notify?.toast?.('eBay アカウントを連携しました', 'success');
     },
 
-    /**
-     * 新しいパスワードを設定する（PASSWORD_RECOVERY フロー完了時）
-     * @param {string} newPassword
-     */
     async updatePassword(newPassword) {
       if (!_supabase) throw new Error('[auth] Supabase 未設定');
       const { error } = await _supabase.auth.updateUser({ password: newPassword });
       if (error) throw error;
     },
 
-    /**
-     * パスワードリセットメールを送信する
-     * @param {string} email
-     */
     async resetPassword(email) {
       if (!_supabase) throw new Error('[auth] Supabase 未設定');
+      // #6 と同様にhashも除去
+      const cleanUrl = window.location.href.split('?')[0].split('#')[0];
       const { error } = await _supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: window.location.href.split('?')[0],
+        redirectTo: cleanUrl,
       });
       if (error) throw error;
     },
 
-    /** eBay 連携を解除する */
     async disconnectEbay() {
       if (!_supabase || !_user) return;
-      await _supabase.from('ebay_tokens').delete().eq('user_id', _user.id);
+      // #4 修正: DELETEのエラーを補足。失敗時はトースト表示せずにエラーログを残す
+      const { error } = await _supabase
+        .from('ebay_tokens')
+        .delete()
+        .eq('user_id', _user.id);
+      if (error) {
+        console.error('[auth] eBayトークン削除失敗:', error.message);
+        BA.notify?.toast?.('eBay 連携解除に失敗しました。再度お試しください。', 'error');
+        return;
+      }
       _ebayTokens = null;
       BA.crypto?.destroy?.();
       _setTier('free');
@@ -490,7 +412,6 @@
       BA.notify?.toast?.('eBay 連携を解除しました', 'info');
     },
 
-    /** 有効なアクセストークンを取得（期限切れなら Edge Function で自動リフレッシュ）*/
     async getAccessToken() { return _ensureValidToken(); },
 
     getTier()         { return _tier; },
@@ -498,11 +419,11 @@
     getSupabase()     { return _supabase; },
     isEbayConnected() { return _ebayTokens !== null; },
 
-    /** ログアウト */
     async signOut() {
+      // #5 修正: disconnectEbay()内でBA.crypto.destroy()が呼ばれるため、
+      // signOut()側の重複呼び出しを除去
       await this.disconnectEbay();
       if (_supabase) await _supabase.auth.signOut();
-      BA.crypto?.destroy?.();
       BA.cache?.clear?.();
       _user = null;
       _setTier('free');
@@ -512,22 +433,16 @@
 
   window.BA.auth = auth;
 
-  // ─────────────────────────────────────
-  // DOMContentLoaded: フォームイベント配線
-  // ─────────────────────────────────────
   document.addEventListener('DOMContentLoaded', () => {
 
-    // サインインフォーム
     document.getElementById('btn-signin')?.addEventListener('click', async () => {
       const email    = document.getElementById('auth-email')?.value?.trim();
       const password = document.getElementById('auth-password')?.value;
       _setAuthMessage('auth-error', '', false);
-
       if (!email || !password) {
         _setAuthMessage('auth-error', 'メールアドレスとパスワードを入力してください');
         return;
       }
-
       _setBtnLoading('btn-signin', true);
       try {
         await auth.signIn(email, password);
@@ -538,13 +453,11 @@
       }
     });
 
-    // サインアップフォーム
     document.getElementById('btn-signup')?.addEventListener('click', async () => {
       const email    = document.getElementById('signup-email')?.value?.trim();
       const password = document.getElementById('signup-password')?.value;
       _setAuthMessage('signup-error',   '', false);
       _setAuthMessage('signup-success', '', false);
-
       if (!email || !password) {
         _setAuthMessage('signup-error', 'メールアドレスとパスワードを入力してください');
         return;
@@ -553,7 +466,6 @@
         _setAuthMessage('signup-error', 'パスワードは8文字以上で入力してください');
         return;
       }
-
       _setBtnLoading('btn-signup', true);
       try {
         const { needsConfirmation } = await auth.signUp(email, password);
@@ -568,7 +480,6 @@
       }
     });
 
-    // Googleでサインイン
     document.getElementById('btn-google-auth')?.addEventListener('click', async () => {
       _setBtnLoading('btn-google-auth', true);
       try {
@@ -579,26 +490,21 @@
       }
     });
 
-    // eBay で接続（connect panel）
     document.getElementById('btn-ebay-oauth')?.addEventListener('click', () => auth.connectEbay());
 
-    // ビュー切り替え
     document.getElementById('btn-to-signup')?.addEventListener('click', () => _showAuthOverlay('signup'));
     document.getElementById('btn-to-signin')?.addEventListener('click', () => _showAuthOverlay('signin'));
     document.getElementById('btn-to-reset')?.addEventListener('click', () => _showAuthOverlay('reset'));
     document.getElementById('btn-reset-to-signin')?.addEventListener('click', () => _showAuthOverlay('signin'));
 
-    // パスワードリセット送信
     document.getElementById('btn-reset-send')?.addEventListener('click', async () => {
       const email = document.getElementById('reset-email')?.value?.trim();
       _setAuthMessage('reset-error',   '', false);
       _setAuthMessage('reset-success', '', false);
-
       if (!email) {
         _setAuthMessage('reset-error', 'メールアドレスを入力してください');
         return;
       }
-
       _setBtnLoading('btn-reset-send', true);
       try {
         await auth.resetPassword(email);
@@ -611,18 +517,15 @@
       }
     });
 
-    // Enterキー送信（リセット画面）
     document.getElementById('reset-email')?.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') document.getElementById('btn-reset-send')?.click();
     });
 
-    // 新パスワード設定
     document.getElementById('btn-update-password')?.addEventListener('click', async () => {
       const newPassword     = document.getElementById('new-password-input')?.value;
       const confirmPassword = document.getElementById('new-password-confirm')?.value;
       _setAuthMessage('new-password-error',   '', false);
       _setAuthMessage('new-password-success', '', false);
-
       if (!newPassword || !confirmPassword) {
         _setAuthMessage('new-password-error', '新しいパスワードを入力してください');
         return;
@@ -635,7 +538,6 @@
         _setAuthMessage('new-password-error', 'パスワードが一致しません');
         return;
       }
-
       _setBtnLoading('btn-update-password', true);
       try {
         await auth.updatePassword(newPassword);
@@ -652,19 +554,16 @@
       if (e.key === 'Enter') document.getElementById('btn-update-password')?.click();
     });
 
-    // サインアウト
     document.getElementById('btn-signout')?.addEventListener('click', async () => {
       await auth.signOut();
     });
 
-    // 無料機能のみ使う
     document.getElementById('btn-skip-free')?.addEventListener('click', () => {
       _hideAuthOverlay();
       _setTier('free');
       _updateEbayStatusUI('disconnected');
     });
 
-    // Enter キー送信
     document.getElementById('auth-password')?.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') document.getElementById('btn-signin')?.click();
     });
@@ -673,9 +572,6 @@
     });
   });
 
-  // ─────────────────────────────────────
-  // Supabase エラーメッセージ日本語化
-  // ─────────────────────────────────────
   function _translateAuthError(msg) {
     if (!msg) return '不明なエラーが発生しました';
     if (msg.includes('Invalid login credentials')) return 'メールアドレスまたはパスワードが正しくありません';
