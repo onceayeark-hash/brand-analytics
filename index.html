@@ -961,15 +961,24 @@
     const params = new URLSearchParams(window.location.search);
     const code  = params.get('code');
     const state = params.get('state');
-    if (code && state) {
-      // URLからcodeを即削除（履歴に残さない）
+    const ebayError = params.get('error');
+    console.log('[init] URL params:', { code: code ? code.slice(0,10)+'...' : null, state: state ? state.slice(0,8)+'...' : null, error: ebayError });
+    if (ebayError) {
       history.replaceState({}, '', window.location.pathname);
+      const desc = params.get('error_description') || ebayError;
+      console.error('[init] eBay OAuth error:', ebayError, desc);
+      BA.notify?.toast?.(`eBay 認証エラー: ${ebayError}`, 'error');
+    } else if (code && state) {
+      history.replaceState({}, '', window.location.pathname);
+      console.log('[init] OAuth code 受信 → ebay-token へ送信');
       try {
         await BA.auth?.handleOAuthCallback?.(code, state);
       } catch (err) {
         console.error('[init] OAuth callback error:', err);
         BA.notify?.toast?.('eBay 連携に失敗しました。再度お試しください。', 'error');
       }
+    } else {
+      console.log('[init] OAuth コールバックなし（通常ロード）');
     }
 
     // 5. UIモジュール初期化

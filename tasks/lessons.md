@@ -109,6 +109,46 @@
   - design-philosophy.md ⑭ を改訂（オーバーレイ禁止 → プロダクトツアー採用に変更）
   - デバッグ時は Console で `BA.tour.reset()` → ページリロードでツアーが再表示される
 
+### 2026-06-01（eBay OAuth テスト・紆余曲折の記録）
+
+#### 環境構築でハマったこと
+- [live-server] `C:\Users\admin` でコマンドを実行するとEPERMエラーが大量発生
+  → 必ず `cd brand-analyticsフォルダ` してから `npx live-server --port=5500` を実行
+- [serveo.net] SSHキー登録が必要・502エラーが出た → cloudflaredに切り替えて解決
+- [cloudflared] URLが毎回変わる → eBay Portal・Supabase URL設定を毎回更新が必要
+
+#### eBay Portalの罠（永久保存）
+- Portalの「Test Sign In」ボタンは**絶対に使わない**
+  → `ebaytkn`（レガシー）が返るだけ。OAuthテストにならない
+  → 正しくはアプリの「eBayを連携する」ボタンから開始する
+- RuName は `vplsttzs`（OAuth用）のみ使用。`kdbpfux`（旧・Auth'n'Auth専用）は触らない
+
+#### サインイン周りでハマったこと
+- [パスワードリセット] Site URLがlocalhostのままだとリセットメールがlocalhostに飛ぶ
+  → cloudflaredURLに更新してから「Send magic link」を使う
+- [localhost vs cloudflared] localhostで開くとSupabaseセッションがない（別ドメイン扱い）
+  → 必ずcloudflaredのURLでアプリを開くこと
+- [magic link] パスワード不要で最速サインイン
+  → Supabase Dashboard → Authentication → Users → Send magic link
+
+#### OAuthフロー診断コマンド（コンソールで実行）
+```javascript
+// サインイン状態確認
+console.log('user:', BA.auth.getUser(), 'tier:', BA.auth.getTier())
+```
+→ `user: null` = 未サインイン / `user: {email:...}` = サインイン済み
+
+#### 今日判明・解決したインフラ不足
+- `ebay-token` Edge Function が未デプロイだった（404の原因）
+  → `npx supabase functions deploy ebay-token --project-ref pvleyieegzqkwpqbpiax` で解決
+- `ebay_tokens` テーブルが存在しなかった
+  → SQL Editor でCREATE TABLE + RLS 4ポリシーを適用して解決
+
+#### 現在地（2026/06/01終了時点）
+- OAuthの往復（eBay→アプリへのリダイレクト）：成功 ✅
+- Edge Function 500エラー：未解決 ❌
+- 次のアクション：Supabase → Edge Functions → ebay-token → Logs でエラー内容を確認
+
 ### 2026-05-25（続）
 - [settings.js] 新規作成。3セクション構成：
   - セクション1：手数料・閾値設定（5項目・`ba_settings` にJSON保存・`ba:settings-changed` dispatch）

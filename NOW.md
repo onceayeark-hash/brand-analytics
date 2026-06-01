@@ -1,43 +1,62 @@
 ﻿# BRAND ANALYTICS｜現在地ノート
-最終更新：2026/05/31
+最終更新：2026/06/01
 
 ---
 
 ## 今やっていること
-② eBay OAuthテスト → 🔄 進行中
-　→ serveo.net（固定URL）で再開予定
-　→ 次回開始コマンド：
-　　 ssh -R brand-analytics:80:localhost:5500 serveo.net
-　→ 固定URL：https://brand-analytics.serveo.net
+③ STAGE2着手（ベストオファーシミュレーター・返品コスト計算）
 
-## 次回セッション開始前に必ず実施（順番通りに）
+---
 
-□ ① Live Server起動
-　cd "C:\Users\admin\OneDrive\Desktop\物販事業　一式\■会社関連\AI一式\claudcord一式\brand-analytics"
-　npx live-server --port=5500
+## 次回セッション開始手順（順番通りに・必ず全部やる）
 
-□ ② serveo.net起動（固定URL）
-　ssh -R brand-analytics:80:localhost:5500 serveo.net
-　→ 固定URL：https://brand-analytics.serveo.net
+### 【手順1】ウィンドウ①：Live Server起動（PowerShell）
+Windowsキー → 「PowerShell」と入力 → Enter
+```
+cd "C:\Users\admin\OneDrive\Desktop\物販事業　一式\■会社関連\AI一式\claudcord一式\brand-analytics"
+```
+Enterを押してから：
+```
+npx live-server --port=5500
+```
+→「Serving "...brand-analytics"」と出ればOK
 
-□ ③ eBay Developer Portal設定（初回のみ）
-　RuName：StayGold_-StayGold-BRANDA-vplsttzs
-　Auth accepted URL：https://brand-analytics.serveo.net/
-　Auth declined URL：https://brand-analytics.serveo.net/
+### 【手順2】ウィンドウ②：cloudflared起動（新しいCMDを開く）
+Windowsキー → 「cmd」 → Enter（新しいウィンドウ）
+```
+npx cloudflared tunnel --url http://localhost:5500
+```
+→ `https://○○○○-○○○○.trycloudflare.com` が表示される
+→ **このURLをメモ帳にコピーする（次の手順で使う）**
 
-□ ④ Supabase Edge Function確認
-　supabase functions list
-　→ ebay-tokenが一覧に出ればOK
-　→ 出なければ：supabase functions deploy ebay-token
+### 【手順3】eBay Developer Portalを更新（毎回必要）
+https://developer.ebay.com/my/keys を開く
+→ Production の「Edit」→ RuName `vplsttzs` をクリック
+→ 以下2か所を今日のcloudflaredURLに書き換え：
+　- Auth accepted URL → 今日のURL
+　- Auth declined URL → 今日のURL
+→「Save」をクリック
 
-□ ⑤ Supabase Edge Function Secrets確認
-　Supabase Dashboard → Edge Functions → Secrets
-　EBAY_CLIENT_ID と EBAY_CERT_ID が登録済みか確認
+### 【手順4】SupabaseのURL設定を更新（毎回必要）
+https://supabase.com/dashboard → Project Settings → Authentication → URL Configuration
+→ Site URL → 今日のcloudflaredURL
+→ Redirect URLs →「Add URL」で 今日のcloudflaredURL/** を追加
+→「Save」をクリック
 
-□ ⑥ ブラウザで開く
-　https://brand-analytics.serveo.net
-　→ サインイン → 「eBayを連携する」クリック
-　→ URLに ?code=XXX&state=YYY が返れば成功！
+### 【手順5】サインイン
+Supabase Dashboard → Authentication → Users
+→ `kakuta@staygold-reuse.co.jp` の「Send magic link」をクリック
+→ メールのリンクをクリック
+→ 今日のcloudflaredURLでアプリが開く
+
+### 【手順6】★最初にやること：Edgeログで500の原因を特定★
+Supabase Dashboard → Edge Functions → `ebay-token` →「Logs」タブ
+→ 最新のエラーログを全部コピーしてClaudeに貼る
+→ 原因が分かれば即修正→テスト完了の見込み
+
+---
+
+## 過去のループ・失敗パターン（再発防止）
 
 ## 過去のループ・失敗パターン（再発防止）
 - localtunnelはURLが毎回変わるため使用禁止→serveo.net固定URL一択
@@ -84,6 +103,12 @@
 ✅ Claude API統合基盤実装
 ✅ VS Codeインストール・brand-analytics接続済み
 ✅ cloudflared導入済み（npx cloudflared tunnel --url http://localhost:5500）
+✅ **eBay OAuth連携（2026/06/01完了）**
+　- 原因：EBAY_CERT_ID に非ASCII文字（Latin1範囲外）が混入 → btoa()がクラッシュ
+　- 対策①：btoa()をTextEncoder経由のUTF-8セーフ実装に置き換え（index.ts）
+　- 対策②：Supabase SecretsのEBAY_CERT_IDをクリーンに再登録
+　- 副産物：ebay-token全体をtry-catchで包みCORSヘッダ付きエラー返却に改善
+　- 副産物：auth.jsの.single()→.maybeSingle()修正（ebay_tokens 0件時の406解消）
 
 ## 未解決・保留中
 - eBay OAuthテスト未完了（serveo.netで次回再開）

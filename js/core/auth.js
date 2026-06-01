@@ -149,7 +149,7 @@
       .from('ebay_tokens')
       .select('token_data')
       .eq('user_id', _user.id)
-      .single();
+      .maybeSingle();
     if (error || !data) return null;
     try {
       const decrypted = await BA.crypto.decrypt(data.token_data);
