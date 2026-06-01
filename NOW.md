@@ -1,5 +1,5 @@
 ﻿# BRAND ANALYTICS｜現在地ノート
-最終更新：2026/06/01
+最終更新：2026/06/01（eBay OAuth完了・X-10/UX-09/X-11追加）
 
 ---
 
@@ -49,21 +49,20 @@ Supabase Dashboard → Authentication → Users
 → メールのリンクをクリック
 → 今日のcloudflaredURLでアプリが開く
 
-### 【手順6】★最初にやること：Edgeログで500の原因を特定★
-Supabase Dashboard → Edge Functions → `ebay-token` →「Logs」タブ
-→ 最新のエラーログを全部コピーしてClaudeに貼る
-→ 原因が分かれば即修正→テスト完了の見込み
+### 【手順6】アプリを使い始める
+サインイン後、eBay連携済みであればCONNECTED状態で起動する。
 
 ---
 
 ## 過去のループ・失敗パターン（再発防止）
-
-## 過去のループ・失敗パターン（再発防止）
-- localtunnelはURLが毎回変わるため使用禁止→serveo.net固定URL一択
+- cloudflaredはURLが毎回変わる→起動のたびeBay Portal + Supabase URL設定を更新
 - eBay PortalのラジオボタンはUI表示のみ・OAuth動作に無関係（変更不要）
 - Portalの「テストサインイン」はレガシーフロー・OAuthテストにならない（使用禁止）
+- localtunnel / serveo.netは使用禁止→cloudflared一択
 - callbackURLに/auth/ebay/callbackは不要→ルートURL（/）で動く
 - Supabase設定なしではOAuthリダイレクトが拒否される
+- eBay Portalで編集すべきRuNameは**vplsttzs**のみ。kdbpfux（Auth'n'Auth）は触らない
+- Supabase SecretsへのCert IDコピペ時は全角スペース・非ASCII文字の混入に注意（btoa crashの原因）
 
 ## 確定したeBay設定値
 - 使用RuName：StayGold_-StayGold-BRANDA-vplsttzs（OAuth用・新規作成）
@@ -73,18 +72,20 @@ Supabase Dashboard → Edge Functions → `ebay-token` →「Logs」タブ
 
 ## 次にやること（優先順）
 
-① eBay OAuthテスト完了（最優先）
-　→ serveo.net起動
-　→ サインイン → 「eBayを連携する」
-　→ URLに ?code=XXX&state=YYY が返れば成功
+① **X-10：為替レートEdge Function化**（最優先・次アクション）
+　→ open.er-api.com がブラウザ直叩きでCORS失敗→固定値150フォールバック中
+　→ exchange-rate Edge Function を新規作成してサーバーサイド取得に変更
+　→ 取得値はキャッシュして無駄な再取得を抑制
 
-② STAGE2：ベストオファーシミュレーター
-③ STAGE2：返品コスト計算
-④ 送料・関税テーブル設定
-⑤ プライバシーポリシー・利用規約の作成
-⑥ Compatible Application Growth Check申請
-⑦ 17TRACK API連携（STAGE2後半）
-⑧ SpeedPAK送料請求CSVインポート（STAGE2後半）
+② STAGE2：ベストオファーシミュレーター（profit.js拡張）
+③ STAGE2：返品コスト計算（profit.js拡張）
+④ 送料・関税テーブル設定（設計確定済み・実装待ち）
+⑤ UX-09：eBay連携などの進行中フィードバック強化（スピナー・段階表示）
+⑥ プライバシーポリシー・利用規約の作成
+⑦ Compatible Application Growth Check申請
+⑧ X-11：全体パフォーマンス最適化（最終STAGE・UX-09とセット）
+⑨ ~~17TRACK API連携~~ 廃止
+⑩ ~~SpeedPAK送料請求CSVインポート~~ → X-09（送料テーブル設定）に置き換え
 
 ## 完了済み（STAGE1）
 ✅ 認証バグ2件修正
@@ -111,7 +112,7 @@ Supabase Dashboard → Edge Functions → `ebay-token` →「Logs」タブ
 　- 副産物：auth.jsの.single()→.maybeSingle()修正（ebay_tokens 0件時の406解消）
 
 ## 未解決・保留中
-- eBay OAuthテスト未完了（serveo.netで次回再開）
+- X-10：為替レートEdge Function化（次アクション）
 - 自動出品STAGE2着手時：他社ツール参考画像確認後に設計
 - ZIK Analytics API統合：STAGE4検討
 - FedEx/DHL API申請：STAGE2後半着手時
@@ -145,12 +146,11 @@ Supabase Dashboard → Edge Functions → `ebay-token` →「Logs」タブ
 - #8（claude.js使用制限）：SaaS化時に再設計
 - #7（claude.js JWT retry）：今回対象外
 
-### 次にやること（更新）
-① eBay OAuthテスト完了（最優先・変わらず）
+### 次にやること（更新：2026/06/01）
+① X-10：為替レートEdge Function化（最優先）
 ② STAGE2：ベストオファーシミュレーター
 ③ STAGE2：返品コスト計算
 ④ 送料・関税テーブル設定（設計確定済み・実装待ち）
-⑤ プライバシーポリシー・利用規約の作成
-⑥ Compatible Application Growth Check申請
-⑦ ~~17TRACK API連携~~ 廃止
-⑧ ~~SpeedPAK送料請求CSVインポート~~ → X-09に置き換え
+⑤ UX-09：進行中フィードバック強化
+⑥ プライバシーポリシー・利用規約の作成
+⑦ Compatible Application Growth Check申請
