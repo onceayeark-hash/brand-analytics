@@ -20,7 +20,7 @@
 | A-02 | 🔴 | パスワードリセット完了フォーム未実装（メールリンク後に入力画面なし） | ✅ 修正済み |
 | A-03 | ⚪ | eBay Client ID・RuNameがソースコードにフォールバック値としてハードコード | 未対応 |
 | A-04 | 🟠 | Googleサインインが未実装。Google Cloud Console連携・Supabase OAuth設定が必要 | 未対応 | 
-| A-05 | 🟠 | メール確認メールが届かない。Supabaseのメール送信設定（SMTPサーバー）が未設定。本番公開前に必須 | 未対応 |
+| A-05 | 🟠 | 認証メールの改善。現状はSupabase標準（英語・noreply@mail.supabase.io）。①文面の日本語化・件名・送信者表示名の変更はDashboard → Authentication → Email Templatesで**今すぐ無料**で可能。②送信元を自社ドメイン（staygold-reuse.co.jp）に変えるにはSMTP設定が必要 → **Resend**（無料枠100通/日・月3,000通）が最も簡単。SaaS公開前に①②両方を実施すること | ①未対応（無料・いつでも可）／②未対応（本番公開前に必須） |
 | A-06 | 🟠 | localtunnelのURLが起動のたびに変わる。毎回eBay Developer Portalの3つのURLを更新する必要がある。ngrok有料プランへの切り替えを検討 | 未対応 |
 | A-07 | 🟠 | Live Serverが408エラーで停止する問題。原因未特定。次回起動時に再確認が必要 | 未対応 |
 ---
