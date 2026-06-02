@@ -300,13 +300,19 @@
       if (cached && !cached.isStale) return cached.value;
 
       try {
-        // 外部為替 API（無料・CORS対応）
+        const cfg = window.BA_CONFIG || {};
+        const supabaseUrl = cfg.SUPABASE_URL || '';
+        const edgeBase = cfg.SUPABASE_EDGE_FUNCTION_URL
+                      || (supabaseUrl ? `${supabaseUrl}/functions/v1` : '');
+        if (!edgeBase) throw new Error('Supabase URL 未設定');
+
+        // Edge Function 経由でサーバーサイド取得（CORS 回避）
         const data = await this.request(
-          'https://open.er-api.com/v6/latest/USD',
+          `${edgeBase}/exchange-rate`,
           { skipRetry: false }
         );
-        const rate = data?.rates?.JPY;
-        if (!rate) throw new Error('JPY レートが取得できません');
+        const rate = data?.rate;
+        if (!rate || typeof rate !== 'number') throw new Error('JPY レートが取得できません');
         BA.cache?.set(cacheKey, rate);
         return rate;
       } catch (err) {
