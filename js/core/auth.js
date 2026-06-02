@@ -18,12 +18,14 @@
   function _getConfig() {
     const cfg = window.BA_CONFIG || {};
     const supabaseUrl = cfg.SUPABASE_URL || '';
+    if (!cfg.EBAY_CLIENT_ID || !cfg.EBAY_REDIRECT_URI) {
+      console.error('[auth] BA_CONFIG に EBAY_CLIENT_ID / EBAY_REDIRECT_URI が未設定です — config.local.js を確認してください');
+    }
     return {
       supabaseUrl,
       supabaseKey:     cfg.SUPABASE_ANON_KEY || '',
-      ebayClientId:    cfg.EBAY_CLIENT_ID || 'StayGold-BRANDANA-PRD-7183f64d5-3fad581c',
-      // #1 修正: フォールバックRuNameを有効なvplsttzsに変更（kdbpfuxは廃棄済み）
-      ebayRedirectUri: cfg.EBAY_REDIRECT_URI || 'StayGold_-StayGold-BRANDA-vplsttzs',
+      ebayClientId:    cfg.EBAY_CLIENT_ID || '',
+      ebayRedirectUri: cfg.EBAY_REDIRECT_URI || '',
       ebayScope: [
         'https://api.ebay.com/oauth/api_scope',
         'https://api.ebay.com/oauth/api_scope/sell.analytics.readonly',
@@ -36,10 +38,11 @@
     };
   }
 
-  let _supabase   = null;
-  let _user       = null;
-  let _tier       = 'free';
-  let _ebayTokens = null;
+  let _supabase       = null;
+  let _user           = null;
+  let _tier           = 'free';
+  let _ebayTokens     = null;
+  let _refreshPromise = null;
 
   function _initSupabase() {
     const cfg = _getConfig();
@@ -160,13 +163,7 @@
     }
   }
 
-  async function _ensureValidToken() {
-    if (!_ebayTokens) return null;
-    const bufferMs = 5 * 60 * 1000;
-    if (_ebayTokens.expiresAt - Date.now() > bufferMs) {
-      return _ebayTokens.accessToken;
-    }
-    console.debug('[auth] アクセストークン期限切れ — Edge Function でリフレッシュ中...');
+  async function _doRefresh() {
     try {
       if (!_supabase || !_user) throw new Error('Supabase 未接続');
       const { data: { session } } = await _supabase.auth.getSession();
@@ -174,39 +171,61 @@
       if (!jwt) throw new Error('Supabase セッション切れ');
       const cfg = _getConfig();
       if (!cfg.edgeFunctionBase) throw new Error('edgeFunctionBase が未設定');
-      const response = await fetch(`${cfg.edgeFunctionBase}/ebay-token`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${jwt}`,
-        },
-        body: JSON.stringify({
-          type:         'refresh_token',
-          refreshToken: _ebayTokens.refreshToken,
-        }),
-      });
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 10000);
+      let response;
+      try {
+        response = await fetch(`${cfg.edgeFunctionBase}/ebay-token`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${jwt}`,
+          },
+          body: JSON.stringify({
+            type:         'refresh_token',
+            refreshToken: _ebayTokens.refreshToken,
+          }),
+          signal: controller.signal,
+        });
+      } finally {
+        clearTimeout(timer);
+      }
       if (!response.ok) {
         const err = await response.json().catch(() => ({}));
         throw new Error(`リフレッシュ失敗 (${response.status}): ${err.error || ''}`);
       }
       const data = await response.json();
+      const expiresIn = Number(data.expires_in);
+      if (!expiresIn || expiresIn <= 0) throw new Error('不正な expires_in 値');
       const newTokens = {
         accessToken:  data.access_token,
         refreshToken: data.refresh_token || _ebayTokens.refreshToken,
-        expiresAt:    Date.now() + data.expires_in * 1000,
+        expiresAt:    Date.now() + expiresIn * 1000,
       };
       await _saveEbayTokens(newTokens);
       return newTokens.accessToken;
     } catch (err) {
       console.error('[auth] トークンリフレッシュ失敗:', err);
       _fireAlert('OAUTH_EXPIRED');
-      // #2 #3 修正: リフレッシュ失敗時はUIとtierをexpired状態に固定し、
-      // 後続のuser_settings読み込みで'connected'に上書きされないようreturnで抜ける
       _updateEbayStatusUI('expired');
       _setTier('free');
       _ebayTokens = null;
       return null;
+    } finally {
+      _refreshPromise = null;
     }
+  }
+
+  async function _ensureValidToken() {
+    if (!_ebayTokens) return null;
+    const bufferMs = 5 * 60 * 1000;
+    if (_ebayTokens.expiresAt - Date.now() > bufferMs) {
+      return _ebayTokens.accessToken;
+    }
+    // 並列呼び出し時は同一Promiseを使い回す（refresh_token の二重消費を防ぐ）
+    if (_refreshPromise) return _refreshPromise;
+    _refreshPromise = _doRefresh();
+    return _refreshPromise;
   }
 
   const auth = {
@@ -287,6 +306,10 @@
       const tokens = await _loadEbayTokens();
       if (tokens) {
         _ebayTokens = tokens;
+        if (Date.now() > tokens.expiresAt) {
+          const validToken = await _ensureValidToken();
+          if (!validToken) return;
+        }
         const { data: settings } = await _supabase
           .from('user_settings')
           .select('access_tier')
@@ -348,27 +371,38 @@
       if (!cfg.edgeFunctionBase) {
         throw new Error('[auth] edgeFunctionBase 未設定 — config.local.js を確認してください');
       }
-      const response = await fetch(`${cfg.edgeFunctionBase}/ebay-token`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${jwt}`,
-        },
-        body: JSON.stringify({
-          type:        'authorization_code',
-          code,
-          redirectUri: cfg.ebayRedirectUri,
-        }),
-      });
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 10000);
+      let response;
+      try {
+        response = await fetch(`${cfg.edgeFunctionBase}/ebay-token`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${jwt}`,
+          },
+          body: JSON.stringify({
+            type:        'authorization_code',
+            code,
+            redirectUri: cfg.ebayRedirectUri,
+          }),
+          signal: controller.signal,
+        });
+      } finally {
+        clearTimeout(timer);
+      }
       if (!response.ok) {
         const err = await response.json().catch(() => ({}));
         throw new Error(`[auth] トークン交換失敗 (${response.status}): ${err.error || ''}`);
       }
       const data = await response.json();
+      if (!data.refresh_token) throw new Error('[auth] refresh_token がレスポンスに含まれていません');
+      const expiresIn = Number(data.expires_in);
+      if (!expiresIn || expiresIn <= 0) throw new Error('[auth] 不正な expires_in 値');
       const tokens = {
         accessToken:  data.access_token,
         refreshToken: data.refresh_token,
-        expiresAt:    Date.now() + data.expires_in * 1000,
+        expiresAt:    Date.now() + expiresIn * 1000,
       };
       await _saveEbayTokens(tokens);
       _setTier('connected');
@@ -406,7 +440,6 @@
         return;
       }
       _ebayTokens = null;
-      BA.crypto?.destroy?.();
       _setTier('free');
       _updateEbayStatusUI('disconnected');
       BA.cache?.clear?.();
@@ -421,9 +454,8 @@
     isEbayConnected() { return _ebayTokens !== null; },
 
     async signOut() {
-      // #5 修正: disconnectEbay()内でBA.crypto.destroy()が呼ばれるため、
-      // signOut()側の重複呼び出しを除去
-      await this.disconnectEbay();
+      await this.disconnectEbay().catch(() => {});
+      _ebayTokens = null; // DB削除失敗時もメモリは確実にクリア
       if (_supabase) await _supabase.auth.signOut();
       BA.cache?.clear?.();
       _user = null;
@@ -580,7 +612,8 @@
     if (msg.includes('User already registered'))   return 'このメールアドレスはすでに登録されています';
     if (msg.includes('Password should be'))        return 'パスワードは8文字以上で入力してください';
     if (msg.includes('rate limit'))                return 'しばらく時間をおいてから再度お試しください';
-    return msg;
+    console.error('[auth] 未分類エラー:', msg);
+    return 'エラーが発生しました。しばらく時間をおいてから再度お試しください。';
   }
 
 })();

@@ -68,7 +68,6 @@
           false,        // キーはエクスポート不可（メモリ内のみ）
           ['encrypt', 'decrypt']
         );
-        console.debug('[crypto] セッションキー生成完了');
       } catch (err) {
         console.error('[crypto] init 失敗:', err);
         throw err;
@@ -108,7 +107,10 @@
       if (!_sessionKey) throw new Error('[crypto] セッションキー未初期化');
       if (typeof encryptedStr !== 'string') throw new TypeError('[crypto] decrypt: string が必要です');
 
-      const [ivB64, ctB64] = encryptedStr.split(':');
+      const colonIdx = encryptedStr.indexOf(':');
+      if (colonIdx === -1) throw new Error('[crypto] 不正な暗号化フォーマット');
+      const ivB64 = encryptedStr.slice(0, colonIdx);
+      const ctB64 = encryptedStr.slice(colonIdx + 1);
       if (!ivB64 || !ctB64) throw new Error('[crypto] 不正な暗号化フォーマット');
 
       const iv = new Uint8Array(_base64ToBuf(ivB64));
@@ -136,7 +138,6 @@
      */
     destroy() {
       _sessionKey = null;
-      console.debug('[crypto] セッションキー破棄');
     },
   };
 

@@ -82,6 +82,13 @@ Supabase Dashboard → Authentication → Users
 ⑨ ~~17TRACK API連携~~ 廃止
 ⑩ ~~SpeedPAK送料請求CSVインポート~~ → X-09（送料テーブル設定）に置き換え
 
+## 【STAGE3・未着手】仕入れリサーチパイプライン（合法ハイブリッド）
+設計・技術レビュー済み（2026-06-02） → CLAUDE.md STAGE3設計メモ参照
+
+- 実装前提条件：profit.js の BA.profit.calculate(params) 純粋関数化（RES-01）
+- 解決 ISSUES：S-01（競合データソース）・S-04（GO候補保存）・X-04・X-05・X-08
+- 着手タイミング：STAGE2完了・Compatible Application Growth Check通過後
+
 ## 完了済み（STAGE1）
 ✅ 認証バグ2件修正
 ✅ ROI表示

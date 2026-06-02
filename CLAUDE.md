@@ -7,7 +7,28 @@
 1. `tasks/lessons.md` を読み、過去の指摘事項を確認する
 2. **`context/design-philosophy.md` を読み、UI設計哲学書を把握する（新規実装・修正前に必須）**
 3. 以下の詳細仕様を参照する
-4. `context/skills.md` の実装タイミング表を確認し、以下のSkillsが有効であることを把握する：
+4. `context/skills.md` の実装タイミング表と **⚡自動発動ルール** を確認する
+
+---
+
+## ⚡ 自動実行ルール（ユーザーが指示しなくても Claude が必ず実行する）
+
+> 以下は「提案」ではない。発動条件を満たしたら Claude が自律的に実行する強制ルール。
+> ユーザーが「レビューして」「確認して」「監査して」と言わなくても実行すること。
+
+| トリガー | 自動実行するスキル |
+|---|---|
+| 任意の機能実装が完了したとき | `code-review:code-review` |
+| `auth.js` / `crypto.js` / トークン・OAuth 処理を変更したとき | `everything-claude-code:security-review` |
+| HTML / CSS / JS の UI 部分を変更・新規実装したとき | `hallmark audit <変更ファイル名>` |
+| 「実装完了」「完了しました」と言う直前 | `superpowers:verification-before-completion` |
+
+**詳細な実行順序・結果処理ルールは `context/skills.md` の ⚡ 自動発動ルールセクションに定義されている。**
+
+---
+
+## スキル管理（詳細）
+以下のSkillsが有効であることを把握する：
    - グラフ・UI実装時 → `frontend-design`（必須・`dashboard-builder`と併用）
    - 利益計算・手数料ロジック実装時 → `finance-billing-ops`（実装前に必ず呼ぶ）
    - DBスキーマ設計時 → `postgres-patterns`
@@ -635,6 +656,83 @@ Terapeakを持っていないユーザー向けの代替手段として位置づ
 ZIK APIはあくまで補完的な選択肢として提供する。
 ユーザーがAPIキーを設定することでTerapeak同等の成約データを自動取得できる設計にする。
 設定ページ（settings）に「ZIK Analytics連携」セクションを追加予定。
+
+---
+
+### 【STAGE3】仕入れリサーチパイプライン（合法ハイブリッド）｜設計メモ
+*記録日：2026-06-02 / 技術・規約レビュー済み*
+
+#### 目的
+「抽出→利益計算→GO/NO-GO→保存」の一気通貫を合法範囲（C-06/C-07準拠）で実現。
+profit.js の統一基準で赤字掴みを構造的に防ぎ、リサーチ時間を短縮する。
+
+#### 入力（合法ルートのみ）
+
+| 入力方法 | 内容 | 規約根拠 |
+|---|---|---|
+| Browse API | 競合出品データ（出品数・価格・カテゴリ等） | eBay 公式 API・合法 |
+| ユーザー貼付 | ユーザーが手動でページを開き、テキストまたはスクショを貼る → Claude API で構造化 | C-06 準拠：アクセスはユーザー、ツールは読むだけ |
+
+**⚠️ URL 自動 fetch 禁止：** 「URL を貼ると自動取得」は C-06 違反。UI で「URL ではなくページ内容のテキストを貼ってください」と明示ガードを設けること。
+
+#### 処理フロー
+```
+① 入力（Browse API / ユーザー貼付）
+② Claude API で構造化（商品名・状態・価格・カテゴリ）
+③ profit.js の現在設定に自動投入（3層UI・X-10 為替）
+   ※ BA.profit.calculate(params) 純粋関数化が前提条件
+④ GO/NO-GO 判定（設定の粗利率・PPD 閾値を参照 = S-01 解決）
+⑤ VeRO/ブランド規約/関税リスクフラグを添付（X-05・判断は人間）
+⑥ GO 候補を Supabase research_items テーブルに保存（S-04 解決）
+```
+
+#### やらないこと（規約ガード）
+- eBay / Amazon 等の自動スクレイピング（C-06）
+- eBay データの AI 学習利用（C-07①）
+- 競合価格連動の自動 repricing（C-07②）
+- eBay データと非 eBay データの視覚的未分離（C-07③ → source_label 必須）
+- 仕入れ判断の自動化（C-01 → 候補と理由を提示し判断はセラー）
+
+#### 実装の前提条件（STAGE3 着手前に完了していること）
+1. **profit.js リファクタ**: `BA.profit.calculate(params)` 純粋関数化
+2. **source_label の UI 表示**: 「eBay Browse API」「ユーザー入力」を視覚的に分離（C-07③）
+3. **URL 自動 fetch ガード**: UI で明示的に防ぐ
+
+#### DB スキーマ（STAGE3 着手時に schema_stage3.sql で作成）
+```sql
+CREATE TABLE research_items (
+  id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id         uuid REFERENCES auth.users NOT NULL,
+  source_type     text NOT NULL CHECK (source_type IN ('browse_api','user_paste')),
+  source_label    text,
+  source_url      text,
+  product_name    text NOT NULL,
+  condition       text,
+  ebay_category   text,
+  list_price_usd  numeric(10,2),
+  cost_price_jpy  integer,
+  profit_usd      numeric(10,2),
+  margin_pct      numeric(5,2),
+  roi_pct         numeric(5,2),
+  go_nogo         text CHECK (go_nogo IN ('go','nogo','review')),
+  go_nogo_reasons jsonb,
+  vero_risk       boolean DEFAULT false,
+  vero_note       text,
+  user_notes      text,
+  created_at      timestamptz DEFAULT now()
+);
+ALTER TABLE research_items ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "users_own_research" ON research_items USING (user_id = auth.uid());
+```
+
+#### 技術レビュー所見（2026-06-02）
+- Browse API で成約データは取れない。設計の手動補完方針は正しい
+- ユーザー貼付→Claude 構造化: テキストで 85-95%・スクショで 75-90%
+- connected tier の月 50 回制限がリサーチ用途でボトルネックになる可能性あり → SaaS 化時に tier 設計を再検討
+- 「消えた出品 = 成約」追跡の誤差（取り下げ・期間切れと区別不可）→ UI に誤差注釈が必要
+- Keepa API（$20/月）は将来の合法仕入れ元価格補完として有望
+
+#### 関連 ISSUES: S-01 / S-04 / X-04 / X-05 / X-08
 
 ---
 

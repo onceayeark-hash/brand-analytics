@@ -31,6 +31,44 @@
 
 ---
 
+## ⚡ 自動発動ルール（ユーザー指示不要・Claude が必ず自分で実行する）
+
+> **これは提案ではなく強制ルールである。**
+> ユーザーが「レビューして」「確認して」と言わなくても、以下のトリガーが発生したら Claude は自分でスキルを呼ぶこと。
+> 呼ばずに「完了」を宣言することは禁止。
+
+| # | トリガー（このとき） | 必ず呼ぶスキル | 目的 |
+|---|---|---|---|
+| A | 任意の機能実装が完了したとき | `code-review:code-review` | 正確性・品質・バグを独立検証 |
+| B | `auth.js` / `crypto.js` / トークン・OAuth処理を変更したとき | `everything-claude-code:security-review` | セキュリティ脆弱性を独立検証 |
+| C | HTML / CSS / JS の UI 部分を変更・新規実装したとき | `hallmark audit <変更ファイル>` | 66ゲートでUI品質・アンチパターンを採点 |
+| D | 「実装完了」「完了しました」と言う直前 | `superpowers:verification-before-completion` | 動作確認を完了宣言前に必ず実行 |
+| E | eBay API 仕様の不明点が出て調査が必要なとき | `Explore`（バックグラウンド） | 調査中もコーディングを止めない |
+
+### 実行順序（UIを含む機能実装の場合）
+
+```
+コード完成
+  → A: code-review
+  → B: security-review（auth/crypto変更時のみ）
+  → C: hallmark audit（UI変更時のみ）
+  → D: verification-before-completion
+  → 完了宣言
+```
+
+### hallmark audit の結果処理ルール
+
+- `Critical` / `High` 判定あり → **修正してから完了宣言**（ユーザーに確認不要・Claude が直接修正）
+- `Medium` / `Low` のみ → ユーザーに一覧を提示して判断を委ねる
+- 修正後は **hallmark audit を再実行してクリアを確認**してから完了宣言
+
+### code-review の結果処理ルール
+
+- バグ・セキュリティ・正確性の指摘 → **修正してから完了宣言**
+- スタイル・提案のみ → ユーザーに提示して判断を委ねる
+
+---
+
 ### 【C】UI・フロントエンド（画面実装時に自動発動）
 
 | スキル | 何をするか | 発動条件 |
