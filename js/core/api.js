@@ -296,6 +296,8 @@
      */
     async getExchangeRate() {
       const cacheKey = 'exchange_rate_usdjpy';
+
+      // ① 鮮度内キャッシュがあれば即返す
       const cached = BA.cache?.get(cacheKey);
       if (cached && !cached.isStale) return cached.value;
 
@@ -316,8 +318,14 @@
         BA.cache?.set(cacheKey, rate);
         return rate;
       } catch (err) {
-        console.warn('[api] 為替レート取得失敗 → 固定値 150 を使用:', err.message);
-        return 150; // フォールバック固定値
+        console.warn('[api] 為替レート取得失敗:', err.message);
+
+        // ② 古いキャッシュがあればそれを使う（cache.js が stale-warning バナーを表示済み）
+        if (cached?.value) return cached.value;
+
+        // ③ キャッシュも完全になければ固定値
+        console.warn('[api] キャッシュなし → 固定値 150 を使用');
+        return 150;
       }
     },
   };

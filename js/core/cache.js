@@ -22,7 +22,7 @@
     alerts:     120,   //  2分: アラート
     protection: 300,   //  5分: アカウント保護
     dashboard:  300,   //  5分: ダッシュボード概況
-    exchange:   3600,  //  1時間: 為替レート
+    exchange:   21600, //  6時間: 為替レート（open.er-apiは日次更新）
     default:    300,   //  5分: その他
   };
 
