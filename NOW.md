@@ -72,12 +72,7 @@ Supabase Dashboard → Authentication → Users
 
 ## 次にやること（優先順）
 
-① **X-10：為替レートEdge Function化**（最優先・次アクション）
-　→ open.er-api.com がブラウザ直叩きでCORS失敗→固定値150フォールバック中
-　→ exchange-rate Edge Function を新規作成してサーバーサイド取得に変更
-　→ 取得値はキャッシュして無駄な再取得を抑制
-
-② STAGE2：ベストオファーシミュレーター（profit.js拡張）
+① STAGE2：ベストオファーシミュレーター（profit.js拡張）
 ③ STAGE2：返品コスト計算（profit.js拡張）
 ④ 送料・関税テーブル設定（設計確定済み・実装待ち）
 ⑤ UX-09：eBay連携などの進行中フィードバック強化（スピナー・段階表示）
@@ -105,6 +100,9 @@ Supabase Dashboard → Authentication → Users
 ✅ VS Codeインストール・brand-analytics接続済み
 ✅ cloudflared導入済み（npx cloudflared tunnel --url http://localhost:5500）
 ✅ **eBay OAuth連携（2026/06/01完了）**
+✅ **X-10：為替レートEdge Function化（2026/06/02完了）**
+　- exchange-rate Edge Function新規作成・デプロイ済み
+　- open.er-api.comのCORSエラー解消・リアルレート取得に変更
 　- 原因：EBAY_CERT_ID に非ASCII文字（Latin1範囲外）が混入 → btoa()がクラッシュ
 　- 対策①：btoa()をTextEncoder経由のUTF-8セーフ実装に置き換え（index.ts）
 　- 対策②：Supabase SecretsのEBAY_CERT_IDをクリーンに再登録
