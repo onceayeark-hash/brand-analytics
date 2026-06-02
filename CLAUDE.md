@@ -848,7 +848,42 @@ CREATE POLICY "users_own_research"  ON research_items     USING (user_id = auth.
 - ユーザー貼付→Claude 構造化: テキストで 85-95%・スクショで 75-90%
 - connected tier の月 50 回制限がリサーチ用途でボトルネックになる可能性 → SaaS 化時に再検討
 
-#### 関連 ISSUES: S-01 / S-04 / X-04 / X-05 / X-08
+#### sold データ取得 A案 検証所見（2026-06-02・確定）
+
+**A案の概要：**
+ユーザーが eBay の sold 検索ページをブラウザで開き HTML 保存 → ツールに渡す → Claude が構造化
+
+**検証結果：A案は現実的。暫定採用。Growth Check 後に Marketplace Insights API へ移行。**
+
+##### 抽出精度
+- **Complete HTML 保存**（ウェブページ、完全）を使用。「HTML のみ」保存は JS レンダリング欠落で不可
+- 商品名 90-95%・価格 90-95%・画像 URL 85-90%・コンディション 80-90%
+- 1ページ最大 240 件（URL に `_ipg=240` 追加）
+- コスト：1ページあたり $0.02 未満（問題なし）
+
+##### データ品質・必須実装
+- **`LH_BIN=1` フィルター推奨**（固定価格のみ）→ 未払いオークション混入を排除
+- 90日制限あり → UI に「過去90日のデータ」と明示
+- 外れ値除去：IQR 法（下限 Q1-1.5×IQR / 上限 Q3+1.5×IQR）をデフォルト適用
+- 「○個売れました」は累計数のため「販売実績（累計・参考）」として表示
+- 回転日数の単品計算は不可 → 「週次販売率（推定）」で代替表示
+
+##### 規約適合
+- C-06：ユーザーが操作主体・ツールは eBay に一切アクセスしない → スクレイピング非該当
+- C-07③：`source: 'ebay_sold_search'` ラベルで視覚的分離
+- UI に「手動取得・自動ツール禁止」の注意喚起を必ず表示（RES-15）
+
+##### 移行パス（スキーマ互換）
+```
+今（STAGE3）
+  ユーザーが HTML 保存 → Claude 抽出 → research_items に保存
+
+Growth Check 通過後
+  Marketplace Insights API（buy.marketplace.insights）が自動取得
+  → 同じ research_items テーブルに保存（移行コストゼロ）
+```
+
+#### 関連 ISSUES: S-01 / S-04 / X-04 / X-05 / X-08 / RES-13 / RES-14 / RES-15
 
 ---
 

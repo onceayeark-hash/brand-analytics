@@ -134,7 +134,7 @@
 
 | # | 内容 | 状態 |
 |---|---|---|
-| OPEN-01 | **ブランドリサーチのデータ取得方法が未確定**。「ブランド名で検索してデータを蓄積する」という信念は確定だが、その手段が決まっていない。Terapeak にCSVエクスポートがないことが判明（2026-06-02）。Browse API 定期スナップショット / Terapeak 手動入力 / 統計的成約率推定 のどれを核心に置くか要検討。STAGE3 設計着手前に必ず確定すること | **継続課題・未確定** |
+| OPEN-01 | **ブランドリサーチの sold データ取得方法**。確定方針：**A案（eBay sold 検索ページをユーザーが HTML 保存 → Claude 抽出）を暫定採用**。Growth Check 通過後に Marketplace Insights API へ移行。スキーマは同一で移行コストゼロ。詳細は CLAUDE.md STAGE3 検証所見セクション参照 | **A案採用・暫定（2026-06-02）** |
 
 ---
 
@@ -155,6 +155,9 @@
 | RES-10 | 🟡 | 並び替え：価格高低・日付新旧・販売額高低 | 未対応・STAGE3 |
 | RES-11 | 🟡 | Browse API は on-demand のみ（自動・定期実行なし）。itemId 重複除外で蓄積 | 未対応・STAGE3 |
 | RES-12 | ⚪ | connected tier 月 50 回制限でリサーチ機能がボトルネックになる可能性 → SaaS 化時に再検討 | 保留・SaaS化時 |
+| RES-13 | 🟡 | A案（sold HTML 保存）の実装。URL に LH_BIN=1 推奨・Complete 保存ガイド・90日制限表示・週次販売率推定・外れ値除去（IQR法）を含む | 未対応・STAGE3 |
+| RES-14 | 🟡 | Growth Check 通過後に Marketplace Insights API（buy.marketplace.insights）へ移行。スキーマ互換のため移行コストゼロ | 未対応・Growth Check後 |
+| RES-15 | 🟡 | UI 注意喚起文の実装：「このデータはユーザーが eBay から手動で取得したものです。自動取得ツールの使用は eBay 利用規約に違反する可能性があります」 | 未対応・A案実装時 |
 
 ---
 
