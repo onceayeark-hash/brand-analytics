@@ -134,7 +134,7 @@
 
 | # | 内容 | 状態 |
 |---|---|---|
-| OPEN-01 | **ブランドリサーチの sold データ取得方法**。確定方針：**A案（eBay sold 検索ページをユーザーが HTML 保存 → Claude 抽出）を暫定採用**。Growth Check 通過後に Marketplace Insights API へ移行。スキーマは同一で移行コストゼロ。詳細は CLAUDE.md STAGE3 検証所見セクション参照 | **A案採用・暫定（2026-06-02）** |
+| OPEN-01 | **ブランドリサーチ・競合リサーチ機能は本体から分離・保留（2026-06-03 確定）**。URL fetch は ToS 違反のため不採用。sold データの合法的自動取得手段なし。Growth Check 通過後に Marketplace Insights API を正攻法で申請。詳細：`docs/RESEARCH_DECISION.md` | **保留・確定（2026-06-03）** |
 
 ---
 
