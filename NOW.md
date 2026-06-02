@@ -1,10 +1,10 @@
 ﻿# BRAND ANALYTICS｜現在地ノート
-最終更新：2026/06/01（eBay OAuth完了・X-10/UX-09/X-11追加）
+最終更新：2026/06/03（リサーチ機能保留確定・STAGE2本体に復帰）
 
 ---
 
 ## 今やっていること
-③ STAGE2着手（ベストオファーシミュレーター・返品コスト計算）
+STAGE2 本体の仕上げに復帰。リサーチ系は保留確定。
 
 ---
 
@@ -70,17 +70,23 @@ Supabase Dashboard → Authentication → Users
 - Client ID（生産）：StayGold-BRANDANA-PRD-7183f64d5-3fad581c
 - config.local.js：EBAY_REDIRECT_URI更新済み（vplsttzs）
 
-## 次にやること（優先順）
+## 次にやること（優先順・2026-06-03 再整理）
 
-① STAGE2：ベストオファーシミュレーター（profit.js拡張）
-③ STAGE2：返品コスト計算（profit.js拡張）
-④ 送料・関税テーブル設定（設計確定済み・実装待ち）
-⑤ UX-09：eBay連携などの進行中フィードバック強化（スピナー・段階表示）
-⑥ プライバシーポリシー・利用規約の作成
-⑦ Compatible Application Growth Check申請
-⑧ X-11：全体パフォーマンス最適化（最終STAGE・UX-09とセット）
-⑨ ~~17TRACK API連携~~ 廃止
-⑩ ~~SpeedPAK送料請求CSVインポート~~ → X-09（送料テーブル設定）に置き換え
+① **STAGE2：ベストオファーシミュレーター**（profit.js 拡張・実装中）
+② **STAGE2：仕入シミュレーター 3層UI＋送料/関税の表示/実コスト分離**（実装中）
+③ **C-03：プライバシーポリシー・利用規約の作成**
+④ **C-02：Compatible Application Growth Check 申請準備**
+   ※ 自動出品の本格公開・リサーチ機能再開の共通の鍵
+⑤ **STAGE2後半：自動出品（AL-03〜07）** ※スコープ追加と実装作り込み・規約クリア
+⑥ **X-11：全体パフォーマンス最適化**（最終STAGE）
+~~⑦ 17TRACK API連携~~ 廃止
+~~⑧ SpeedPAK送料請求CSVインポート~~ → X-09（送料テーブル設定）に置き換え
+
+## 保留（再開条件が整うまで着手しない）
+
+- **競合リサーチ・商品リサーチ（ブランドリサーチ）**
+  再開条件：Growth Check 通過 → Marketplace Insights API 正攻法申請
+  理由：合法な sold データ取得手段が現時点で存在しない（詳細：`docs/RESEARCH_DECISION.md`）
 
 ## 【STAGE3・設計確定】ブランドリサーチ
 設計・技術レビュー・soldデータ取得A案検証済み（2026-06-02）→ CLAUDE.md STAGE3設計メモ参照

@@ -39,7 +39,7 @@
 
 | # | 優先 | 内容 | 状態 |
 |---|---|---|---|
-| S-01 | 🟠 | 競合増加率・成約率のデータソースが完全に手動入力。取得方法のガイドもUI上に存在しない | STAGE3「仕入れリサーチパイプライン」で解決予定。Browse API（自動）＋Terapeak CSV（手動補完）のハイブリッド |
+| S-01 | ⚪ | 競合増加率・成約率のデータソース自動化。**※変更：STAGE3として本体から分離・保留**。理由：合法な成約データ取得手段が Growth Check 通過後の Marketplace Insights API 待ちのため。URL fetch は ToS（automated means）で不採用確定。再開条件＝Growth Check通過→Marketplace Insights 正攻法申請（法人・販売実態ありで承認の現実味あり）。詳細：`docs/RESEARCH_DECISION.md` | **保留（2026-06-03）** |
 | S-02 | 🟠 | 「仕入シミュレーターから」というラベルが存在するが、profit.jsとの自動連動は未実装 | 未対応 |
 | S-03 | 🟡 | 閾値設定（粗利率・競合増加率・成約率）がリロードでリセット。localStorageへの保存が未実装 | ✅ 設定ページ実装で解決済み |
 | S-04 | 🟡 | GO判定商品を保存・メモする機能がない | STAGE3「仕入れリサーチパイプライン」の research_items テーブルで解決予定（設計・スキーマ確定済み → CLAUDE.md STAGE3設計メモ参照） |
@@ -118,7 +118,7 @@
 | X-01 | 🟠 | Finances API接続が実装されれば、transactions・dashboard・financeの手動入力依存が一括解消 | ✅ 完了 |
 | X-02 | 🟠 | seller_standards_profile API接続で、dashboardの健全性5指標が自動化 | ✅ 完了 |
 | X-03 | 🟡 | profit.js ↔ sourcing.jsのデータ連動（粗利率の自動引き渡し）がない | 未対応 |
-| X-04 | ⚪ | Browse API（競合出品数・価格・カテゴリ自動取得）＋Terapeak手動補完のハイブリッド方式で設計確定。STAGE3の仕入れリサーチパイプラインに統合。成約データはBrowse APIでは取得不可のため引き続き手動補完。Marketplace Insights APIはGrowth Check後に申請。STAGE4でZIK Analytics API統合を検討 | 設計確定・STAGE3統合済み |
+| X-04 | ⚪ | 成約データ取得方針。**2026-06-03 検証確定**：① Terapeak CSV エクスポートは機能自体が存在しない ② sold 一覧ページ HTML 保存は SPA のため空シェル（取得不可）③ 個別ページ HTML 保存は可能だが 1件ずつ手動 ④ URL fetch は ToS 違反で不採用 ⑤ Marketplace Insights API は現時点で一般開発者への承認ほぼ不可 ⑥ ZIK Analytics に API なし。**方針：Growth Check 通過後に Marketplace Insights API を正攻法申請。それまでリサーチ機能は保留。** 詳細：`docs/RESEARCH_DECISION.md` | **保留・確定（2026-06-03）** |
 | X-05 | 🟡 | eBay Japanポリシー・VeRO・関税の自動監視システム未実装。STAGE2後半で実装予定。STAGE3ではリサーチパイプラインの vero_risk フラグと連携し、商品候補にリスク警告を添付する | 未対応・STAGE2後半→STAGE3連携予定 |
 | X-06 | ~~🟡 17TRACK API連携~~ | ※変更：Ship&co不使用のため廃止 | 廃止確定 |
  | X-07 | ~~🟡 SpeedPAK送料請求CSVインポート~~ | ※変更：送料テーブル設定に置き換え | 下記に移行 | | 未対応 |
