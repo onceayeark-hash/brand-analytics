@@ -14,7 +14,7 @@ js/
     auth.js                ← Supabase Auth + eBay OAuth 2.0
 
   features/
-    profit.js              ← 為替・利益計算機 + PPD（FREE・STAGE1）✅（PPDは未実装）
+    profit.js              ← 為替・仕入シミュレーター + PPD（FREE・STAGE1）✅（PPDは未実装）
     sourcing.js            ← 仕入れメーター Go/No-Go（FREE・STAGE1）✅完了
     transactions.js        ← 取引記録入力 + 学習型手数料計算（FREE・STAGE1）★新規
     dashboard.js           ← アカウントパフォーマンス指標表示 + 健全性シミュレーター + アラート（CONNECTED・STAGE1）
@@ -39,7 +39,7 @@ tasks/
 ```
 ① UI骨格    index.html + js/core/ 骨格     ← 完了
 ② OAuth認証  js/core/auth.js               ← 完了
-③ 利益計算機 js/features/profit.js         ← 完了（PPD統合は④で）
+③ 仕入シミュレーター js/features/profit.js         ← 完了（PPD統合は④で）
 ── PHASE 0: Supabase設定完成 ──────────────── ← 次（Anon Key修正・EF deploy・SQL適用）
 ④ PPD統合   profit.js に在庫保有日数計算を追加
 ⑤ 取引記録  js/features/transactions.js 新規実装（学習型手数料の土台）
