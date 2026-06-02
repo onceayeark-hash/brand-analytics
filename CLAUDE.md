@@ -527,17 +527,13 @@ eBay各国マーケットプレイスの競合出品データを
 ① STAGE3：Terapeak CSV × Claude分析（最優先・最強コスパ）
 　・ユーザーがTerapeakでCSV出力 → アップロード → Claude自動分析
 　・コスト0・精度最高（Terapeak本体データ）・実装容易
-　・成約率・PPD・価格帯を自動分析してサマリー生成
+　・成約率・PPD・価格帯・マーケットプレイス別データを自動分析してサマリー生成
+　・蓄積するたびにトレンド追跡が可能になる（ツールの核心的価値）
 
-② STAGE3同時進行：「消えた出品」追跡（サイレント稼働）
-　・Browse APIで毎日検索 → 消えた出品IDを成約と判定
-　・6ヶ月後に自前成約データベースが完成
-　・ユーザーが増えるほど精度向上（集合知）
-
-③ Growth Check後：Marketplace Insights API申請
+② Growth Check後：Marketplace Insights API申請
 　・eBay公式の成約データAPI・審査通過後に即申請
 
-④ STAGE4：ZIK Analytics API
+③ STAGE4：ZIK Analytics API
 　・Terapeakを持っていないユーザー向けの代替手段として位置づけ
 　・メインはTerapeak CSVルートで割り切る
 
@@ -699,38 +695,70 @@ profit.js の統一基準で赤字掴みを構造的に防ぎ、リサーチ時�
 3. **URL 自動 fetch ガード**: UI で明示的に防ぐ
 
 #### DB スキーマ（STAGE3 着手時に schema_stage3.sql で作成）
+
 ```sql
-CREATE TABLE research_items (
-  id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id         uuid REFERENCES auth.users NOT NULL,
-  source_type     text NOT NULL CHECK (source_type IN ('browse_api','user_paste')),
-  source_label    text,
-  source_url      text,
-  product_name    text NOT NULL,
-  condition       text,
-  ebay_category   text,
-  list_price_usd  numeric(10,2),
-  cost_price_jpy  integer,
-  profit_usd      numeric(10,2),
-  margin_pct      numeric(5,2),
-  roi_pct         numeric(5,2),
-  go_nogo         text CHECK (go_nogo IN ('go','nogo','review')),
-  go_nogo_reasons jsonb,
-  vero_risk       boolean DEFAULT false,
-  vero_note       text,
-  user_notes      text,
-  created_at      timestamptz DEFAULT now()
+-- Terapeak CSV 1回分のスナップショット（蓄積・トレンド追跡の核心）
+CREATE TABLE terapeak_snapshots (
+  id                  uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id             uuid REFERENCES auth.users NOT NULL,
+  keyword             text NOT NULL,
+  marketplace         text NOT NULL,  -- 'EBAY_US'|'EBAY_AU'|'EBAY_GB'|'EBAY_DE'|'EBAY_CA'|'EBAY_IT'|'EBAY_FR'|'EBAY_ES'
+  search_date         date NOT NULL,
+  sell_through_rate   numeric(5,2),   -- 成約率（%）
+  avg_sold_price_usd  numeric(10,2),  -- 平均成約価格
+  avg_days_to_sell    numeric(5,1),   -- 平均販売日数
+  total_sold          integer,        -- 成約件数
+  total_listed        integer,        -- 出品件数
+  price_range_min_usd numeric(10,2),
+  price_range_max_usd numeric(10,2),
+  raw_csv_data        jsonb,          -- Claude が抽出した元データ
+  claude_summary      text,           -- Claude が生成したサマリー
+  created_at          timestamptz DEFAULT now()
 );
+
+-- 仕入れ候補リスト（GO/NO-GO の判断と結果を蓄積）
+CREATE TABLE research_items (
+  id                   uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id              uuid REFERENCES auth.users NOT NULL,
+  marketplace          text NOT NULL DEFAULT 'EBAY_US',
+  source_type          text NOT NULL CHECK (source_type IN ('browse_api','user_paste')),
+  source_label         text,          -- UI表示用（C-07③ 視覚分離）
+  source_url           text,
+  terapeak_snapshot_id uuid REFERENCES terapeak_snapshots(id),
+  product_name         text NOT NULL,
+  condition            text,
+  ebay_category        text,
+  list_price_usd       numeric(10,2),
+  cost_price_jpy       integer,
+  profit_usd           numeric(10,2),
+  margin_pct           numeric(5,2),
+  roi_pct              numeric(5,2),
+  go_nogo              text CHECK (go_nogo IN ('go','nogo','review')),
+  go_nogo_reasons      jsonb,
+  vero_risk            boolean DEFAULT false,
+  vero_note            text,
+  outcome              text CHECK (outcome IN ('bought','sold','passed','pending')),
+  user_notes           text,
+  created_at           timestamptz DEFAULT now()
+);
+
+ALTER TABLE terapeak_snapshots ENABLE ROW LEVEL SECURITY;
 ALTER TABLE research_items ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "users_own_research" ON research_items USING (user_id = auth.uid());
+CREATE POLICY "users_own_snapshots" ON terapeak_snapshots USING (user_id = auth.uid());
+CREATE POLICY "users_own_research"  ON research_items     USING (user_id = auth.uid());
 ```
 
-#### 技術レビュー所見（2026-06-02）
-- Browse API で成約データは取れない。設計の手動補完方針は正しい
+**`terapeak_snapshots` が蓄積の核心:**
+- 同じキーワードを異なる日付・異なるマーケットプレイスでアップロードするたびに行が増える
+- `search_date` × `marketplace` × `keyword` で時系列トレンドを自動生成できる
+- `outcome` で「GO判定→実際に買った→実際に売れた」まで追跡できる
+
+#### 技術レビュー所見（2026-06-02・更新）
+- Browse API で成約データは取れない。Terapeak CSV が成約データの唯一の信頼できるソース
+- 同業者は全員 Terapeak を使っている → CSV アップロード → 蓄積 がツールの差別化の核心
 - ユーザー貼付→Claude 構造化: テキストで 85-95%・スクショで 75-90%
 - connected tier の月 50 回制限がリサーチ用途でボトルネックになる可能性あり → SaaS 化時に tier 設計を再検討
-- 「消えた出品 = 成約」追跡の誤差（取り下げ・期間切れと区別不可）→ UI に誤差注釈が必要
-- Keepa API（$20/月）は将来の合法仕入れ元価格補完として有望
+- 「消えた出品 = 成約」追跡は**廃止**（取り下げ・期間切れと区別不可・データ品質が低い）
 
 #### 関連 ISSUES: S-01 / S-04 / X-04 / X-05 / X-08
 

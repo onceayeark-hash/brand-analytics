@@ -122,7 +122,7 @@
 | X-05 | 🟡 | eBay Japanポリシー・VeRO・関税の自動監視システム未実装。STAGE2後半で実装予定。STAGE3ではリサーチパイプラインの vero_risk フラグと連携し、商品候補にリスク警告を添付する | 未対応・STAGE2後半→STAGE3連携予定 |
 | X-06 | ~~🟡 17TRACK API連携~~ | ※変更：Ship&co不使用のため廃止 | 廃止確定 |
  | X-07 | ~~🟡 SpeedPAK送料請求CSVインポート~~ | ※変更：送料テーブル設定に置き換え | 下記に移行 | | 未対応 |
-| X-08 | 🟡 | 仕入れメーター（sourcing.js）に「平均販売日数」表示を追加。STAGE3の仕入れリサーチパイプラインの GO/NO-GO 判定（PPD 閾値）に使用。Browse API の「消えた出品追跡」データから推定 | 未対応・STAGE3で研究パイプラインと同時実装 |
+| X-08 | 🟡 | 仕入れメーター（sourcing.js）に「平均販売日数」表示を追加。STAGE3の仕入れリサーチパイプラインの GO/NO-GO 判定（PPD 閾値）に使用。terapeak_snapshots の avg_days_to_sell から取得 | 未対応・STAGE3で研究パイプラインと同時実装 |
 | X-10 | 🟠 | 為替レートAPI（open.er-api.com/v6/latest/USD）がブラウザ直叩きでCORS失敗→固定値150にフォールバック。利益計算の精度に影響。対応方針：Edge Function経由（サーバーサイド取得）に変更 or CORS対応済みAPIに差し替え。取得値はキャッシュして無駄な再取得を抑制。**次アクション：A案（Edge Function化）から着手** | 未対応・最優先 |
 | X-11 | 🟡 | 全体パフォーマンス最適化・軽量化（最終ブラッシュアップ）。複数API実装で読み込み/応答にラグが出る箇所を最終フェーズでまとめて最適化。施策候補：API呼び出しの並列化・結果キャッシュ・遅延ロード・不要な再レンダリング削減・初期ロードの分割。体感速度はUX-09（ローディング表現）とセットで改善 | 未対応・最終STAGE |
 
@@ -138,8 +138,11 @@
 | RES-02 | 🟡 | ユーザー貼付テキスト→Claude API 構造化の精度検証（テキスト 85-95%・スクショ 75-90% を実測確認） | 未対応 |
 | RES-03 | 🟡 | source_label による eBayデータ／非eBayデータの視覚的分離（C-07③ 必須要件） | 未対応 |
 | RES-04 | 🟡 | URL 自動 fetch 防止ガード（C-06 必須要件）：UI に「URL ではなくページ内容のテキストを貼ってください」を明示 | 未対応 |
-| RES-05 | ⚪ | 「消えた出品 = 成約」追跡の誤差注釈（取り下げ・期間切れと区別不可）→ UI に免責表示 | 未対応 |
-| RES-06 | ⚪ | connected tier 月 50 回制限でリサーチ機能がボトルネックになる可能性 → SaaS 化時に tier 設計を再検討 | 保留・SaaS化時 |
+| ~~RES-05~~ | ~~⚪~~ | ~~「消えた出品 = 成約」追跡~~ | **廃止**：取り下げ・期間切れと区別不可。データ品質が低いため設計から削除 |
+| RES-05 | 🟡 | `terapeak_snapshots` テーブル実装。keyword × marketplace × search_date で時系列トレンドを蓄積。同業者が全員 Terapeak を使っていることを前提とした設計 | 未対応・STAGE3 |
+| RES-06 | 🟡 | `research_items` と `terapeak_snapshots` への `marketplace` フィールド追加。EBAY_US / EBAY_AU / EBAY_GB / EBAY_DE / EBAY_CA / EBAY_IT / EBAY_FR / EBAY_ES | 未対応・STAGE3 |
+| RES-07 | 🟡 | `research_items.outcome` フィールドで「GO判定→実際に買った→実際に売れた」まで追跡。transaction_logs との紐づけで判定精度の検証が可能になる | 未対応・STAGE3 |
+| RES-08 | ⚪ | connected tier 月 50 回制限でリサーチ機能がボトルネックになる可能性 → SaaS 化時に tier 設計を再検討 | 保留・SaaS化時 |
 
 ---
 
