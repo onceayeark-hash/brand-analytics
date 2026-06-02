@@ -12,6 +12,7 @@
 
   const DEFAULTS = {
     targetMargin:    25,
+    targetProfitJpy: 0,
     competitorLimit: 15,
     minSellRate:     30,
     payoneerRate:    2,
@@ -42,11 +43,12 @@
   // セクション1：手数料・閾値設定
   // ─────────────────────────────────────
   const _FIELDS = [
-    { label: '目標粗利率',       key: 'targetMargin',    id: 's-target-margin',    unit: '%', before: false, step: '0.1'  },
-    { label: '競合増加率上限',   key: 'competitorLimit', id: 's-competitor-limit', unit: '%', before: false, step: '0.1'  },
-    { label: '最低成約率',       key: 'minSellRate',     id: 's-min-sell-rate',    unit: '%', before: false, step: '0.1'  },
-    { label: 'Payoneer手数料率', key: 'payoneerRate',    id: 's-payoneer-rate',    unit: '%', before: false, step: '0.1'  },
-    { label: '真贋サービス送料', key: 'authServiceJpy',  id: 's-auth-service',     unit: '¥', before: true,  step: '100'  },
+    { label: '目標粗利率',       key: 'targetMargin',    id: 's-target-margin',      unit: '%', before: false, step: '0.1'  },
+    { label: '目標粗利額',       key: 'targetProfitJpy', id: 's-target-profit-jpy',  unit: '¥', before: true,  step: '100'  },
+    { label: '競合増加率上限',   key: 'competitorLimit', id: 's-competitor-limit',   unit: '%', before: false, step: '0.1'  },
+    { label: '最低成約率',       key: 'minSellRate',     id: 's-min-sell-rate',      unit: '%', before: false, step: '0.1'  },
+    { label: 'Payoneer手数料率', key: 'payoneerRate',    id: 's-payoneer-rate',      unit: '%', before: false, step: '0.1'  },
+    { label: '真贋サービス送料', key: 'authServiceJpy',  id: 's-auth-service',       unit: '¥', before: true,  step: '100'  },
   ];
 
   function _renderSection1(data) {

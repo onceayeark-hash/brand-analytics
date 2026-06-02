@@ -107,6 +107,339 @@
   let _rendered     = false;
 
   // ─────────────────────────────────────
+  // シミュレーター：入力値読み取り
+  // ─────────────────────────────────────
+
+  function _readInputs(root) {
+    return {
+      price:          parseFloat(root.querySelector('#p-price')?.value) || 0,
+      costJpy:        parseFloat(root.querySelector('#p-cost')?.value)  || 0,
+      plan:           root.querySelector('#p-plan')?.value              || DEFAULTS.plan,
+      category:       root.querySelector('#p-category')?.value          || DEFAULTS.category,
+      promotedRate:   (parseFloat(root.querySelector('#p-promoted')?.value) || 0) / 100,
+      payoneerRate:   (parseFloat(root.querySelector('#p-payoneer')?.value) || 2) / 100,
+      shippingMode:   root.querySelector('#p-ship-mode')?.value         || 'manual',
+      shippingUsd:    parseFloat(root.querySelector('#p-ship-val')?.value)    || 0,
+      customsMode:    root.querySelector('#p-customs-mode')?.value      || 'manual',
+      customsUsd:     parseFloat(root.querySelector('#p-customs-val')?.value) || 0,
+      authServiceJpy: parseFloat(root.querySelector('#p-auth-service')?.value) || DEFAULTS.authServiceJpy,
+      usdJpy:         parseFloat(root.querySelector('#p-rate')?.value)  || DEFAULTS.usdJpy,
+    };
+  }
+
+  // ─────────────────────────────────────
+  // シミュレーター：最低承認可能価格逆算
+  // ─────────────────────────────────────
+
+  /**
+   * 目標を満たす最低オファー価格を3区間で逆算する
+   * 区間1: P<$500（真贋なし）/ 区間2: $500≤P<Cap価格 / 区間3: P≥Cap価格（FVF=$750固定）
+   * @returns {number|null} null=達成不可
+   */
+  function _calcMinPrice(inputs, mode, targetValue) {
+    const FVF_CAP = 750;
+    const feeRate = EBAY_FEE[inputs.plan]?.[inputs.category] ?? EBAY_FEE.basic.other;
+    const promo   = inputs.promotedRate;
+    const pay     = inputs.payoneerRate;
+    const costUsd = inputs.costJpy / inputs.usdJpy;
+    const authUsd = inputs.authServiceJpy / inputs.usdJpy;
+    const fvfCapP = FVF_CAP / feeRate;
+
+    const ship1 = inputs.shippingMode === 'fixed'  ? 35
+                : inputs.shippingMode === 'manual' ? (inputs.shippingUsd || 0) : 0;
+    const cust1 = inputs.customsMode === 'manual' ? (inputs.customsUsd || 0) : 0;
+
+    const candidates = [];
+
+    // 区間1: P < $500
+    const fixed1 = ship1 + cust1 + costUsd;
+    const varR1  = feeRate + promo + pay;
+    {
+      let p;
+      if (mode === 'pct') {
+        const denom = 1 - varR1 - (targetValue / 100);
+        p = denom > 0 ? fixed1 / denom : (denom < 0 ? -1 : null);
+      } else {
+        const denom = 1 - varR1;
+        p = denom > 0 ? (targetValue / inputs.usdJpy + fixed1) / denom : null;
+      }
+      if (p !== null) {
+        if (p < 0) candidates.push(0.01);
+        else if (p < 500) candidates.push(p);
+      }
+    }
+
+    // 区間2: $500 ≤ P < fvfCapP
+    const fixed2 = authUsd + costUsd;
+    const varR2  = feeRate + promo + pay;
+    {
+      let p;
+      if (mode === 'pct') {
+        const denom = 1 - varR2 - (targetValue / 100);
+        p = denom > 0 ? fixed2 / denom : null;
+      } else {
+        const denom = 1 - varR2;
+        p = denom > 0 ? (targetValue / inputs.usdJpy + fixed2) / denom : null;
+      }
+      if (p !== null && p >= 500 && p < fvfCapP) candidates.push(p);
+    }
+
+    // 区間3: P ≥ fvfCapP（FVF=$750固定）
+    const fixed3 = FVF_CAP + authUsd + costUsd;
+    const varR3  = promo + pay;
+    {
+      let p;
+      if (mode === 'pct') {
+        const denom = 1 - varR3 - (targetValue / 100);
+        p = denom > 0 ? fixed3 / denom : null;
+      } else {
+        const denom = 1 - varR3;
+        p = denom > 0 ? (targetValue / inputs.usdJpy + fixed3) / denom : null;
+      }
+      if (p !== null && p >= fvfCapP) candidates.push(p);
+    }
+
+    return candidates.length > 0 ? Math.min(...candidates) : null;
+  }
+
+  // ─────────────────────────────────────
+  // シミュレーター：UI更新
+  // ─────────────────────────────────────
+
+  function _updateSimulator(root) {
+    const body = root.querySelector('#p-sim-body');
+    if (!body || body.style.display === 'none') return;
+
+    const inputs = _readInputs(root);
+    const hasData = inputs.price > 0 || inputs.costJpy > 0;
+    const guide   = root.querySelector('#p-sim-guide');
+    const content = root.querySelector('#p-sim-content');
+    if (guide)   guide.style.display   = hasData ? 'none'  : 'block';
+    if (content) content.style.display = hasData ? 'block' : 'none';
+    if (!hasData) return;
+
+    const set = (id, txt, color) => {
+      const el = root.querySelector(id);
+      if (!el) return;
+      el.textContent = txt;
+      el.style.color = color || '';
+    };
+
+    // 差額
+    const offerRaw = root.querySelector('#p-sim-offer')?.value ?? '';
+    const offer    = parseFloat(offerRaw);
+    const hasOffer = offerRaw !== '' && !isNaN(offer) && offer >= 0;
+
+    if (hasOffer && inputs.price > 0) {
+      const diff = offer - inputs.price;
+      const pct  = (diff / inputs.price) * 100;
+      const sign = diff >= 0 ? '▲' : '▼';
+      set('#p-sim-diff',
+        `${sign}$${Math.abs(diff).toFixed(2)}（${pct >= 0 ? '+' : ''}${pct.toFixed(2)}%）`,
+        diff >= 0 ? 'var(--green)' : 'var(--red)');
+    } else {
+      set('#p-sim-diff', '—', '');
+    }
+
+    // オファー価格での粗利計算
+    if (hasOffer) {
+      const r = _calculate({
+        sellingPriceUsd: offer,
+        costJpy:         inputs.costJpy,
+        plan:            inputs.plan,
+        category:        inputs.category,
+        promotedRate:    inputs.promotedRate,
+        payoneerRate:    inputs.payoneerRate,
+        shippingMode:    inputs.shippingMode,
+        shippingUsd:     inputs.shippingUsd,
+        customsMode:     inputs.customsMode,
+        customsUsd:      inputs.customsUsd,
+        authServiceJpy:  inputs.authServiceJpy,
+        usdJpy:          inputs.usdJpy,
+        holdingDays:     0,
+      });
+      const c = r.grossProfitUsd >= 0 ? 'var(--green)' : 'var(--red)';
+      set('#p-sim-profit-usd', `$${r.grossProfitUsd.toFixed(2)}`, c);
+      set('#p-sim-profit-jpy', `¥${Math.round(r.grossProfitJpy).toLocaleString()}`, c);
+      set('#p-sim-rate', `${r.profitRate.toFixed(1)}%`, c);
+      if (inputs.costJpy > 0) {
+        const roi = (r.grossProfitJpy / inputs.costJpy) * 100;
+        set('#p-sim-roi', `${roi.toFixed(2)}%`, roi >= 0 ? 'var(--green)' : 'var(--red)');
+      } else {
+        set('#p-sim-roi', '—', '');
+      }
+    } else {
+      ['#p-sim-profit-usd','#p-sim-profit-jpy','#p-sim-rate','#p-sim-roi']
+        .forEach(id => set(id, '—', ''));
+    }
+
+    // 最低承認可能価格
+    const mode = root.querySelector('#p-sim-tab-pct')?.classList.contains('sim-tab-active') ? 'pct' : 'jpy';
+    const targetVal = mode === 'pct'
+      ? parseFloat(root.querySelector('#p-sim-target-pct')?.value) || 0
+      : parseFloat(root.querySelector('#p-sim-target-jpy')?.value) || 0;
+
+    const minP = _calcMinPrice(inputs, mode, targetVal);
+    if (minP === null) {
+      set('#p-sim-min-price', 'この目標は達成不可', 'var(--red)');
+    } else {
+      set('#p-sim-min-price', `$${minP.toFixed(2)}`, 'var(--text-primary)');
+    }
+  }
+
+  // ─────────────────────────────────────
+  // シミュレーター：イベントバインド
+  // ─────────────────────────────────────
+
+  function _bindSimulatorEvents(root) {
+    root.querySelector('#p-sim-toggle')?.addEventListener('click', () => {
+      const body = root.querySelector('#p-sim-body');
+      const icon = root.querySelector('#p-sim-icon');
+      if (!body) return;
+      const open = body.style.display === 'none';
+      body.style.display = open ? 'block' : 'none';
+      if (icon) icon.textContent = open ? '▼' : '▶';
+      if (open) _updateSimulator(root);
+    });
+
+    const setTab = (active) => {
+      const pBtn = root.querySelector('#p-sim-tab-pct');
+      const jBtn = root.querySelector('#p-sim-tab-jpy');
+      const pW   = root.querySelector('#p-sim-target-pct-wrap');
+      const jW   = root.querySelector('#p-sim-target-jpy-wrap');
+      if (!pBtn) return;
+      if (active === 'pct') {
+        pBtn.classList.add('sim-tab-active');    jBtn.classList.remove('sim-tab-active');
+        pBtn.style.background = 'var(--brand)';  pBtn.style.color = '#fff';
+        jBtn.style.background = 'var(--card-bg)'; jBtn.style.color = 'var(--text-secondary)';
+        if (pW) pW.style.display = 'flex'; if (jW) jW.style.display = 'none';
+      } else {
+        jBtn.classList.add('sim-tab-active');    pBtn.classList.remove('sim-tab-active');
+        jBtn.style.background = 'var(--brand)';  jBtn.style.color = '#fff';
+        pBtn.style.background = 'var(--card-bg)'; pBtn.style.color = 'var(--text-secondary)';
+        if (jW) jW.style.display = 'flex'; if (pW) pW.style.display = 'none';
+      }
+      _updateSimulator(root);
+    };
+    root.querySelector('#p-sim-tab-pct')?.addEventListener('click', () => setTab('pct'));
+    root.querySelector('#p-sim-tab-jpy')?.addEventListener('click', () => setTab('jpy'));
+
+    let _simTimer;
+    const debounced = () => {
+      clearTimeout(_simTimer);
+      _simTimer = setTimeout(() => _updateSimulator(root), 150);
+    };
+    ['#p-sim-offer','#p-sim-target-pct','#p-sim-target-jpy']
+      .forEach(id => root.querySelector(id)?.addEventListener('input', debounced));
+  }
+
+  // ─────────────────────────────────────
+  // シミュレーター：HTML生成
+  // ─────────────────────────────────────
+
+  function _renderSimulator() {
+    const s      = BA.settings?.get?.() ?? {};
+    const defPct = s.targetMargin    ?? 25;
+    const defJpy = s.targetProfitJpy ?? 0;
+
+    return `
+      <div id="p-sim-wrap" style="margin-top:20px">
+        <button id="p-sim-toggle" style="
+          width:100%;display:flex;align-items:center;justify-content:space-between;
+          padding:14px 20px;background:var(--card-bg);border:1px solid var(--border);
+          border-radius:8px;cursor:pointer;font-size:14px;font-weight:500;
+          color:var(--text-primary);text-align:left">
+          <span style="display:flex;align-items:center;gap:8px">
+            <span style="color:var(--brand)">$?</span>
+            ベストオファーシミュレーター
+          </span>
+          <span id="p-sim-icon" style="font-size:11px;color:var(--text-muted)">▶</span>
+        </button>
+
+        <div id="p-sim-body" style="display:none;border:1px solid var(--border);border-top:none;
+          border-radius:0 0 8px 8px;padding:20px;background:var(--card-bg)">
+
+          <div id="p-sim-guide" style="font-size:13px;color:var(--text-muted);padding:4px 0">
+            先に利益計算機で販売価格または仕入れ原価を入力してください。
+          </div>
+
+          <div id="p-sim-content" style="display:none">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start">
+
+              <!-- 左：入力 -->
+              <div>
+                <div class="input-group" style="margin-bottom:16px">
+                  <label class="input-label">オファー金額</label>
+                  <div class="input-wrap">
+                    <div class="input-prefix">$</div>
+                    <input class="input" id="p-sim-offer" type="number" min="0" step="0.01"
+                      placeholder="バイヤーの提示価格">
+                  </div>
+                  <div id="p-sim-diff" style="font-size:12px;margin-top:6px;
+                    font-family:var(--font-mono);color:var(--text-muted)">—</div>
+                </div>
+
+                <div class="input-group">
+                  <label class="input-label">最低承認価格の目標</label>
+                  <div style="display:flex;border:1px solid var(--border);
+                    border-radius:6px;overflow:hidden;margin-bottom:10px">
+                    <button id="p-sim-tab-pct" class="sim-tab-active" style="
+                      flex:1;padding:7px 0;font-size:12px;border:none;cursor:pointer;
+                      background:var(--brand);color:#fff;font-weight:500">粗利率 %</button>
+                    <button id="p-sim-tab-jpy" style="
+                      flex:1;padding:7px 0;font-size:12px;border:none;cursor:pointer;
+                      background:var(--card-bg);color:var(--text-secondary)">粗利額 ¥</button>
+                  </div>
+                  <div id="p-sim-target-pct-wrap" style="display:flex;align-items:center;gap:6px">
+                    <input class="input" id="p-sim-target-pct" type="number" min="0" max="100" step="0.1"
+                      value="${defPct}" style="text-align:right;width:90px">
+                    <span style="font-size:13px;color:var(--text-muted)">%</span>
+                  </div>
+                  <div id="p-sim-target-jpy-wrap" style="display:none;align-items:center;gap:6px">
+                    <span style="font-size:13px;color:var(--text-muted)">¥</span>
+                    <input class="input" id="p-sim-target-jpy" type="number" min="0" step="100"
+                      value="${defJpy}" style="text-align:right;width:120px">
+                  </div>
+                </div>
+              </div>
+
+              <!-- 右：結果 -->
+              <div class="card" style="margin-bottom:0">
+                <div class="card-title" style="margin-bottom:12px">承認後の試算</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+                  <div>
+                    <div style="font-size:11px;color:var(--text-muted);margin-bottom:2px">粗利益 USD</div>
+                    <div style="font-size:20px;font-weight:700;font-family:var(--font-mono)" id="p-sim-profit-usd">—</div>
+                  </div>
+                  <div>
+                    <div style="font-size:11px;color:var(--text-muted);margin-bottom:2px">粗利益 JPY</div>
+                    <div style="font-size:20px;font-weight:700;font-family:var(--font-mono)" id="p-sim-profit-jpy">—</div>
+                  </div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
+                  <div>
+                    <div style="font-size:11px;color:var(--text-muted);margin-bottom:2px">粗利率</div>
+                    <div style="font-size:18px;font-weight:600;font-family:var(--font-mono)" id="p-sim-rate">—</div>
+                  </div>
+                  <div>
+                    <div style="font-size:11px;color:var(--text-muted);margin-bottom:2px">ROI</div>
+                    <div style="font-size:18px;font-weight:600;font-family:var(--font-mono)" id="p-sim-roi">—</div>
+                  </div>
+                </div>
+                <div style="border-top:1px solid var(--border);padding-top:12px">
+                  <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">最低承認可能価格</div>
+                  <div style="font-size:22px;font-weight:700;font-family:var(--font-mono)" id="p-sim-min-price">—</div>
+                  <div style="font-size:10px;color:var(--text-muted);margin-top:2px">目標を満たす最小オファー価格</div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  // ─────────────────────────────────────
   // 計算ロジック
   // ─────────────────────────────────────
 
@@ -523,6 +856,8 @@
 
         </div>
       </div>
+
+      ${_renderSimulator()}
     `;
 
     root.querySelector('#profit-tut-close')?.addEventListener('click', () => {
@@ -531,6 +866,7 @@
     });
 
     _bindEvents(root);
+    _bindSimulatorEvents(root);
     _update(root);
   }
 
@@ -704,6 +1040,9 @@
     const feeLab  = root.querySelector('#p-fee-rate-label');
     if (feeDisp) feeDisp.textContent = `${(feeRate * 100).toFixed(2)}%`;
     if (feeLab)  feeLab.textContent  = `${PLAN_LABELS[plan] ?? plan} / ${CATEGORY_LABELS[cat] ?? cat}`;
+
+    // シミュレーターも再計算（メイン入力が変わったとき）
+    _updateSimulator(root);
   }
 
   // ─────────────────────────────────────
