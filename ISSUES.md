@@ -139,10 +139,14 @@
 | RES-03 | 🟡 | source_label による eBayデータ／非eBayデータの視覚的分離（C-07③ 必須要件） | 未対応 |
 | RES-04 | 🟡 | URL 自動 fetch 防止ガード（C-06 必須要件）：UI に「URL ではなくページ内容のテキストを貼ってください」を明示 | 未対応 |
 | ~~RES-05~~ | ~~⚪~~ | ~~「消えた出品 = 成約」追跡~~ | **廃止**：取り下げ・期間切れと区別不可。データ品質が低いため設計から削除 |
-| RES-05 | 🟡 | `terapeak_snapshots` テーブル実装。keyword × marketplace × search_date で時系列トレンドを蓄積。同業者が全員 Terapeak を使っていることを前提とした設計 | 未対応・STAGE3 |
+| RES-05 | 🟡 | `terapeak_snapshots` テーブル実装。keyword × marketplace × search_date で時系列トレンドを蓄積。**蓄積の核心**（FXヒストリカルデータ相当） | 未対応・STAGE3 |
 | RES-06 | 🟡 | `research_items` と `terapeak_snapshots` への `marketplace` フィールド追加。EBAY_US / EBAY_AU / EBAY_GB / EBAY_DE / EBAY_CA / EBAY_IT / EBAY_FR / EBAY_ES | 未対応・STAGE3 |
-| RES-07 | 🟡 | `research_items.outcome` フィールドで「GO判定→実際に買った→実際に売れた」まで追跡。transaction_logs との紐づけで判定精度の検証が可能になる | 未対応・STAGE3 |
-| RES-08 | ⚪ | connected tier 月 50 回制限でリサーチ機能がボトルネックになる可能性 → SaaS 化時に tier 設計を再検討 | 保留・SaaS化時 |
+| RES-07 | 🟡 | `research_items.outcome` フィールドで「GO判定→買った→売れた」まで追跡。transaction_logs と紐づけで判定精度の検証が可能 | 未対応・STAGE3 |
+| RES-08 | 🟡 | ブランド選択 UI：プリセット13ブランド（LV/シャネル/グッチ/エルメス/プラダ等）＋カスタム追加。ブランド選択で蓄積データを自動絞り込み | 未対応・STAGE3 |
+| RES-09 | 🟡 | フィルターバー UI（Terapeak 準拠・日本語化）：状態/形式/価格/評価＋「日本出品者のみ」独立チェックボックス | 未対応・STAGE3 |
+| RES-10 | 🟡 | 並び替え：価格高低・日付新旧・販売額高低 | 未対応・STAGE3 |
+| RES-11 | 🟡 | Browse API は on-demand のみ（自動・定期実行なし）。itemId 重複除外で蓄積 | 未対応・STAGE3 |
+| RES-12 | ⚪ | connected tier 月 50 回制限でリサーチ機能がボトルネックになる可能性 → SaaS 化時に再検討 | 保留・SaaS化時 |
 
 ---
 
