@@ -177,14 +177,14 @@
           ${step.body}
         </div>
         <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
-          <div style="display:flex;gap:5px;align-items:center;flex-shrink:0">${dots}</div>
-          <div style="display:flex;gap:8px;align-items:center;flex-shrink:0">
+          <div style="display:flex;gap:5px;align-items:center">${dots}</div>
+          <div style="display:flex;gap:8px;align-items:center;flex-shrink:0;flex-wrap:nowrap">
             ${_step > 0
               ? `<button id="tour-prev-btn" class="btn btn-secondary"
-                  style="padding:0 14px;min-height:36px;font-size:13px">← 戻る</button>`
+                  style="padding:0 12px;min-height:36px;font-size:13px">← 戻る</button>`
               : ''}
             <button id="tour-next-btn" class="btn btn-primary"
-              style="padding:0 16px;min-height:36px;font-size:13px">
+              style="padding:0 12px;min-height:36px;font-size:13px">
               ${isLast ? 'さっそく使う' : '次へ →'}
             </button>
           </div>
@@ -347,7 +347,10 @@
   // 公開API
   // ─────────────────────────────────────
   window.BA.tour = {
-    init()  { _show(); },
+    init() {
+      _show();
+      document.addEventListener('ba:auth-state-change', _show);
+    },
     reset() { try { localStorage.removeItem(DONE_KEY); } catch {} },
   };
 

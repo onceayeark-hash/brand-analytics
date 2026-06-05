@@ -124,6 +124,10 @@ Supabase Dashboard → Authentication → Users
 ✅ F-01〜F-03：ファイナンス表示修正
 ✅ ダーク/ライトモード統一
 
+## 完了済み（UI修正・2026-06-05）
+✅ UX-04：ツアーボタン縦並び修正（tour.js：ドット群shrink解除・ボタン群nowrap・padding詰め）
+✅ UX-10：ツアーがログイン前に表示されるバグ修正（tour.js：認証チェック復活・ログインイベント監視追加）
+
 ## 完了済み（STAGE2着手）
 ✅ Claude API統合基盤実装
 ✅ VS Codeインストール・brand-analytics接続済み
