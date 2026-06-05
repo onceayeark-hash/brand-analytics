@@ -144,7 +144,8 @@
       clearTimeout(timer);
       return { key: svc.key, label: svc.label, status: res.ok ? 'ok' : 'degraded', statusUrl: svc.statusUrl };
     } catch {
-      return { key: svc.key, label: svc.label, status: 'down', statusUrl: svc.statusUrl };
+      // ネットワーク到達不能（file://・CORS・オフライン等）は 'down' と区別する
+      return { key: svc.key, label: svc.label, status: 'unreachable', statusUrl: svc.statusUrl };
     }
   }
 
