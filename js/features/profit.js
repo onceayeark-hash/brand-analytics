@@ -323,6 +323,153 @@
   }
 
   // ─────────────────────────────────────
+  // 粗利率 ⇔ 粗利額 トグル：HTML生成
+  // ─────────────────────────────────────
+
+  function _renderRateAmountToggle() {
+    return `
+      <div class="card" style="margin-bottom:16px" id="p-toggle-wrap">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+          <div class="card-title" style="margin:0">粗利率 ⇔ 粗利額</div>
+          <div style="display:flex;border:1px solid var(--border);border-radius:6px;overflow:hidden">
+            <button id="p-toggle-rate-btn" style="padding:5px 14px;font-size:12px;border:none;
+              cursor:pointer;background:var(--brand);color:#fff;font-weight:500">粗利率 %</button>
+            <button id="p-toggle-amount-btn" style="padding:5px 14px;font-size:12px;border:none;
+              cursor:pointer;background:transparent;color:var(--text-secondary)">粗利額 ¥</button>
+          </div>
+        </div>
+
+        <div id="p-toggle-rate-wrap">
+          <div class="input-group" style="margin-bottom:12px">
+            <label class="input-label">粗利率（目標）</label>
+            <div class="input-wrap">
+              <input class="input" id="p-toggle-rate-input" type="number" min="0" max="100"
+                step="0.01" placeholder="25.00" style="text-align:right">
+              <div class="input-prefix" style="border-left:none;border-right:1px solid var(--border);
+                border-radius:0 3px 3px 0">%</div>
+            </div>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:baseline">
+            <span style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted)">対応粗利額</span>
+            <span id="p-toggle-rate-result" style="font-family:var(--font-mono);font-size:22px;
+              font-weight:700;color:var(--text-primary)">—</span>
+          </div>
+        </div>
+
+        <div id="p-toggle-amount-wrap" style="display:none">
+          <div class="input-group" style="margin-bottom:12px">
+            <label class="input-label">粗利額（目標）</label>
+            <div class="input-wrap">
+              <div class="input-prefix">¥</div>
+              <input class="input" id="p-toggle-amount-input" type="number" min="0"
+                step="100" placeholder="20000" style="text-align:right">
+            </div>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:baseline">
+            <span style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted)">対応粗利率</span>
+            <span id="p-toggle-amount-result" style="font-family:var(--font-mono);font-size:22px;
+              font-weight:700;color:var(--text-primary)">—</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // ─────────────────────────────────────
+  // 粗利率 ⇔ 粗利額 トグル：換算計算
+  // ─────────────────────────────────────
+
+  function _updateRateAmountToggle(root) {
+    const rateInput    = root.querySelector('#p-toggle-rate-input');
+    const amountInput  = root.querySelector('#p-toggle-amount-input');
+    const rateResult   = root.querySelector('#p-toggle-rate-result');
+    const amountResult = root.querySelector('#p-toggle-amount-result');
+    if (!rateInput) return;
+
+    const price    = parseFloat(root.querySelector('#p-price')?.value) || 0;
+    const usdJpy   = parseFloat(root.querySelector('#p-rate')?.value)  || DEFAULTS.usdJpy;
+    const revJpy   = price * usdJpy;
+
+    // 粗利率 → 粗利額
+    if (rateResult) {
+      const rv = parseFloat(rateInput.value);
+      if (revJpy > 0 && !isNaN(rv) && rateInput.value !== '') {
+        const profitJpy = Math.round(rv / 100 * revJpy);
+        rateResult.textContent = `¥${profitJpy.toLocaleString()}`;
+        rateResult.style.color = profitJpy >= 0 ? 'var(--text-primary)' : 'var(--red)';
+      } else {
+        rateResult.textContent = '—';
+        rateResult.style.color = '';
+      }
+    }
+
+    // 粗利額 → 粗利率
+    if (amountResult) {
+      const av = parseFloat(amountInput.value);
+      if (revJpy > 0 && !isNaN(av) && amountInput.value !== '') {
+        amountResult.textContent = `${((av / revJpy) * 100).toFixed(2)}%`;
+        amountResult.style.color = 'var(--text-primary)';
+      } else {
+        amountResult.textContent = '—';
+        amountResult.style.color = '';
+      }
+    }
+  }
+
+  // ─────────────────────────────────────
+  // 粗利率 ⇔ 粗利額 トグル：イベントバインド
+  // ─────────────────────────────────────
+
+  function _bindToggleEvents(root) {
+    const rateBtn    = root.querySelector('#p-toggle-rate-btn');
+    const amountBtn  = root.querySelector('#p-toggle-amount-btn');
+    const rateWrap   = root.querySelector('#p-toggle-rate-wrap');
+    const amountWrap = root.querySelector('#p-toggle-amount-wrap');
+    const rateInput  = root.querySelector('#p-toggle-rate-input');
+    const amountInput = root.querySelector('#p-toggle-amount-input');
+    if (!rateBtn) return;
+
+    const getRevJpy = () => {
+      const price  = parseFloat(root.querySelector('#p-price')?.value) || 0;
+      const usdJpy = parseFloat(root.querySelector('#p-rate')?.value)  || DEFAULTS.usdJpy;
+      return price * usdJpy;
+    };
+
+    rateBtn.addEventListener('click', () => {
+      // 粗利額 → 粗利率 に変換して値を維持
+      const av = parseFloat(amountInput?.value);
+      const rev = getRevJpy();
+      if (!isNaN(av) && av >= 0 && rev > 0 && rateInput && amountInput.value !== '') {
+        rateInput.value = ((av / rev) * 100).toFixed(2);
+      }
+      rateBtn.style.background = 'var(--brand)'; rateBtn.style.color = '#fff';
+      amountBtn.style.background = 'transparent'; amountBtn.style.color = 'var(--text-secondary)';
+      if (rateWrap)   rateWrap.style.display   = 'block';
+      if (amountWrap) amountWrap.style.display = 'none';
+      _updateRateAmountToggle(root);
+    });
+
+    amountBtn.addEventListener('click', () => {
+      // 粗利率 → 粗利額 に変換して値を維持
+      const rv = parseFloat(rateInput?.value);
+      const rev = getRevJpy();
+      if (!isNaN(rv) && rv >= 0 && rev > 0 && amountInput && rateInput.value !== '') {
+        amountInput.value = Math.round((rv / 100) * rev);
+      }
+      amountBtn.style.background = 'var(--brand)'; amountBtn.style.color = '#fff';
+      rateBtn.style.background = 'transparent'; rateBtn.style.color = 'var(--text-secondary)';
+      if (amountWrap) amountWrap.style.display = 'block';
+      if (rateWrap)   rateWrap.style.display   = 'none';
+      _updateRateAmountToggle(root);
+    });
+
+    let _timer;
+    const debounced = () => { clearTimeout(_timer); _timer = setTimeout(() => _updateRateAmountToggle(root), 150); };
+    rateInput?.addEventListener('input', debounced);
+    amountInput?.addEventListener('input', debounced);
+  }
+
+  // ─────────────────────────────────────
   // シミュレーター：HTML生成
   // ─────────────────────────────────────
 
@@ -772,6 +919,8 @@
             </div>
           </div>
 
+          ${_renderRateAmountToggle()}
+
           <!-- 内訳 -->
           <div class="card" style="margin-bottom:16px">
             <div class="card-title">費用内訳</div>
@@ -850,6 +999,7 @@
     });
 
     _bindEvents(root);
+    _bindToggleEvents(root);
     _bindSimulatorEvents(root);
     _update(root);
   }
@@ -1025,7 +1175,8 @@
     if (feeDisp) feeDisp.textContent = `${(feeRate * 100).toFixed(2)}%`;
     if (feeLab)  feeLab.textContent  = `${PLAN_LABELS[plan] ?? plan} / ${CATEGORY_LABELS[cat] ?? cat}`;
 
-    // シミュレーターも再計算（メイン入力が変わったとき）
+    // トグル換算・シミュレーターも再計算（メイン入力が変わったとき）
+    _updateRateAmountToggle(root);
     _updateSimulator(root);
   }
 
