@@ -350,7 +350,7 @@
           border-radius:8px;cursor:pointer;font-size:14px;font-weight:500;
           color:var(--text-primary);text-align:left">
           <span style="display:flex;align-items:center;gap:8px">
-            <span style="color:var(--brand)">$?</span>
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--brand);flex-shrink:0"><path d="M2 8h12M10 5l4 3-4 3M6 11l-4-3 4-3"/></svg>
             ベストオファーシミュレーター
           </span>
           <span id="p-sim-icon" style="font-size:11px;color:var(--text-muted)">▶</span>
@@ -854,10 +854,10 @@
             </div>
           </div>
 
+          ${_renderSimulator()}
+
         </div>
       </div>
-
-      ${_renderSimulator()}
     `;
 
     root.querySelector('#profit-tut-close')?.addEventListener('click', () => {
