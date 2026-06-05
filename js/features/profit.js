@@ -207,8 +207,7 @@
   // ─────────────────────────────────────
 
   function _updateSimulator(root) {
-    const body = root.querySelector('#p-sim-body');
-    if (!body || body.style.display === 'none') return;
+    if (!root.querySelector('#p-sim-guide')) return;
 
     const inputs = _readInputs(root);
     const hasData = inputs.price > 0 || inputs.costJpy > 0;
@@ -292,16 +291,6 @@
   // ─────────────────────────────────────
 
   function _bindSimulatorEvents(root) {
-    root.querySelector('#p-sim-toggle')?.addEventListener('click', () => {
-      const body = root.querySelector('#p-sim-body');
-      const icon = root.querySelector('#p-sim-icon');
-      if (!body) return;
-      const open = body.style.display === 'none';
-      body.style.display = open ? 'block' : 'none';
-      if (icon) icon.textContent = open ? '▼' : '▶';
-      if (open) _updateSimulator(root);
-    });
-
     const setTab = (active) => {
       const pBtn = root.querySelector('#p-sim-tab-pct');
       const jBtn = root.querySelector('#p-sim-tab-jpy');
@@ -343,98 +332,88 @@
     const defJpy = s.targetProfitJpy ?? 0;
 
     return `
-      <div id="p-sim-wrap" style="margin-top:20px">
-        <button id="p-sim-toggle" style="
-          width:100%;display:flex;align-items:center;justify-content:space-between;
-          padding:14px 20px;background:var(--card-bg);border:1px solid var(--border);
-          border-radius:8px;cursor:pointer;font-size:14px;font-weight:500;
-          color:var(--text-primary);text-align:left">
-          <span style="display:flex;align-items:center;gap:8px">
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--brand);flex-shrink:0"><path d="M2 8h12M10 5l4 3-4 3M6 11l-4-3 4-3"/></svg>
-            ベストオファーシミュレーター
-          </span>
-          <span id="p-sim-icon" style="font-size:11px;color:var(--text-muted)">▶</span>
-        </button>
+      <div class="card" id="p-sim-wrap">
+        <div class="card-title">ベストオファーシミュレーター</div>
 
-        <div id="p-sim-body" style="display:none;border:1px solid var(--border);border-top:none;
-          border-radius:0 0 8px 8px;padding:20px;background:var(--card-bg)">
+        <div id="p-sim-guide" style="font-size:13px;color:var(--text-muted);line-height:1.8">
+          先に利益計算機で販売価格または<br>仕入れ原価を入力してください。
+        </div>
 
-          <div id="p-sim-guide" style="font-size:13px;color:var(--text-muted);padding:4px 0">
-            先に利益計算機で販売価格または仕入れ原価を入力してください。
+        <div id="p-sim-content" style="display:none">
+
+          <div class="input-group" style="margin-bottom:12px">
+            <label class="input-label">オファー金額</label>
+            <div class="input-wrap">
+              <div class="input-prefix">$</div>
+              <input class="input" id="p-sim-offer" type="number" min="0" step="0.01"
+                placeholder="バイヤーの提示価格">
+            </div>
+            <div id="p-sim-diff" style="font-size:12px;margin-top:6px;
+              font-family:var(--font-mono);color:var(--text-muted)">—</div>
           </div>
 
-          <div id="p-sim-content" style="display:none">
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start">
-
-              <!-- 左：入力 -->
-              <div>
-                <div class="input-group" style="margin-bottom:16px">
-                  <label class="input-label">オファー金額</label>
-                  <div class="input-wrap">
-                    <div class="input-prefix">$</div>
-                    <input class="input" id="p-sim-offer" type="number" min="0" step="0.01"
-                      placeholder="バイヤーの提示価格">
-                  </div>
-                  <div id="p-sim-diff" style="font-size:12px;margin-top:6px;
-                    font-family:var(--font-mono);color:var(--text-muted)">—</div>
-                </div>
-
-                <div class="input-group">
-                  <label class="input-label">最低承認価格の目標</label>
-                  <div style="display:flex;border:1px solid var(--border);
-                    border-radius:6px;overflow:hidden;margin-bottom:10px">
-                    <button id="p-sim-tab-pct" class="sim-tab-active" style="
-                      flex:1;padding:7px 0;font-size:12px;border:none;cursor:pointer;
-                      background:var(--brand);color:#fff;font-weight:500">粗利率 %</button>
-                    <button id="p-sim-tab-jpy" style="
-                      flex:1;padding:7px 0;font-size:12px;border:none;cursor:pointer;
-                      background:var(--card-bg);color:var(--text-secondary)">粗利額 ¥</button>
-                  </div>
-                  <div id="p-sim-target-pct-wrap" style="display:flex;align-items:center;gap:6px">
-                    <input class="input" id="p-sim-target-pct" type="number" min="0" max="100" step="0.1"
-                      value="${defPct}" style="text-align:right;width:90px">
-                    <span style="font-size:13px;color:var(--text-muted)">%</span>
-                  </div>
-                  <div id="p-sim-target-jpy-wrap" style="display:none;align-items:center;gap:6px">
-                    <span style="font-size:13px;color:var(--text-muted)">¥</span>
-                    <input class="input" id="p-sim-target-jpy" type="number" min="0" step="100"
-                      value="${defJpy}" style="text-align:right;width:120px">
-                  </div>
-                </div>
-              </div>
-
-              <!-- 右：結果 -->
-              <div class="card" style="margin-bottom:0">
-                <div class="card-title" style="margin-bottom:12px">承認後の試算</div>
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
-                  <div>
-                    <div style="font-size:11px;color:var(--text-muted);margin-bottom:2px">粗利益 USD</div>
-                    <div style="font-size:20px;font-weight:700;font-family:var(--font-mono)" id="p-sim-profit-usd">—</div>
-                  </div>
-                  <div>
-                    <div style="font-size:11px;color:var(--text-muted);margin-bottom:2px">粗利益 JPY</div>
-                    <div style="font-size:20px;font-weight:700;font-family:var(--font-mono)" id="p-sim-profit-jpy">—</div>
-                  </div>
-                </div>
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
-                  <div>
-                    <div style="font-size:11px;color:var(--text-muted);margin-bottom:2px">粗利率</div>
-                    <div style="font-size:18px;font-weight:600;font-family:var(--font-mono)" id="p-sim-rate">—</div>
-                  </div>
-                  <div>
-                    <div style="font-size:11px;color:var(--text-muted);margin-bottom:2px">ROI</div>
-                    <div style="font-size:18px;font-weight:600;font-family:var(--font-mono)" id="p-sim-roi">—</div>
-                  </div>
-                </div>
-                <div style="border-top:1px solid var(--border);padding-top:12px">
-                  <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">最低承認可能価格</div>
-                  <div style="font-size:22px;font-weight:700;font-family:var(--font-mono)" id="p-sim-min-price">—</div>
-                  <div style="font-size:10px;color:var(--text-muted);margin-top:2px">目標を満たす最小オファー価格</div>
-                </div>
-              </div>
-
+          <div class="input-group" style="margin-bottom:14px">
+            <label class="input-label">目標</label>
+            <div style="display:flex;border:1px solid var(--border);
+              border-radius:6px;overflow:hidden;margin-bottom:10px">
+              <button id="p-sim-tab-pct" class="sim-tab-active" style="
+                flex:1;padding:7px 0;font-size:12px;border:none;cursor:pointer;
+                background:var(--brand);color:#fff;font-weight:500">粗利率 %</button>
+              <button id="p-sim-tab-jpy" style="
+                flex:1;padding:7px 0;font-size:12px;border:none;cursor:pointer;
+                background:var(--card-bg);color:var(--text-secondary)">粗利額 ¥</button>
+            </div>
+            <div id="p-sim-target-pct-wrap" style="display:flex;align-items:center;gap:6px">
+              <input class="input" id="p-sim-target-pct" type="number" min="0" max="100"
+                step="0.1" value="${defPct}" style="text-align:right">
+              <span style="font-size:13px;color:var(--text-muted)">%</span>
+            </div>
+            <div id="p-sim-target-jpy-wrap" style="display:none;align-items:center;gap:6px">
+              <span style="font-size:13px;color:var(--text-muted)">¥</span>
+              <input class="input" id="p-sim-target-jpy" type="number" min="0"
+                step="100" value="${defJpy}" style="text-align:right">
             </div>
           </div>
+
+          <div style="border-top:1px solid var(--border);padding-top:12px">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+              <div>
+                <div style="font-family:var(--font-mono);font-size:11px;
+                  color:var(--text-muted);margin-bottom:2px">粗利益 USD</div>
+                <div style="font-size:20px;font-weight:700;font-family:var(--font-mono)"
+                  id="p-sim-profit-usd">—</div>
+              </div>
+              <div>
+                <div style="font-family:var(--font-mono);font-size:11px;
+                  color:var(--text-muted);margin-bottom:2px">粗利益 JPY</div>
+                <div style="font-size:20px;font-weight:700;font-family:var(--font-mono)"
+                  id="p-sim-profit-jpy">—</div>
+              </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+              <div>
+                <div style="font-family:var(--font-mono);font-size:11px;
+                  color:var(--text-muted);margin-bottom:2px">粗利率</div>
+                <div style="font-size:18px;font-weight:600;font-family:var(--font-mono)"
+                  id="p-sim-rate">—</div>
+              </div>
+              <div>
+                <div style="font-family:var(--font-mono);font-size:11px;
+                  color:var(--text-muted);margin-bottom:2px">ROI</div>
+                <div style="font-size:18px;font-weight:600;font-family:var(--font-mono)"
+                  id="p-sim-roi">—</div>
+              </div>
+            </div>
+            <div style="border-top:1px solid var(--border);padding-top:10px">
+              <div style="font-family:var(--font-mono);font-size:11px;
+                color:var(--text-muted);margin-bottom:4px">最低承認可能価格</div>
+              <div style="font-size:22px;font-weight:700;font-family:var(--font-mono)"
+                id="p-sim-min-price">—</div>
+              <div style="font-size:10px;color:var(--text-muted);margin-top:2px">
+                目標を満たす最小オファー価格</div>
+            </div>
+          </div>
+
         </div>
       </div>`;
   }
@@ -585,7 +564,7 @@
   function _render(root) {
     root.innerHTML = `
       ${_tutorialBanner()}
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start">
+      <div class="profit-3col" style="display:grid;grid-template-columns:1.1fr 1fr 1fr;gap:20px;align-items:start">
 
         <!-- LEFT: 入力フォーム -->
         <div>
@@ -760,7 +739,7 @@
 
         </div>
 
-        <!-- RIGHT: 計算結果 -->
+        <!-- CENTER: 主要計算結果 -->
         <div>
 
           <!-- 粗利益サマリー -->
@@ -820,6 +799,11 @@
               ※ 在庫保有日数を入力すると計算されます
             </div>
           </div>
+
+        </div>
+
+        <!-- RIGHT: 手数料・為替・シミュレーター -->
+        <div>
 
           <!-- eBay 手数料率表示 -->
           <div class="card" style="margin-bottom:16px">
