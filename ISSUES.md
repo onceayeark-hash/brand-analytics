@@ -37,6 +37,7 @@
 | P-14 | 🟡 | 利益計算機レイアウト全面再配置。左列：基本設定→適用手数料率→価格原価→PPD入力→手数料→送料関税。中列：トグル→ベストオファーシミュレーター→為替レート。右列（1.2fr幅）：粗利益(JPY主・USD従)→PPD結果→費用内訳。カテゴリ先頭をブランドバッグに変更。為替取得時刻表示追加。カード間余白統一(16px) | ✅ 実装済み（2026-06-09） |
 | P-15 | 🟡 | 手数料率入力欄（Promoted・Payoneer・関税%）のblur時に小数第2位まで表示（例:2→2.00）。`_attachPctFormat()`ヘルパーで実装。内部計算は素のparseFloatで数値化 | ✅ 実装済み（2026-06-09） |
 | P-16 | 🟡 | 入力欄の通貨記号($・¥・JPY)の視認性改善。`.input-prefix`の`color:var(--text-muted)`→`color:var(--text-secondary)`に変更（ライトテーマ:#555555/4.5:1以上、ダークテーマ:#9a9a9a/WCAG AA準拠）。新色トークン追加なし | ✅ 実装済み（2026-06-09） |
+| P-17 | 🟡 | 3列レイアウトの横幅拡張・外枠一体化。`#panel-profit{max-width:none}`でmax-width制限を解除し24インチ画面の右側空白を解消。3列グリッド全体を`var(--bg-elevated)/var(--border)/border-radius:12px`の外枠コンテナで囲み一体感を追加。右列を1.2fr→1.4frに拡大して粗利益を主役化。Promoted/Payoneer入力を`type="text"`に変更してデフォルト表示"0.00"/"2.00"を実現。settings-changed ハンドラで`payoneerRate.toFixed(2)`対応 | ✅ 実装済み（2026-06-09） |
 
 ---
 

@@ -758,7 +758,8 @@
   function _render(root) {
     root.innerHTML = `
       ${_tutorialBanner()}
-      <div class="profit-3col" style="display:grid;grid-template-columns:1fr 1fr 1.2fr;gap:20px;align-items:start">
+      <div style="background:var(--bg-elevated);border:1px solid var(--border);border-radius:12px;padding:16px">
+        <div class="profit-3col" style="display:grid;grid-template-columns:1fr 1fr 1.4fr;gap:20px;align-items:start">
 
         <!-- LEFT: 入力フォーム -->
         <div>
@@ -849,7 +850,7 @@
               <div class="input-group">
                 <label class="input-label" for="p-promoted" data-tip="販売価格に対する割合">Promoted Listings</label>
                 <div class="input-wrap">
-                  <input class="input" id="p-promoted" type="number" min="0" max="100" step="0.01" value="0">
+                  <input class="input" id="p-promoted" type="text" inputmode="decimal" value="0.00">
                   <div class="input-prefix" style="border-left:none;border-right:1px solid var(--border);border-radius:0 3px 3px 0">%</div>
                 </div>
               </div>
@@ -857,7 +858,7 @@
               <div class="input-group">
                 <label class="input-label" for="p-payoneer">Payoneer 手数料</label>
                 <div class="input-wrap">
-                  <input class="input" id="p-payoneer" type="number" min="0" max="10" step="0.01" value="2">
+                  <input class="input" id="p-payoneer" type="text" inputmode="decimal" value="2.00">
                   <div class="input-prefix" style="border-left:none;border-right:1px solid var(--border);border-radius:0 3px 3px 0">%</div>
                 </div>
               </div>
@@ -1044,6 +1045,7 @@
             </table>
           </div>
 
+        </div>
         </div>
       </div>
     `;
@@ -1314,7 +1316,7 @@
         if (!root || !_rendered) return;
         const payoneerEl = root.querySelector('#p-payoneer');
         const authSvcEl  = root.querySelector('#p-auth-service');
-        if (payoneerEl && detail.payoneerRate   != null) payoneerEl.value = detail.payoneerRate;
+        if (payoneerEl && detail.payoneerRate   != null) payoneerEl.value = Number(detail.payoneerRate).toFixed(2);
         if (authSvcEl  && detail.authServiceJpy != null) authSvcEl.value  = detail.authServiceJpy;
         _update(root);
       });
