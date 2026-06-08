@@ -107,23 +107,53 @@
   let _rendered     = false;
 
   // ─────────────────────────────────────
+  // カンマ表示ヘルパー（P-12）
+  // ─────────────────────────────────────
+
+  function _parseNum(str) {
+    if (typeof str !== 'string') str = String(str ?? '');
+    return parseFloat(str.replace(/,/g, '')) || 0;
+  }
+
+  function _attachCommaFormat(el, isDecimal) {
+    if (!el) return;
+    el.addEventListener('blur', () => {
+      const raw = (el.value || '').replace(/,/g, '');
+      const v = parseFloat(raw);
+      if (!isNaN(v) && raw !== '') {
+        el.value = isDecimal
+          ? v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+          : Math.round(v).toLocaleString('en-US');
+      }
+    });
+    el.addEventListener('focus', () => {
+      const raw = (el.value || '').replace(/,/g, '');
+      const v = parseFloat(raw);
+      if (!isNaN(v) && raw !== '') {
+        el.value = isDecimal ? String(v) : String(Math.round(v));
+      }
+    });
+  }
+
+  // ─────────────────────────────────────
   // シミュレーター：入力値読み取り
   // ─────────────────────────────────────
 
   function _readInputs(root) {
     return {
-      price:          parseFloat(root.querySelector('#p-price')?.value) || 0,
-      costJpy:        parseFloat(root.querySelector('#p-cost')?.value)  || 0,
-      plan:           root.querySelector('#p-plan')?.value              || DEFAULTS.plan,
-      category:       root.querySelector('#p-category')?.value          || DEFAULTS.category,
+      price:          _parseNum(root.querySelector('#p-price')?.value  || ''),
+      costJpy:        _parseNum(root.querySelector('#p-cost')?.value   || ''),
+      plan:           root.querySelector('#p-plan')?.value             || DEFAULTS.plan,
+      category:       root.querySelector('#p-category')?.value         || DEFAULTS.category,
       promotedRate:   (parseFloat(root.querySelector('#p-promoted')?.value) || 0) / 100,
       payoneerRate:   (parseFloat(root.querySelector('#p-payoneer')?.value) || 2) / 100,
-      shippingMode:   root.querySelector('#p-ship-mode')?.value         || 'manual',
-      shippingUsd:    parseFloat(root.querySelector('#p-ship-val')?.value)    || 0,
-      customsMode:    root.querySelector('#p-customs-mode')?.value      || 'manual',
-      customsUsd:     parseFloat(root.querySelector('#p-customs-val')?.value) || 0,
-      authServiceJpy: parseFloat(root.querySelector('#p-auth-service')?.value) || DEFAULTS.authServiceJpy,
-      usdJpy:         parseFloat(root.querySelector('#p-rate')?.value)  || DEFAULTS.usdJpy,
+      shippingMode:   root.querySelector('#p-ship-mode')?.value        || 'manual',
+      shippingUsd:    _parseNum(root.querySelector('#p-ship-val')?.value    || ''),
+      customsMode:    root.querySelector('#p-customs-mode')?.value     || 'manual',
+      customsUsd:     _parseNum(root.querySelector('#p-customs-val')?.value || ''),
+      customsPct:     parseFloat(root.querySelector('#p-customs-pct')?.value) || 0,
+      authServiceJpy: _parseNum(root.querySelector('#p-auth-service')?.value || ''),
+      usdJpy:         _parseNum(root.querySelector('#p-rate')?.value   || '') || DEFAULTS.usdJpy,
     };
   }
 
@@ -148,12 +178,13 @@
     const ship1 = inputs.shippingMode === 'fixed'  ? 35
                 : inputs.shippingMode === 'manual' ? (inputs.shippingUsd || 0) : 0;
     const cust1 = inputs.customsMode === 'manual' ? (inputs.customsUsd || 0) : 0;
+    const custPctRate = inputs.customsMode === 'pct' ? (inputs.customsPct || 0) / 100 : 0;
 
     const candidates = [];
 
-    // 区間1: P < $500
+    // 区間1: P < $500（関税%は変動コストなのでvarR1に加算）
     const fixed1 = ship1 + cust1 + costUsd;
-    const varR1  = feeRate + promo + pay;
+    const varR1  = feeRate + promo + pay + custPctRate;
     {
       let p;
       if (mode === 'pct') {
@@ -226,8 +257,8 @@
 
     // 差額
     const offerRaw = root.querySelector('#p-sim-offer')?.value ?? '';
-    const offer    = parseFloat(offerRaw);
-    const hasOffer = offerRaw !== '' && !isNaN(offer) && offer >= 0;
+    const offer    = _parseNum(offerRaw);
+    const hasOffer = offerRaw !== '' && offer >= 0;
 
     if (hasOffer && inputs.price > 0) {
       const diff = offer - inputs.price;
@@ -276,7 +307,7 @@
     const mode = root.querySelector('#p-sim-tab-pct')?.classList.contains('sim-tab-active') ? 'pct' : 'jpy';
     const targetVal = mode === 'pct'
       ? parseFloat(root.querySelector('#p-sim-target-pct')?.value) || 0
-      : parseFloat(root.querySelector('#p-sim-target-jpy')?.value) || 0;
+      : _parseNum(root.querySelector('#p-sim-target-jpy')?.value || '');
 
     const minP = _calcMinPrice(inputs, mode, targetVal);
     if (minP === null) {
@@ -320,6 +351,9 @@
     };
     ['#p-sim-offer','#p-sim-target-pct','#p-sim-target-jpy']
       .forEach(id => root.querySelector(id)?.addEventListener('input', debounced));
+
+    _attachCommaFormat(root.querySelector('#p-sim-offer'),      true);
+    _attachCommaFormat(root.querySelector('#p-sim-target-jpy'), false);
   }
 
   // ─────────────────────────────────────
@@ -361,8 +395,8 @@
             <label class="input-label">粗利額（目標）</label>
             <div class="input-wrap">
               <div class="input-prefix">¥</div>
-              <input class="input" id="p-toggle-amount-input" type="number" min="0"
-                step="100" placeholder="20000" style="text-align:right">
+              <input class="input" id="p-toggle-amount-input" type="text" inputmode="numeric"
+                placeholder="20000" style="text-align:right">
             </div>
           </div>
           <div style="display:flex;justify-content:space-between;align-items:baseline">
@@ -386,8 +420,8 @@
     const amountResult = root.querySelector('#p-toggle-amount-result');
     if (!rateInput) return;
 
-    const price    = parseFloat(root.querySelector('#p-price')?.value) || 0;
-    const usdJpy   = parseFloat(root.querySelector('#p-rate')?.value)  || DEFAULTS.usdJpy;
+    const price    = _parseNum(root.querySelector('#p-price')?.value  || '');
+    const usdJpy   = _parseNum(root.querySelector('#p-rate')?.value   || '') || DEFAULTS.usdJpy;
     const revJpy   = price * usdJpy;
 
     // 粗利率 → 粗利額
@@ -405,8 +439,8 @@
 
     // 粗利額 → 粗利率
     if (amountResult) {
-      const av = parseFloat(amountInput.value);
-      if (revJpy > 0 && !isNaN(av) && amountInput.value !== '') {
+      const av = _parseNum(amountInput.value);
+      if (revJpy > 0 && av >= 0 && amountInput.value !== '') {
         amountResult.textContent = `${((av / revJpy) * 100).toFixed(2)}%`;
         amountResult.style.color = 'var(--text-primary)';
       } else {
@@ -430,16 +464,16 @@
     if (!rateBtn) return;
 
     const getRevJpy = () => {
-      const price  = parseFloat(root.querySelector('#p-price')?.value) || 0;
-      const usdJpy = parseFloat(root.querySelector('#p-rate')?.value)  || DEFAULTS.usdJpy;
+      const price  = _parseNum(root.querySelector('#p-price')?.value  || '');
+      const usdJpy = _parseNum(root.querySelector('#p-rate')?.value   || '') || DEFAULTS.usdJpy;
       return price * usdJpy;
     };
 
     rateBtn.addEventListener('click', () => {
       // 粗利額 → 粗利率 に変換して値を維持
-      const av = parseFloat(amountInput?.value);
+      const av = _parseNum(amountInput?.value || '');
       const rev = getRevJpy();
-      if (!isNaN(av) && av >= 0 && rev > 0 && rateInput && amountInput.value !== '') {
+      if (av >= 0 && rev > 0 && rateInput && amountInput.value !== '') {
         rateInput.value = ((av / rev) * 100).toFixed(2);
       }
       rateBtn.style.background = 'var(--brand)'; rateBtn.style.color = '#fff';
@@ -454,7 +488,7 @@
       const rv = parseFloat(rateInput?.value);
       const rev = getRevJpy();
       if (!isNaN(rv) && rv >= 0 && rev > 0 && amountInput && rateInput.value !== '') {
-        amountInput.value = Math.round((rv / 100) * rev);
+        amountInput.value = Math.round((rv / 100) * rev).toLocaleString('en-US');
       }
       amountBtn.style.background = 'var(--brand)'; amountBtn.style.color = '#fff';
       rateBtn.style.background = 'transparent'; rateBtn.style.color = 'var(--text-secondary)';
@@ -467,6 +501,8 @@
     const debounced = () => { clearTimeout(_timer); _timer = setTimeout(() => _updateRateAmountToggle(root), 150); };
     rateInput?.addEventListener('input', debounced);
     amountInput?.addEventListener('input', debounced);
+
+    _attachCommaFormat(root.querySelector('#p-toggle-amount-input'), false);
   }
 
   // ─────────────────────────────────────
@@ -492,8 +528,8 @@
             <label class="input-label">オファー金額</label>
             <div class="input-wrap">
               <div class="input-prefix">$</div>
-              <input class="input" id="p-sim-offer" type="number" min="0" step="0.01"
-                placeholder="バイヤーの提示価格">
+              <input class="input" id="p-sim-offer" type="text" inputmode="decimal"
+                placeholder="バイヤーの提示価格" style="text-align:right">
             </div>
             <div id="p-sim-diff" style="font-size:12px;margin-top:6px;
               font-family:var(--font-mono);color:var(--text-muted)">—</div>
@@ -517,8 +553,8 @@
             </div>
             <div id="p-sim-target-jpy-wrap" style="display:none;align-items:center;gap:6px">
               <span style="font-size:13px;color:var(--text-muted)">¥</span>
-              <input class="input" id="p-sim-target-jpy" type="number" min="0"
-                step="100" value="${defJpy}" style="text-align:right">
+              <input class="input" id="p-sim-target-jpy" type="text" inputmode="numeric"
+                value="${defJpy}" style="text-align:right">
             </div>
           </div>
 
@@ -584,8 +620,9 @@
       payoneerRate,     // 0〜1（デフォルト0.02）
       shippingMode,     // 'manual'|'fixed'|'buyer'
       shippingUsd,      // manual時のみ
-      customsMode,      // 'manual'|'zero'
+      customsMode,      // 'manual'|'zero'|'pct'
       customsUsd,       // manual時のみ
+      customsPct,       // pct時のみ（販売価格に対する%）
       authServiceJpy,   // $500以上時
       usdJpy,
       holdingDays,      // 在庫保有日数（PPD計算用）
@@ -618,7 +655,8 @@
     // ── 関税 ──
     let effectiveCustomsUsd = 0;
     if (!above500) {
-      if (customsMode === 'manual') effectiveCustomsUsd = customsUsd || 0;
+      if (customsMode === 'manual')     effectiveCustomsUsd = customsUsd || 0;
+      else if (customsMode === 'pct')   effectiveCustomsUsd = selling * ((customsPct || 0) / 100);
       // zero → 0
     }
 
@@ -751,7 +789,7 @@
                 <label class="input-label" for="p-price">販売価格</label>
                 <div class="input-wrap">
                   <div class="input-prefix">$</div>
-                  <input class="input" id="p-price" type="number" min="0" step="0.01" placeholder="0.00">
+                  <input class="input" id="p-price" type="text" inputmode="decimal" placeholder="0.00" style="text-align:right">
                 </div>
               </div>
 
@@ -759,7 +797,7 @@
                 <label class="input-label" for="p-cost">仕入れ原価</label>
                 <div class="input-wrap">
                   <div class="input-prefix">¥</div>
-                  <input class="input" id="p-cost" type="number" min="0" step="1" placeholder="0">
+                  <input class="input" id="p-cost" type="text" inputmode="numeric" placeholder="0" style="text-align:right">
                 </div>
               </div>
 
@@ -831,7 +869,7 @@
                   <label class="input-label" for="p-ship-val">送料（手動）</label>
                   <div class="input-wrap">
                     <div class="input-prefix">$</div>
-                    <input class="input" id="p-ship-val" type="number" min="0" step="0.01" value="0">
+                    <input class="input" id="p-ship-val" type="text" inputmode="decimal" value="0" style="text-align:right">
                   </div>
                 </div>
 
@@ -844,14 +882,24 @@
                   <select class="select" id="p-customs-mode">
                     <option value="manual">手動入力</option>
                     <option value="zero">$0（バイヤー負担）</option>
+                    <option value="pct">販売額の %</option>
                   </select>
                 </div>
 
-                <div class="input-group" id="p-customs-manual-wrap">
-                  <label class="input-label" for="p-customs-val">関税（手動）</label>
-                  <div class="input-wrap">
-                    <div class="input-prefix">$</div>
-                    <input class="input" id="p-customs-val" type="number" min="0" step="0.01" value="0">
+                <div id="p-customs-input-cell">
+                  <div class="input-group" id="p-customs-manual-wrap">
+                    <label class="input-label" for="p-customs-val">関税（手動）</label>
+                    <div class="input-wrap">
+                      <div class="input-prefix">$</div>
+                      <input class="input" id="p-customs-val" type="text" inputmode="decimal" value="0" style="text-align:right">
+                    </div>
+                  </div>
+                  <div class="input-group" id="p-customs-pct-wrap" style="display:none">
+                    <label class="input-label" for="p-customs-pct">関税率</label>
+                    <div class="input-wrap">
+                      <input class="input" id="p-customs-pct" type="number" min="0" max="100" step="0.1" value="0" style="text-align:right">
+                      <div class="input-prefix" style="border-left:none;border-right:1px solid var(--border);border-radius:0 3px 3px 0">%</div>
+                    </div>
                   </div>
                 </div>
 
@@ -876,7 +924,7 @@
                   <label class="input-label" for="p-auth-service">真贋サービス送料</label>
                   <div class="input-wrap">
                     <div class="input-prefix">¥</div>
-                    <input class="input" id="p-auth-service" type="number" min="0" value="1500">
+                    <input class="input" id="p-auth-service" type="text" inputmode="numeric" value="1500" style="text-align:right">
                   </div>
                 </div>
               </div>
@@ -977,7 +1025,7 @@
               <div class="input-group" style="flex:1">
                 <label class="input-label" for="p-rate">1 USD =</label>
                 <div class="input-wrap">
-                  <input class="input" id="p-rate" type="number" min="1" step="0.01" value="150">
+                  <input class="input" id="p-rate" type="text" inputmode="decimal" value="150" style="text-align:right">
                   <div class="input-prefix" style="border-left:none;border-right:1px solid var(--border);border-radius:0 3px 3px 0">JPY</div>
                 </div>
               </div>
@@ -1019,9 +1067,20 @@
     });
 
     root.querySelector('#p-customs-mode')?.addEventListener('change', e => {
-      const wrap = root.querySelector('#p-customs-manual-wrap');
-      if (wrap) wrap.style.visibility = e.target.value === 'manual' ? 'visible' : 'hidden';
+      const manualWrap = root.querySelector('#p-customs-manual-wrap');
+      const pctWrap    = root.querySelector('#p-customs-pct-wrap');
+      const mode = e.target.value;
+      if (manualWrap) manualWrap.style.display = mode === 'manual' ? '' : 'none';
+      if (pctWrap)    pctWrap.style.display    = mode === 'pct'    ? '' : 'none';
     });
+
+    // カンマ表示フォーマット
+    _attachCommaFormat(root.querySelector('#p-price'),        true);
+    _attachCommaFormat(root.querySelector('#p-cost'),         false);
+    _attachCommaFormat(root.querySelector('#p-ship-val'),     true);
+    _attachCommaFormat(root.querySelector('#p-customs-val'),  true);
+    _attachCommaFormat(root.querySelector('#p-auth-service'), false);
+    _attachCommaFormat(root.querySelector('#p-rate'),         true);
 
     // 為替レート更新ボタン
     root.querySelector('#p-refresh-rate')?.addEventListener('click', async () => {
@@ -1044,18 +1103,19 @@
 
   /** 計算実行 → 結果 UI 更新 */
   function _update(root) {
-    const price  = parseFloat(root.querySelector('#p-price')?.value)    || 0;
-    const cost   = parseFloat(root.querySelector('#p-cost')?.value)     || 0;
+    const price  = _parseNum(root.querySelector('#p-price')?.value  || '');
+    const cost   = _parseNum(root.querySelector('#p-cost')?.value   || '');
     const plan   = root.querySelector('#p-plan')?.value   || DEFAULTS.plan;
     const cat    = root.querySelector('#p-category')?.value || DEFAULTS.category;
     const promo  = (parseFloat(root.querySelector('#p-promoted')?.value) || 0) / 100;
     const payRate = (parseFloat(root.querySelector('#p-payoneer')?.value) || 2) / 100;
     const shipMode = root.querySelector('#p-ship-mode')?.value   || 'manual';
-    const shipVal  = parseFloat(root.querySelector('#p-ship-val')?.value)    || 0;
+    const shipVal  = _parseNum(root.querySelector('#p-ship-val')?.value    || '');
     const custMode = root.querySelector('#p-customs-mode')?.value  || 'manual';
-    const custVal  = parseFloat(root.querySelector('#p-customs-val')?.value) || 0;
-    const authSvc     = parseFloat(root.querySelector('#p-auth-service')?.value) || DEFAULTS.authServiceJpy;
-    const rate        = parseFloat(root.querySelector('#p-rate')?.value)   || DEFAULTS.usdJpy;
+    const custVal  = _parseNum(root.querySelector('#p-customs-val')?.value || '');
+    const custPct  = parseFloat(root.querySelector('#p-customs-pct')?.value) || 0;
+    const authSvc     = _parseNum(root.querySelector('#p-auth-service')?.value || '') || DEFAULTS.authServiceJpy;
+    const rate        = _parseNum(root.querySelector('#p-rate')?.value   || '') || DEFAULTS.usdJpy;
     const holdingDays = parseFloat(root.querySelector('#p-holding-days')?.value) || 0;
     const above500 = price >= DEFAULTS.threshold500;
 
@@ -1078,6 +1138,7 @@
       shippingUsd:  shipVal,
       customsMode:  custMode,
       customsUsd:   custVal,
+      customsPct:   custPct,
       authServiceJpy: authSvc,
       usdJpy: rate,
       holdingDays,
