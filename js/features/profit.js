@@ -69,8 +69,8 @@
 
   // カテゴリ表示名
   const CATEGORY_LABELS = {
+    handbags:        'ブランドバッグ',
     shoes_sneakers:  'シューズ・スニーカー',
-    handbags:        'ハンドバッグ',
     jewelry_watches: 'ジュエリー・時計',
     electronics:     '電子機器',
     motors:          'モーターパーツ',
@@ -132,6 +132,15 @@
       if (!isNaN(v) && raw !== '') {
         el.value = isDecimal ? String(v) : String(Math.round(v));
       }
+    });
+  }
+
+  // 手数料率入力欄：blur時に小数第2位まで表示（P-15）
+  function _attachPctFormat(el) {
+    if (!el) return;
+    el.addEventListener('blur', () => {
+      const v = parseFloat(el.value);
+      if (!isNaN(v) && el.value !== '') el.value = v.toFixed(2);
     });
   }
 
@@ -511,11 +520,11 @@
 
   function _renderSimulator() {
     const s      = BA.settings?.get?.() ?? {};
-    const defPct = s.targetMargin    ?? 25;
-    const defJpy = s.targetProfitJpy ?? 0;
+    const defPct = Number(s.targetMargin    ?? 25) || 25;
+    const defJpy = Number(s.targetProfitJpy ?? 0)  || 0;
 
     return `
-      <div class="card" id="p-sim-wrap">
+      <div class="card" style="margin-bottom:16px" id="p-sim-wrap">
         <div class="card-title">ベストオファーシミュレーター</div>
 
         <div id="p-sim-guide" style="font-size:13px;color:var(--text-muted);line-height:1.8">
@@ -749,7 +758,7 @@
   function _render(root) {
     root.innerHTML = `
       ${_tutorialBanner()}
-      <div class="profit-3col" style="display:grid;grid-template-columns:1.1fr 1fr 1fr;gap:20px;align-items:start">
+      <div class="profit-3col" style="display:grid;grid-template-columns:1fr 1fr 1.2fr;gap:20px;align-items:start">
 
         <!-- LEFT: 入力フォーム -->
         <div>
@@ -777,6 +786,17 @@
                 </select>
               </div>
 
+            </div>
+          </div>
+
+          <!-- 適用手数料率（基本設定直下） -->
+          <div class="card" style="margin-bottom:16px">
+            <div class="card-title">適用手数料率</div>
+            <div style="font-family:var(--font-mono);font-size:24px;color:var(--amber);text-align:center;padding:8px 0" id="p-fee-rate-display">
+              —
+            </div>
+            <div style="font-size:11px;color:var(--text-muted);text-align:center" id="p-fee-rate-label">
+              プランとカテゴリを選択してください
             </div>
           </div>
 
@@ -829,7 +849,7 @@
               <div class="input-group">
                 <label class="input-label" for="p-promoted" data-tip="販売価格に対する割合">Promoted Listings</label>
                 <div class="input-wrap">
-                  <input class="input" id="p-promoted" type="number" min="0" max="100" step="0.1" value="0">
+                  <input class="input" id="p-promoted" type="number" min="0" max="100" step="0.01" value="0">
                   <div class="input-prefix" style="border-left:none;border-right:1px solid var(--border);border-radius:0 3px 3px 0">%</div>
                 </div>
               </div>
@@ -837,7 +857,7 @@
               <div class="input-group">
                 <label class="input-label" for="p-payoneer">Payoneer 手数料</label>
                 <div class="input-wrap">
-                  <input class="input" id="p-payoneer" type="number" min="0" max="10" step="0.1" value="2">
+                  <input class="input" id="p-payoneer" type="number" min="0" max="10" step="0.01" value="2">
                   <div class="input-prefix" style="border-left:none;border-right:1px solid var(--border);border-radius:0 3px 3px 0">%</div>
                 </div>
               </div>
@@ -897,7 +917,7 @@
                   <div class="input-group" id="p-customs-pct-wrap" style="display:none">
                     <label class="input-label" for="p-customs-pct">関税率</label>
                     <div class="input-wrap">
-                      <input class="input" id="p-customs-pct" type="number" min="0" max="100" step="0.1" value="0" style="text-align:right">
+                      <input class="input" id="p-customs-pct" type="number" min="0" max="100" step="0.01" value="0" style="text-align:right">
                       <div class="input-prefix" style="border-left:none;border-right:1px solid var(--border);border-radius:0 3px 3px 0">%</div>
                     </div>
                   </div>
@@ -934,87 +954,15 @@
 
         </div>
 
-        <!-- CENTER: 主要計算結果 -->
+        <!-- CENTER: トグル・シミュレーター・為替 -->
         <div>
-
-          <!-- 粗利益サマリー -->
-          <div class="card" style="margin-bottom:16px;border-color:var(--border-active)">
-            <div class="card-title">粗利益（シミュレーション）</div>
-
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
-              <div>
-                <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);margin-bottom:4px">USD</div>
-                <div class="card-value" id="p-result-usd">$0.00</div>
-              </div>
-              <div>
-                <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);margin-bottom:4px">JPY</div>
-                <div class="card-value" id="p-result-jpy">¥0</div>
-              </div>
-            </div>
-
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-              <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-secondary)">粗利率</div>
-              <div class="card-value" style="font-size:20px" id="p-result-rate">0.0%</div>
-            </div>
-
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-              <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-secondary)">ROI</div>
-              <div class="card-value" style="font-size:20px" id="p-result-roi">—</div>
-            </div>
-
-            <div class="meter">
-              <div class="meter-fill green" id="p-profit-meter" style="width:0%"></div>
-            </div>
-          </div>
 
           ${_renderRateAmountToggle()}
 
-          <!-- 内訳 -->
-          <div class="card" style="margin-bottom:16px">
-            <div class="card-title">費用内訳</div>
-            <table class="data-table" id="p-breakdown-table">
-              <tbody>
-                ${_emptyBreakdown()}
-              </tbody>
-            </table>
-          </div>
-
-          <!-- PPD 結果 -->
-          <div class="card" style="margin-bottom:16px">
-            <div class="card-title">PPD（1日あたり粗利益）</div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:8px">
-              <div>
-                <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);margin-bottom:4px">USD / 日</div>
-                <div class="card-value" style="font-size:20px" id="p-ppd-usd">—</div>
-              </div>
-              <div>
-                <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);margin-bottom:4px">JPY / 日</div>
-                <div class="card-value" style="font-size:20px" id="p-ppd-jpy">—</div>
-              </div>
-            </div>
-            <div style="font-size:10px;color:var(--text-muted)">
-              ※ 在庫保有日数を入力すると計算されます
-            </div>
-          </div>
-
-        </div>
-
-        <!-- RIGHT: 手数料・為替・シミュレーター -->
-        <div>
-
-          <!-- eBay 手数料率表示 -->
-          <div class="card" style="margin-bottom:16px">
-            <div class="card-title">適用手数料率</div>
-            <div style="font-family:var(--font-mono);font-size:24px;color:var(--amber);text-align:center;padding:8px 0" id="p-fee-rate-display">
-              —
-            </div>
-            <div style="font-size:11px;color:var(--text-muted);text-align:center" id="p-fee-rate-label">
-              プランとカテゴリを選択してください
-            </div>
-          </div>
+          ${_renderSimulator()}
 
           <!-- 為替レート -->
-          <div class="card">
+          <div class="card" style="margin-bottom:16px">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
               <div class="card-title" style="margin:0">為替レート</div>
               <button class="btn btn-ghost" id="p-refresh-rate" style="font-size:10px;padding:4px 8px">
@@ -1035,7 +983,66 @@
             </div>
           </div>
 
-          ${_renderSimulator()}
+        </div>
+
+        <!-- RIGHT: 結果系 -->
+        <div>
+
+          <!-- 粗利益サマリー（JPY主・USD従） -->
+          <div class="card" style="margin-bottom:16px;border-color:var(--border-active)">
+            <div class="card-title">粗利益（シミュレーション）</div>
+
+            <div style="margin-bottom:10px">
+              <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);margin-bottom:4px">JPY</div>
+              <div class="card-value" id="p-result-jpy" style="font-size:2.2rem">¥0</div>
+            </div>
+            <div style="margin-bottom:16px">
+              <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);margin-bottom:2px">USD</div>
+              <div class="card-value" id="p-result-usd" style="font-size:1.4rem">$0.00</div>
+            </div>
+
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+              <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-secondary)">粗利率</div>
+              <div class="card-value" style="font-size:20px" id="p-result-rate">0.0%</div>
+            </div>
+
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+              <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-secondary)">ROI</div>
+              <div class="card-value" style="font-size:20px" id="p-result-roi">—</div>
+            </div>
+
+            <div class="meter">
+              <div class="meter-fill green" id="p-profit-meter" style="width:0%"></div>
+            </div>
+          </div>
+
+          <!-- PPD 結果 -->
+          <div class="card" style="margin-bottom:16px">
+            <div class="card-title">PPD（1日あたり粗利益）</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:8px">
+              <div>
+                <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);margin-bottom:4px">USD / 日</div>
+                <div class="card-value" style="font-size:20px" id="p-ppd-usd">—</div>
+              </div>
+              <div>
+                <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);margin-bottom:4px">JPY / 日</div>
+                <div class="card-value" style="font-size:20px" id="p-ppd-jpy">—</div>
+              </div>
+            </div>
+            <div style="font-size:10px;color:var(--text-muted)">
+              ※ 在庫保有日数を入力すると計算されます
+            </div>
+          </div>
+
+          <!-- 費用内訳 -->
+          <div class="card" style="margin-bottom:16px">
+            <div class="card-title">費用内訳</div>
+            <table class="data-table" id="p-breakdown-table">
+              <tbody>
+                ${_emptyBreakdown()}
+              </tbody>
+            </table>
+          </div>
 
         </div>
       </div>
@@ -1082,6 +1089,11 @@
     _attachCommaFormat(root.querySelector('#p-auth-service'), false);
     _attachCommaFormat(root.querySelector('#p-rate'),         true);
 
+    // 手数料率 小数第2位フォーマット（P-15）
+    _attachPctFormat(root.querySelector('#p-promoted'));
+    _attachPctFormat(root.querySelector('#p-payoneer'));
+    _attachPctFormat(root.querySelector('#p-customs-pct'));
+
     // 為替レート更新ボタン
     root.querySelector('#p-refresh-rate')?.addEventListener('click', async () => {
       const btn = root.querySelector('#p-refresh-rate');
@@ -1091,7 +1103,14 @@
         const rateInput = root.querySelector('#p-rate');
         if (rateInput) rateInput.value = _exchangeRate.toFixed(2);
         const updEl = root.querySelector('#p-rate-updated');
-        if (updEl) updEl.textContent = '最新レート';
+        if (updEl) {
+          const now = new Date();
+          const mm = String(now.getMonth() + 1).padStart(2, '0');
+          const dd = String(now.getDate()).padStart(2, '0');
+          const hh = String(now.getHours()).padStart(2, '0');
+          const mn = String(now.getMinutes()).padStart(2, '0');
+          updEl.textContent = `${mm}/${dd} ${hh}:${mn} 時点`;
+        }
         _update(root);
       } catch {
         BA.notify?.toast?.('為替レートの取得に失敗しました', 'error');
