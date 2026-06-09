@@ -670,10 +670,16 @@
       : _parseNum(root.querySelector('#p-sim-target-jpy')?.value || '');
 
     const minP = _calcMinPrice(inputs, mode, targetVal);
+    const minPJpyEl = root.querySelector('#p-sim-min-price-jpy');
     if (minP === null) {
       set('#p-sim-min-price', 'この目標は達成不可', 'var(--red)');
+      if (minPJpyEl) { minPJpyEl.textContent = ''; minPJpyEl.style.color = ''; }
     } else {
       set('#p-sim-min-price', `$${minP.toFixed(2)}`, 'var(--text-primary)');
+      if (minPJpyEl) {
+        minPJpyEl.textContent = `¥${Math.round(minP * inputs.usdJpy).toLocaleString()}`;
+        minPJpyEl.style.color = 'var(--text-muted)';
+      }
     }
   }
 
@@ -1074,7 +1080,10 @@
           <!-- 最低承認可能価格: フル幅 -->
           <div style="border-top:1px solid var(--border);padding-top:10px">
             <div style="font-size:10px;color:var(--text-secondary);margin-bottom:4px">最低承認可能価格</div>
-            <div style="font-size:18px;font-weight:700;font-family:var(--font-sans);font-variant-numeric:tabular-nums" id="p-sim-min-price">—</div>
+            <div style="display:flex;align-items:baseline;gap:10px">
+              <div style="font-size:18px;font-weight:700;font-family:var(--font-sans);font-variant-numeric:tabular-nums" id="p-sim-min-price">—</div>
+              <div style="font-size:13px;font-family:var(--font-mono);font-variant-numeric:tabular-nums;color:var(--text-muted)" id="p-sim-min-price-jpy">—</div>
+            </div>
             <div style="font-size:10px;color:var(--text-secondary);margin-top:2px">目標を満たす最小オファー価格</div>
           </div>
         </div>
@@ -1173,7 +1182,8 @@
     return items.map(label => `
       <tr>
         <td style="color:var(--text-secondary);font-size:14px;padding:8px 0">${label}</td>
-        <td style="color:var(--text-muted);font-size:14px;text-align:right;padding:8px 0">—</td>
+        <td style="color:var(--text-muted);font-family:var(--font-mono);font-size:12px;text-align:right;padding:8px 0">—</td>
+        <td style="color:var(--text-muted);font-family:var(--font-mono);font-size:13px;text-align:right;padding:8px 0">—</td>
       </tr>
     `).join('');
   }
@@ -1393,6 +1403,7 @@
               <div class="meter">
                 <div class="meter-fill green" id="p-profit-meter" style="width:0%"></div>
               </div>
+              <div style="font-size:10px;color:var(--text-muted);margin-top:3px;text-align:right" id="p-profit-meter-label">目標達成度</div>
             </div>
 
             <!-- PPD 結果 -->
@@ -1400,12 +1411,12 @@
               <div class="card-title">PPD（1日あたり粗利益）</div>
               <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:8px">
                 <div>
-                  <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);margin-bottom:4px">USD / 日</div>
-                  <div class="card-value" style="font-size:20px" id="p-ppd-usd">—</div>
-                </div>
-                <div>
                   <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);margin-bottom:4px">JPY / 日</div>
                   <div class="card-value" style="font-size:20px" id="p-ppd-jpy">—</div>
+                </div>
+                <div>
+                  <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);margin-bottom:4px">USD / 日</div>
+                  <div class="card-value" style="font-size:20px" id="p-ppd-usd">—</div>
                 </div>
               </div>
               <div style="font-size:10px;color:var(--text-muted)">
@@ -1604,14 +1615,22 @@
       }
     }
 
-    const meterFill = root.querySelector('#p-profit-meter');
+    const meterFill  = root.querySelector('#p-profit-meter');
+    const meterLabel = root.querySelector('#p-profit-meter-label');
     if (meterFill) {
-      const pct = Math.max(0, Math.min(100, profitRate));
+      const s = BA.settings?.get?.() ?? {};
+      const targetRate = parseFloat(root.querySelector('#p-toggle-rate-input')?.value)
+                         || Number(s.targetMargin ?? 25) || 25;
+      const achievePct = targetRate > 0
+        ? Math.max(0, Math.min(100, (profitRate / targetRate) * 100))
+        : 0;
+      const colorKey = profitRate < 0 ? 'red' : profitRate >= targetRate ? 'green' : 'amber';
       if (BA.charts?.meterBar) {
-        BA.charts.meterBar(meterFill, pct, 100, profitRate >= 25 ? 'green' : profitRate >= 0 ? 'amber' : 'red');
+        BA.charts.meterBar(meterFill, achievePct, 100, colorKey);
       } else {
-        meterFill.style.width = `${pct}%`;
+        meterFill.style.width = `${achievePct}%`;
       }
+      if (meterLabel) meterLabel.textContent = `目標達成度（目標 ${targetRate.toFixed(0)}%）`;
     }
 
     const tbody = root.querySelector('#p-breakdown-table tbody');
@@ -1619,31 +1638,35 @@
       const b = result.breakdown;
       const baseCostUsd = cost / rate;
       const feeUsd      = costFeeJpy / rate;
+      // rows: [label, isDeduction, usdAbsValue]
       const rows = [
-        ['販売価格',        `$${b.sellingUsd.toFixed(2)}`],
-        ['eBay 手数料',     `-$${b.ebayFeeUsd.toFixed(2)}`],
-        b.promotedUsd    > 0 ? ['Promoted Listings', `-$${b.promotedUsd.toFixed(2)}`]    : null,
-        [`Payoneer 手数料`, `-$${b.payoneerUsd.toFixed(2)}`],
-        b.shippingUsd    > 0 ? ['送料',               `-$${b.shippingUsd.toFixed(2)}`]   : null,
-        b.customsUsd     > 0 ? ['関税',               `-$${b.customsUsd.toFixed(2)}`]    : null,
-        b.authServiceUsd > 0 ? ['真贋サービス送料',   `-$${b.authServiceUsd.toFixed(2)}`]: null,
-        baseCostUsd      > 0 ? ['仕入れ原価',         `-$${baseCostUsd.toFixed(2)}`]     : null,
-        feeUsd           > 0 ? ['仕入れ手数料',       `-$${feeUsd.toFixed(2)}`]          : null,
+        ['販売価格',         false, b.sellingUsd],
+        ['eBay 手数料',      true,  b.ebayFeeUsd],
+        b.promotedUsd    > 0 ? ['Promoted',        true, b.promotedUsd]    : null,
+        ['Payoneer',         true,  b.payoneerUsd],
+        b.shippingUsd    > 0 ? ['送料',             true, b.shippingUsd]   : null,
+        b.customsUsd     > 0 ? ['関税',             true, b.customsUsd]    : null,
+        b.authServiceUsd > 0 ? ['真贋サービス',     true, b.authServiceUsd]: null,
+        baseCostUsd      > 0 ? ['仕入れ原価',       true, baseCostUsd]     : null,
+        feeUsd           > 0 ? ['仕入れ手数料',     true, feeUsd]          : null,
       ].filter(Boolean);
 
-      tbody.innerHTML = rows.map(([label, val]) => `
-        <tr>
-          <td>${label}</td>
-          <td style="font-family:var(--font-mono);text-align:right;color:${val.startsWith('-') ? 'var(--text-muted)' : 'var(--text-primary)'}">
-            ${val}
-          </td>
-        </tr>
-      `).join('') + `
+      tbody.innerHTML = rows.map(([label, isDed, usdAbs]) => {
+        const jpyAbs = Math.round(usdAbs * rate);
+        const sign   = isDed ? '-' : '';
+        const col    = isDed ? 'var(--text-muted)' : 'var(--text-primary)';
+        return `
+          <tr>
+            <td style="font-size:14px;padding:8px 0">${label}</td>
+            <td style="font-family:var(--font-mono);font-size:12px;text-align:right;color:${col};padding:8px 0">${sign}¥${jpyAbs.toLocaleString()}</td>
+            <td style="font-family:var(--font-mono);font-size:13px;text-align:right;color:${col};padding:8px 0">${sign}$${usdAbs.toFixed(2)}</td>
+          </tr>
+        `;
+      }).join('') + `
         <tr style="border-top:1px solid var(--border-active)">
-          <td style="color:var(--text-primary);font-weight:500">粗利益</td>
-          <td style="font-family:var(--font-mono);text-align:right;color:${color};font-weight:500">
-            $${profitUsd.toFixed(2)}
-          </td>
+          <td style="color:var(--text-primary);font-weight:500;font-size:14px;padding:8px 0">粗利益</td>
+          <td style="font-family:var(--font-mono);font-size:12px;text-align:right;color:${color};font-weight:500;padding:8px 0">¥${Math.round(profitJpy).toLocaleString()}</td>
+          <td style="font-family:var(--font-mono);font-size:13px;text-align:right;color:${color};font-weight:500;padding:8px 0">$${profitUsd.toFixed(2)}</td>
         </tr>
       `;
     } else if (tbody) {
