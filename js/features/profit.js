@@ -552,7 +552,7 @@
 
   function _renderPriceCalcCard() {
     return `
-      <div class="card" style="margin-bottom:16px" id="p-calc-card">
+      <div class="card" style="margin-bottom:12px" id="p-calc-card">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
           <div class="card-title" style="margin:0">価格・原価・粗利</div>
           <div style="display:flex;border:1px solid var(--border);border-radius:6px;overflow:hidden">
@@ -566,8 +566,8 @@
           <div class="input-group">
             <label class="input-label" for="p-cost">仕入れ原価</label>
             <div class="input-wrap">
-              <div class="input-prefix">¥</div>
-              <input class="input" id="p-cost" type="text" inputmode="numeric" placeholder="0" style="text-align:right">
+              <input class="input" id="p-cost" type="text" inputmode="numeric" placeholder="0" style="text-align:right;border-right:none;border-radius:6px 0 0 6px">
+              <div class="input-prefix" style="border-right:1px solid var(--border);border-radius:0 8px 8px 0">¥</div>
             </div>
           </div>
 
@@ -575,8 +575,8 @@
           <div id="p-price-col" class="input-group">
             <label class="input-label" for="p-price">販売価格</label>
             <div class="input-wrap">
-              <div class="input-prefix">$</div>
-              <input class="input" id="p-price" type="text" inputmode="decimal" placeholder="0.00" style="text-align:right">
+              <input class="input" id="p-price" type="text" inputmode="decimal" placeholder="0.00" style="text-align:right;border-right:none;border-radius:6px 0 0 6px">
+              <div class="input-prefix" style="border-right:1px solid var(--border);border-radius:0 8px 8px 0">$</div>
             </div>
           </div>
 
@@ -597,8 +597,8 @@
             </div>
             <div id="p-calc-target-jpy-wrap" style="display:none">
               <div class="input-wrap" style="max-width:130px">
-                <div class="input-prefix">¥</div>
-                <input class="input" id="p-calc-target-jpy" type="text" inputmode="numeric" placeholder="20000" style="text-align:right">
+                <input class="input" id="p-calc-target-jpy" type="text" inputmode="numeric" placeholder="20000" style="text-align:right;border-right:none;border-radius:6px 0 0 6px">
+                <div class="input-prefix" style="border-right:1px solid var(--border);border-radius:0 8px 8px 0">¥</div>
               </div>
             </div>
           </div>
@@ -635,8 +635,8 @@
               <div class="input-group" style="margin-bottom:8px">
                 <label class="input-label">粗利額（目標）</label>
                 <div class="input-wrap" style="max-width:130px">
-                  <div class="input-prefix">¥</div>
-                  <input class="input" id="p-toggle-amount-input" type="text" inputmode="numeric" placeholder="20000" style="text-align:right">
+                  <input class="input" id="p-toggle-amount-input" type="text" inputmode="numeric" placeholder="20000" style="text-align:right;border-right:none;border-radius:6px 0 0 6px">
+                  <div class="input-prefix" style="border-right:1px solid var(--border);border-radius:0 8px 8px 0">¥</div>
                 </div>
               </div>
               <div style="display:flex;justify-content:space-between;align-items:baseline">
@@ -680,9 +680,9 @@
           <div class="input-group" style="margin-bottom:12px">
             <label class="input-label">オファー金額</label>
             <div class="input-wrap">
-              <div class="input-prefix">$</div>
               <input class="input" id="p-sim-offer" type="text" inputmode="decimal"
-                placeholder="バイヤーの提示価格" style="text-align:right">
+                placeholder="バイヤーの提示価格" style="text-align:right;border-right:none;border-radius:6px 0 0 6px">
+              <div class="input-prefix" style="border-right:1px solid var(--border);border-radius:0 8px 8px 0">$</div>
             </div>
             <div id="p-sim-diff" style="font-size:12px;margin-top:6px;
               font-family:var(--font-mono);color:var(--text-muted)">—</div>
@@ -866,14 +866,14 @@
   function _render(root) {
     root.innerHTML = `
       ${_tutorialBanner()}
-      <div style="background:var(--bg-elevated);border:1px solid var(--border);border-radius:12px;padding:20px 36px">
+      <div style="background:var(--bg-elevated);border:1px solid var(--border);border-radius:12px;padding:16px 36px">
         <div class="profit-3col" style="display:grid;grid-template-columns:1fr 1fr 1.4fr;gap:40px;align-items:start">
 
         <!-- LEFT: 入力フォーム -->
         <div>
 
           <!-- 基本設定 + 適用手数料率 一体化（P-18 【3】） -->
-          <div class="card" style="margin-bottom:16px">
+          <div class="card" style="margin-bottom:12px">
             <div class="card-title">基本設定</div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:10px">
               <div class="input-group">
@@ -909,7 +909,7 @@
           ${_renderPriceCalcCard()}
 
           <!-- PPD: 在庫保有日数 -->
-          <div class="card" style="margin-bottom:16px">
+          <div class="card" style="margin-bottom:12px">
             <div class="card-title">PPD（1日あたり粗利益）</div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:end">
               <div class="input-group">
@@ -926,7 +926,7 @@
           </div>
 
           <!-- 手数料 -->
-          <div class="card" style="margin-bottom:16px">
+          <div class="card" style="margin-bottom:12px">
             <div class="card-title">手数料</div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
               <div class="input-group">
@@ -966,8 +966,8 @@
                 <div class="input-group" id="p-ship-manual-wrap">
                   <label class="input-label" for="p-ship-val">送料（手動）</label>
                   <div class="input-wrap">
-                    <div class="input-prefix">$</div>
-                    <input class="input" id="p-ship-val" type="text" inputmode="decimal" value="0" style="text-align:right">
+                    <input class="input" id="p-ship-val" type="text" inputmode="decimal" value="0" style="text-align:right;border-right:none;border-radius:6px 0 0 6px">
+                    <div class="input-prefix" style="border-right:1px solid var(--border);border-radius:0 8px 8px 0">$</div>
                   </div>
                 </div>
               </div>
@@ -985,8 +985,8 @@
                   <div class="input-group" id="p-customs-manual-wrap">
                     <label class="input-label" for="p-customs-val">関税（手動）</label>
                     <div class="input-wrap">
-                      <div class="input-prefix">$</div>
-                      <input class="input" id="p-customs-val" type="text" inputmode="decimal" value="0" style="text-align:right">
+                      <input class="input" id="p-customs-val" type="text" inputmode="decimal" value="0" style="text-align:right;border-right:none;border-radius:6px 0 0 6px">
+                      <div class="input-prefix" style="border-right:1px solid var(--border);border-radius:0 8px 8px 0">$</div>
                     </div>
                   </div>
                   <div class="input-group" id="p-customs-pct-wrap" style="display:none">
@@ -1010,15 +1010,15 @@
                 <div class="input-group">
                   <label class="input-label">国際送料</label>
                   <div class="input-wrap">
-                    <div class="input-prefix">$</div>
-                    <input class="input" type="number" value="0" disabled style="opacity:0.4">
+                    <input class="input" type="number" value="0" disabled style="opacity:0.4;border-right:none;border-radius:6px 0 0 6px">
+                    <div class="input-prefix" style="border-right:1px solid var(--border);border-radius:0 8px 8px 0;opacity:0.4">$</div>
                   </div>
                 </div>
                 <div class="input-group">
                   <label class="input-label" for="p-auth-service">真贋サービス送料</label>
                   <div class="input-wrap">
-                    <div class="input-prefix">¥</div>
-                    <input class="input" id="p-auth-service" type="text" inputmode="numeric" value="1500" style="text-align:right">
+                    <input class="input" id="p-auth-service" type="text" inputmode="numeric" value="1500" style="text-align:right;border-right:none;border-radius:6px 0 0 6px">
+                    <div class="input-prefix" style="border-right:1px solid var(--border);border-radius:0 8px 8px 0">¥</div>
                   </div>
                 </div>
               </div>
