@@ -38,6 +38,7 @@
 | P-15 | 🟡 | 手数料率入力欄（Promoted・Payoneer・関税%）のblur時に小数第2位まで表示（例:2→2.00）。`_attachPctFormat()`ヘルパーで実装。内部計算は素のparseFloatで数値化 | ✅ 実装済み（2026-06-09） |
 | P-16 | 🟡 | 入力欄の通貨記号($・¥・JPY)の視認性改善。`.input-prefix`の`color:var(--text-muted)`→`color:var(--text-secondary)`に変更（ライトテーマ:#555555/4.5:1以上、ダークテーマ:#9a9a9a/WCAG AA準拠）。新色トークン追加なし | ✅ 実装済み（2026-06-09） |
 | P-17 | 🟡 | 3列レイアウトの横幅拡張・外枠一体化。`#panel-profit{max-width:none}`でmax-width制限を解除し24インチ画面の右側空白を解消。3列グリッド全体を`var(--bg-elevated)/var(--border)/border-radius:12px`の外枠コンテナで囲み一体感を追加。右列を1.2fr→1.4frに拡大して粗利益を主役化。Promoted/Payoneer入力を`type="text"`に変更してデフォルト表示"0.00"/"2.00"を実現。settings-changed ハンドラで`payoneerRate.toFixed(2)`対応 | ✅ 実装済み（2026-06-09） |
+| P-18 | 🟡 | **仕入シミュレーター6点改修**。【1】価格・原価＋粗利率⇔粗利額を1カードに統合しタブで3方向計算を実装（タブ②粗利を求める・タブ①販売価格を求める。循環防止：`_refreshCalcPrice()`はDOM直接書き換えのみでinputイベント不発）。【2】送料の固定$35選択肢を削除（DEFAULTSから`shippingFixed`削除・`_calculate()`・`_calcMinPrice()`の固定分岐削除・送料selectを手動/バイヤー負担2択に変更）。【3】「適用手数料率」カードを廃止し基本設定カード内にインライン統合。【4】粗利率/額入力欄のmax-width:130px統一・為替レート入力グループをwidth:160pxに統一。【5】ページ表示時点の`MM/DD HH:MM 時点`を「更新」ボタン押下なしでデフォルト表示（`_fmtNow()`追加）。【6】右列の粗利益・PPD・費用内訳3カードを外枠コンテナで一体化 | ✅ 実装済み（2026-06-09） |
 
 ---
 
