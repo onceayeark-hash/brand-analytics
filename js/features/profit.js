@@ -94,8 +94,12 @@
     threshold500:   500,
   };
 
-  let _exchangeRate = DEFAULTS.usdJpy;
-  let _rendered     = false;
+  let _exchangeRate    = DEFAULTS.usdJpy;
+  let _rendered        = false;
+  let _costFeeProfiles = [];
+  let _costFeeExtras   = [];
+  let _costFeeState    = { profileId: null, extraIds: new Set() };
+  let _costFeeOpen     = false;
 
   // ─────────────────────────────────────
   // カンマ表示ヘルパー（P-12）
@@ -148,6 +152,320 @@
   }
 
   // ─────────────────────────────────────
+  // 仕入れ手数料 管理（P-21）
+  // ─────────────────────────────────────
+
+  const _FEE_PROFILES_KEY  = 'ba_cost_fee_profiles';
+  const _FEE_EXTRAS_KEY    = 'ba_cost_fee_extras';
+  const _FEE_STATE_KEY     = 'ba_cost_fee_state';
+
+  const _FEE_TIERED_DEFAULT = {
+    id: 'default_tiered', name: '段階制', type: 'tiered',
+    tiers: [
+      { max: 9999,  fee: 500  },
+      { max: 29999, fee: 1000 },
+      { max: 49999, fee: 2000 },
+      { max: null,  fee: 4000 },
+    ],
+  };
+
+  function _initCostFee() {
+    try {
+      const sp = localStorage.getItem(_FEE_PROFILES_KEY);
+      _costFeeProfiles = sp
+        ? JSON.parse(sp)
+        : [JSON.parse(JSON.stringify(_FEE_TIERED_DEFAULT))];
+      const se = localStorage.getItem(_FEE_EXTRAS_KEY);
+      _costFeeExtras = se ? JSON.parse(se) : [];
+      const ss = localStorage.getItem(_FEE_STATE_KEY);
+      if (ss) {
+        const s = JSON.parse(ss);
+        _costFeeState.profileId = s.profileId ?? null;
+        _costFeeState.extraIds  = new Set(s.extraIds ?? []);
+      }
+    } catch {}
+  }
+
+  function _saveCostFee() {
+    try {
+      localStorage.setItem(_FEE_PROFILES_KEY, JSON.stringify(_costFeeProfiles));
+      localStorage.setItem(_FEE_EXTRAS_KEY,   JSON.stringify(_costFeeExtras));
+      localStorage.setItem(_FEE_STATE_KEY, JSON.stringify({
+        profileId: _costFeeState.profileId,
+        extraIds:  [..._costFeeState.extraIds],
+      }));
+    } catch {}
+  }
+
+  function _calcCostFee(baseCostJpy) {
+    if (!baseCostJpy) return 0;
+    let fee = 0;
+    const profile = _costFeeProfiles.find(p => p.id === _costFeeState.profileId);
+    if (profile) {
+      if (profile.type === 'tiered') {
+        for (const tier of profile.tiers) {
+          if (tier.max === null || baseCostJpy <= tier.max) {
+            fee = tier.fee || 0;
+            break;
+          }
+        }
+      } else if (profile.type === 'pct') {
+        fee = Math.round(baseCostJpy * ((profile.rate || 0) / 100));
+      }
+    }
+    for (const ex of _costFeeExtras) {
+      if (_costFeeState.extraIds.has(ex.id)) fee += (ex.amount || 0);
+    }
+    return fee;
+  }
+
+  function _buildCostFeePanelHtml() {
+    const profilesHtml = _costFeeProfiles.map(p => {
+      const isSelected = _costFeeState.profileId === p.id;
+      let body = '';
+      if (p.type === 'tiered') {
+        body = p.tiers.map((t, i) => {
+          const fromLabel = i === 0 ? '¥0' : '¥' + (p.tiers[i - 1].max + 1).toLocaleString();
+          const toLabel   = t.max !== null ? '〜¥' + t.max.toLocaleString() : '以上';
+          return `
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+              <span style="font-size:11px;color:var(--text-muted);flex:1;white-space:nowrap">${fromLabel}${toLabel}</span>
+              <div class="input-wrap" style="width:110px;flex-shrink:0">
+                <input class="input" type="number" min="0" step="100" value="${t.fee}"
+                  data-tier-profile="${p.id}" data-tier-idx="${i}"
+                  style="font-size:12px;text-align:right;border-right:none;border-radius:4px 0 0 4px">
+                <div class="input-prefix" style="font-size:11px;border-right:1px solid var(--border);border-radius:0 4px 4px 0">¥</div>
+              </div>
+            </div>`;
+        }).join('');
+      } else {
+        body = `
+          <div style="display:flex;align-items:center;gap:6px">
+            <span style="font-size:11px;color:var(--text-muted);min-width:60px">手数料率</span>
+            <div class="input-wrap" style="width:80px">
+              <input class="input" type="number" min="0" max="100" step="0.1" value="${p.rate || ''}"
+                data-pct-profile="${p.id}"
+                style="font-size:12px;text-align:right">
+              <div class="input-prefix" style="font-size:11px;border-left:none;border-right:1px solid var(--border);border-radius:0 4px 4px 0">%</div>
+            </div>
+          </div>`;
+      }
+      const borderColor = isSelected ? 'var(--brand)' : 'var(--border)';
+      return `
+        <div style="border:1px solid ${borderColor};border-radius:8px;padding:10px 12px;margin-bottom:8px">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+            <input type="radio" name="p-fee-radio" value="${p.id}" ${isSelected ? 'checked' : ''}
+              style="accent-color:var(--brand);cursor:pointer;flex-shrink:0">
+            <span style="font-size:12px;font-weight:500;color:var(--text-primary);flex:1">${p.name}</span>
+            ${p.id !== 'default_tiered' ? `<button data-fee-del-profile="${p.id}" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:13px;padding:0 2px;line-height:1">✕</button>` : ''}
+          </div>
+          ${body}
+        </div>`;
+    }).join('');
+
+    const extraItems = _costFeeExtras.map(ex => `
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
+        <input type="checkbox" value="${ex.id}" ${_costFeeState.extraIds.has(ex.id) ? 'checked' : ''}
+          style="accent-color:var(--brand);cursor:pointer;flex-shrink:0">
+        <span style="font-size:12px;color:var(--text-primary);flex:1">${ex.name}</span>
+        <span style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted)">+¥${ex.amount.toLocaleString()}</span>
+        <button data-fee-del-extra="${ex.id}" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:13px;padding:0 2px;line-height:1">✕</button>
+      </div>`).join('');
+
+    return `
+      <div class="card" id="p-cost-fee-panel" style="margin-bottom:16px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <div class="card-title" style="margin:0">仕入れ手数料</div>
+          <button id="p-fee-close-btn" style="background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:18px;padding:0;line-height:1">×</button>
+        </div>
+
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px">手数料プロフィール（ラジオで選択）</div>
+
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+          <input type="radio" name="p-fee-radio" value="" ${!_costFeeState.profileId ? 'checked' : ''}
+            style="accent-color:var(--brand);cursor:pointer;flex-shrink:0">
+          <span style="font-size:12px;color:var(--text-muted)">手数料なし</span>
+        </div>
+
+        ${profilesHtml}
+
+        <div style="display:flex;gap:8px;margin-bottom:12px">
+          <button id="p-fee-add-tiered-btn" class="btn btn-secondary" style="font-size:11px;padding:4px 10px">+ 段階制を追加</button>
+          <button id="p-fee-add-pct-btn"    class="btn btn-secondary" style="font-size:11px;padding:4px 10px">+ ％を追加</button>
+        </div>
+
+        <div id="p-fee-add-form" style="display:none;border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:12px">
+          <div class="input-group" style="margin-bottom:8px">
+            <label class="input-label">名前</label>
+            <input class="input" id="p-fee-form-name" type="text" placeholder="例：ヤフオク手数料" style="font-size:12px">
+          </div>
+          <div id="p-fee-form-pct-wrap" style="display:none;margin-bottom:8px">
+            <label class="input-label">手数料率</label>
+            <div class="input-wrap" style="max-width:90px">
+              <input class="input" id="p-fee-form-rate" type="number" min="0" max="100" step="0.1"
+                placeholder="6.0" style="font-size:12px;text-align:right">
+              <div class="input-prefix" style="font-size:11px;border-left:none;border-right:1px solid var(--border);border-radius:0 4px 4px 0">%</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:6px">
+            <button id="p-fee-form-save-btn"   class="btn btn-primary" style="font-size:11px;padding:4px 10px">保存</button>
+            <button id="p-fee-form-cancel-btn" class="btn btn-ghost"   style="font-size:11px;padding:4px 10px">キャンセル</button>
+          </div>
+        </div>
+
+        <div style="border-top:1px solid var(--border);padding-top:12px">
+          <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px">追加費用（複数選択可）</div>
+          <div id="p-fee-extras-list">${extraItems}</div>
+          <div style="display:flex;gap:6px;margin-top:8px">
+            <input class="input" id="p-fee-ex-name" type="text" placeholder="名前（例:送料）" style="flex:1;font-size:12px">
+            <div class="input-wrap" style="width:90px">
+              <input class="input" id="p-fee-ex-amount" type="number" min="0" step="100" placeholder="500"
+                style="text-align:right;font-size:12px;border-right:none;border-radius:6px 0 0 6px">
+              <div class="input-prefix" style="font-size:11px;border-right:1px solid var(--border);border-radius:0 6px 6px 0">¥</div>
+            </div>
+            <button id="p-fee-ex-add-btn" class="btn btn-secondary" style="font-size:11px;padding:4px 8px">追加</button>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  function _rebuildCostFeePanel(root) {
+    const wrap = root.querySelector('#p-cost-fee-panel-wrap');
+    if (!wrap) return;
+    if (!_costFeeOpen) { wrap.innerHTML = ''; return; }
+    wrap.innerHTML = _buildCostFeePanelHtml();
+    _bindCostFeeEvents(root);
+  }
+
+  function _bindCostFeeToggle(root) {
+    root.querySelector('#p-fee-toggle-btn')?.addEventListener('click', () => {
+      _costFeeOpen = !_costFeeOpen;
+      const btn = root.querySelector('#p-fee-toggle-btn');
+      if (btn) btn.textContent = _costFeeOpen ? '仕入れ手数料 ▲' : '仕入れ手数料 ▸';
+      _rebuildCostFeePanel(root);
+      _update(root);
+    });
+  }
+
+  function _bindCostFeeEvents(root) {
+    const wrap = root.querySelector('#p-cost-fee-panel-wrap');
+    if (!wrap) return;
+
+    wrap.querySelector('#p-fee-close-btn')?.addEventListener('click', () => {
+      _costFeeOpen = false;
+      const btn = root.querySelector('#p-fee-toggle-btn');
+      if (btn) btn.textContent = '仕入れ手数料 ▸';
+      wrap.innerHTML = '';
+      _update(root);
+    });
+
+    wrap.querySelectorAll('input[name="p-fee-radio"]').forEach(r => {
+      r.addEventListener('change', () => {
+        _costFeeState.profileId = r.value || null;
+        _saveCostFee();
+        _rebuildCostFeePanel(root);
+        _update(root);
+      });
+    });
+
+    wrap.querySelectorAll('[data-tier-profile]').forEach(input => {
+      input.addEventListener('input', () => {
+        const pid  = input.dataset.tierProfile;
+        const idx  = parseInt(input.dataset.tierIdx);
+        const prof = _costFeeProfiles.find(p => p.id === pid);
+        if (prof) { prof.tiers[idx].fee = parseInt(input.value) || 0; _saveCostFee(); _update(root); }
+      });
+    });
+
+    wrap.querySelectorAll('[data-pct-profile]').forEach(input => {
+      input.addEventListener('input', () => {
+        const pid  = input.dataset.pctProfile;
+        const prof = _costFeeProfiles.find(p => p.id === pid);
+        if (prof) { prof.rate = parseFloat(input.value) || 0; _saveCostFee(); _update(root); }
+      });
+    });
+
+    wrap.querySelectorAll('[data-fee-del-profile]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const pid = btn.dataset.feeDelProfile;
+        _costFeeProfiles = _costFeeProfiles.filter(p => p.id !== pid);
+        if (_costFeeState.profileId === pid) _costFeeState.profileId = null;
+        _saveCostFee();
+        _rebuildCostFeePanel(root);
+        _update(root);
+      });
+    });
+
+    wrap.querySelectorAll('#p-fee-extras-list input[type="checkbox"]').forEach(cb => {
+      cb.addEventListener('change', () => {
+        if (cb.checked) _costFeeState.extraIds.add(cb.value);
+        else            _costFeeState.extraIds.delete(cb.value);
+        _saveCostFee();
+        _update(root);
+      });
+    });
+
+    wrap.querySelectorAll('[data-fee-del-extra]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const eid = btn.dataset.feeDelExtra;
+        _costFeeExtras = _costFeeExtras.filter(e => e.id !== eid);
+        _costFeeState.extraIds.delete(eid);
+        _saveCostFee();
+        _rebuildCostFeePanel(root);
+        _update(root);
+      });
+    });
+
+    let _addingType = null;
+    const form    = wrap.querySelector('#p-fee-add-form');
+    const pctWrap = wrap.querySelector('#p-fee-form-pct-wrap');
+
+    wrap.querySelector('#p-fee-add-tiered-btn')?.addEventListener('click', () => {
+      _addingType = 'tiered';
+      if (form)    form.style.display    = '';
+      if (pctWrap) pctWrap.style.display = 'none';
+      wrap.querySelector('#p-fee-form-name')?.focus();
+    });
+    wrap.querySelector('#p-fee-add-pct-btn')?.addEventListener('click', () => {
+      _addingType = 'pct';
+      if (form)    form.style.display    = '';
+      if (pctWrap) pctWrap.style.display = '';
+      wrap.querySelector('#p-fee-form-name')?.focus();
+    });
+    wrap.querySelector('#p-fee-form-cancel-btn')?.addEventListener('click', () => {
+      if (form) form.style.display = 'none';
+      _addingType = null;
+    });
+    wrap.querySelector('#p-fee-form-save-btn')?.addEventListener('click', () => {
+      const name = wrap.querySelector('#p-fee-form-name')?.value.trim();
+      if (!name) return;
+      if (_addingType === 'tiered') {
+        _costFeeProfiles.push({
+          id: `tiered_${Date.now()}`, name, type: 'tiered',
+          tiers: JSON.parse(JSON.stringify(_FEE_TIERED_DEFAULT.tiers)),
+        });
+      } else if (_addingType === 'pct') {
+        const rate = parseFloat(wrap.querySelector('#p-fee-form-rate')?.value) || 0;
+        _costFeeProfiles.push({ id: `pct_${Date.now()}`, name, type: 'pct', rate });
+      }
+      _saveCostFee();
+      _rebuildCostFeePanel(root);
+      _update(root);
+      _addingType = null;
+    });
+
+    wrap.querySelector('#p-fee-ex-add-btn')?.addEventListener('click', () => {
+      const name   = wrap.querySelector('#p-fee-ex-name')?.value.trim();
+      const amount = parseInt(wrap.querySelector('#p-fee-ex-amount')?.value) || 0;
+      if (!name || amount <= 0) return;
+      _costFeeExtras.push({ id: `ex_${Date.now()}`, name, amount });
+      _saveCostFee();
+      _rebuildCostFeePanel(root);
+      _update(root);
+    });
+  }
+
+  // ─────────────────────────────────────
   // 入力値読み取り
   // ─────────────────────────────────────
 
@@ -167,6 +485,12 @@
       authServiceJpy: _parseNum(root.querySelector('#p-auth-service')?.value || ''),
       usdJpy:         _parseNum(root.querySelector('#p-rate')?.value   || '') || DEFAULTS.usdJpy,
     };
+  }
+
+  function _readInputsWithFee(root) {
+    const inputs = _readInputs(root);
+    inputs.costJpy += _calcCostFee(inputs.costJpy);
+    return inputs;
   }
 
   // ─────────────────────────────────────
@@ -251,7 +575,7 @@
       ? parseFloat(root.querySelector('#p-calc-target-pct')?.value) || 0
       : _parseNum(root.querySelector('#p-calc-target-jpy')?.value || '');
 
-    const inputs = _readInputs(root);
+    const inputs = _readInputsWithFee(root);
     const calcedPrice = _calcMinPrice(inputs, mode, targetVal);
     const resultEl    = root.querySelector('#p-calc-price-result');
     const priceInput  = root.querySelector('#p-price');
@@ -279,7 +603,7 @@
   function _updateSimulator(root) {
     if (!root.querySelector('#p-sim-guide')) return;
 
-    const inputs = _readInputs(root);
+    const inputs = _readInputsWithFee(root);
     const hasData = inputs.price > 0 || inputs.costJpy > 0;
     const guide   = root.querySelector('#p-sim-guide');
     const content = root.querySelector('#p-sim-content');
@@ -368,12 +692,12 @@
         pBtn.classList.add('sim-tab-active');     jBtn.classList.remove('sim-tab-active');
         pBtn.style.background = 'var(--brand)';   pBtn.style.color = '#fff';
         jBtn.style.background = 'var(--card-bg)'; jBtn.style.color = 'var(--text-secondary)';
-        if (pW) pW.style.display = 'flex'; if (jW) jW.style.display = 'none';
+        if (pW) pW.style.display = ''; if (jW) jW.style.display = 'none';
       } else {
         jBtn.classList.add('sim-tab-active');     pBtn.classList.remove('sim-tab-active');
         jBtn.style.background = 'var(--brand)';   jBtn.style.color = '#fff';
         pBtn.style.background = 'var(--card-bg)'; pBtn.style.color = 'var(--text-secondary)';
-        if (jW) jW.style.display = 'flex'; if (pW) pW.style.display = 'none';
+        if (jW) jW.style.display = ''; if (pW) pW.style.display = 'none';
       }
       _updateSimulator(root);
     };
@@ -554,14 +878,17 @@
     return `
       <div class="card" style="margin-bottom:12px" id="p-calc-card">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-          <div class="card-title" style="margin:0">価格・原価・粗利</div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <div class="card-title" style="margin:0">価格・原価・粗利</div>
+            <button id="p-fee-toggle-btn" style="font-size:11px;padding:3px 8px;border:1px solid var(--border);border-radius:4px;background:transparent;cursor:pointer;color:var(--text-muted);white-space:nowrap">仕入れ手数料 ▸</button>
+          </div>
           <div style="display:flex;border:1px solid var(--border);border-radius:6px;overflow:hidden">
             <button id="p-calc-tab-profit-btn" style="padding:5px 12px;font-size:11px;border:none;cursor:pointer;background:var(--brand);color:#fff;font-weight:500">粗利を求める</button>
             <button id="p-calc-tab-price-btn"  style="padding:5px 12px;font-size:11px;border:none;cursor:pointer;background:transparent;color:var(--text-secondary)">販売価格を求める</button>
           </div>
         </div>
 
-        <!-- 仕入原価 + 右セル(タブ依存) 横並び1行 -->
+        <!-- 仕入原価 + 右セル(タブ依存) 横並び1行（P-21: グリッドズレ修正） -->
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
           <div class="input-group">
             <label class="input-label" for="p-cost">仕入れ原価</label>
@@ -571,34 +898,37 @@
             </div>
           </div>
 
-          <!-- タブ②: 販売価格 -->
-          <div id="p-price-col" class="input-group">
-            <label class="input-label" for="p-price">販売価格</label>
-            <div class="input-wrap">
-              <input class="input" id="p-price" type="text" inputmode="decimal" placeholder="0.00" style="text-align:right;border-right:none;border-radius:6px 0 0 6px">
-              <div class="input-prefix" style="border-right:1px solid var(--border);border-radius:0 8px 8px 0">$</div>
+          <!-- 列2: 常にここ。タブによって中身が切り替わる -->
+          <div>
+            <!-- タブ②: 販売価格 -->
+            <div id="p-price-col" class="input-group">
+              <label class="input-label" for="p-price">販売価格</label>
+              <div class="input-wrap">
+                <input class="input" id="p-price" type="text" inputmode="decimal" placeholder="0.00" style="text-align:right;border-right:none;border-radius:6px 0 0 6px">
+                <div class="input-prefix" style="border-right:1px solid var(--border);border-radius:0 8px 8px 0">$</div>
+              </div>
             </div>
-          </div>
 
-          <!-- タブ①: 目標トグル -->
-          <div id="p-calc-target-col" style="display:none">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-              <label class="input-label" style="margin:0">目標</label>
-              <div style="display:flex;border:1px solid var(--border);border-radius:6px;overflow:hidden">
-                <button id="p-calc-toggle-pct-btn" style="padding:3px 9px;font-size:11px;border:none;cursor:pointer;background:var(--brand);color:#fff;font-weight:500">%</button>
-                <button id="p-calc-toggle-jpy-btn" style="padding:3px 9px;font-size:11px;border:none;cursor:pointer;background:transparent;color:var(--text-secondary)">¥</button>
+            <!-- タブ①: 目標トグル -->
+            <div id="p-calc-target-col" style="display:none">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+                <label class="input-label" style="margin:0">目標</label>
+                <div style="display:flex;border:1px solid var(--border);border-radius:6px;overflow:hidden">
+                  <button id="p-calc-toggle-pct-btn" style="padding:5px 12px;font-size:11px;border:none;cursor:pointer;background:var(--brand);color:#fff;font-weight:500">%</button>
+                  <button id="p-calc-toggle-jpy-btn" style="padding:5px 12px;font-size:11px;border:none;cursor:pointer;background:transparent;color:var(--text-secondary)">¥</button>
+                </div>
               </div>
-            </div>
-            <div id="p-calc-target-pct-wrap">
-              <div class="input-wrap" style="max-width:130px">
-                <input class="input" id="p-calc-target-pct" type="number" min="0" max="100" step="0.01" placeholder="25.00" style="text-align:right">
-                <div class="input-prefix" style="border-left:none;border-right:1px solid var(--border);border-radius:0 3px 3px 0">%</div>
+              <div id="p-calc-target-pct-wrap">
+                <div class="input-wrap" style="max-width:130px">
+                  <input class="input" id="p-calc-target-pct" type="number" min="0" max="100" step="0.01" placeholder="25.00" style="text-align:right">
+                  <div class="input-prefix" style="border-left:none;border-right:1px solid var(--border);border-radius:0 3px 3px 0">%</div>
+                </div>
               </div>
-            </div>
-            <div id="p-calc-target-jpy-wrap" style="display:none">
-              <div class="input-wrap" style="max-width:130px">
-                <input class="input" id="p-calc-target-jpy" type="text" inputmode="numeric" placeholder="20000" style="text-align:right;border-right:none;border-radius:6px 0 0 6px">
-                <div class="input-prefix" style="border-right:1px solid var(--border);border-radius:0 8px 8px 0">¥</div>
+              <div id="p-calc-target-jpy-wrap" style="display:none">
+                <div class="input-wrap" style="max-width:130px">
+                  <input class="input" id="p-calc-target-jpy" type="text" inputmode="numeric" placeholder="20000" style="text-align:right;border-right:none;border-radius:6px 0 0 6px">
+                  <div class="input-prefix" style="border-right:1px solid var(--border);border-radius:0 8px 8px 0">¥</div>
+                </div>
               </div>
             </div>
           </div>
@@ -610,8 +940,8 @@
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
               <div style="font-size:11px;color:var(--text-muted)">粗利率 ⇔ 粗利額</div>
               <div style="display:flex;border:1px solid var(--border);border-radius:6px;overflow:hidden">
-                <button id="p-toggle-rate-btn"   style="padding:4px 10px;font-size:11px;border:none;cursor:pointer;background:var(--brand);color:#fff;font-weight:500">粗利率 %</button>
-                <button id="p-toggle-amount-btn" style="padding:4px 10px;font-size:11px;border:none;cursor:pointer;background:transparent;color:var(--text-secondary)">粗利額 ¥</button>
+                <button id="p-toggle-rate-btn"   style="padding:5px 12px;font-size:11px;border:none;cursor:pointer;background:var(--brand);color:#fff;font-weight:500">粗利率 %</button>
+                <button id="p-toggle-amount-btn" style="padding:5px 12px;font-size:11px;border:none;cursor:pointer;background:transparent;color:var(--text-secondary)">粗利額 ¥</button>
               </div>
             </div>
 
@@ -626,7 +956,7 @@
               </div>
               <div style="display:flex;justify-content:space-between;align-items:baseline">
                 <span style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted)">対応粗利額</span>
-                <span id="p-toggle-rate-result" style="font-family:var(--font-mono);font-size:18px;font-weight:700;color:var(--text-primary)">—</span>
+                <span id="p-toggle-rate-result" style="font-family:var(--font-sans);font-size:18px;font-weight:700;color:var(--text-primary);font-variant-numeric:tabular-nums">—</span>
               </div>
             </div>
 
@@ -641,7 +971,7 @@
               </div>
               <div style="display:flex;justify-content:space-between;align-items:baseline">
                 <span style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted)">対応粗利率</span>
-                <span id="p-toggle-amount-result" style="font-family:var(--font-mono);font-size:18px;font-weight:700;color:var(--text-primary)">—</span>
+                <span id="p-toggle-amount-result" style="font-family:var(--font-sans);font-size:18px;font-weight:700;color:var(--text-primary);font-variant-numeric:tabular-nums">—</span>
               </div>
             </div>
           </div>
@@ -651,7 +981,7 @@
         <div id="p-calc-tab-price-wrap" style="display:none">
           <div style="border-top:1px solid var(--border);padding-top:12px">
             <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);margin-bottom:4px">販売価格（逆算）</div>
-            <div id="p-calc-price-result" style="font-family:var(--font-mono);font-size:24px;font-weight:700;color:var(--text-primary)">—</div>
+            <div id="p-calc-price-result" style="font-family:var(--font-sans);font-size:24px;font-weight:700;color:var(--text-primary);font-variant-numeric:tabular-nums">—</div>
             <div style="font-size:10px;color:var(--text-muted);margin-top:2px">手数料・送料・原価を考慮した逆算価格</div>
           </div>
         </div>
@@ -669,7 +999,7 @@
     const defJpy = Number(s.targetProfitJpy ?? 0)  || 0;
 
     return `
-      <div class="card" style="margin-bottom:16px" id="p-sim-wrap">
+      <div class="card" style="margin-bottom:10px" id="p-sim-wrap">
         <div class="card-title">ベストオファーシミュレーター</div>
 
         <div id="p-sim-guide" style="font-size:13px;color:var(--text-muted);line-height:1.8">
@@ -677,66 +1007,75 @@
         </div>
 
         <div id="p-sim-content" style="display:none">
-          <div class="input-group" style="margin-bottom:12px">
-            <label class="input-label">オファー金額</label>
-            <div class="input-wrap">
-              <input class="input" id="p-sim-offer" type="text" inputmode="decimal"
-                placeholder="バイヤーの提示価格" style="text-align:right;border-right:none;border-radius:6px 0 0 6px">
-              <div class="input-prefix" style="border-right:1px solid var(--border);border-radius:0 8px 8px 0">$</div>
+          <!-- P-22【1】: 2列レイアウト — 左:入力 / 右:4結果 -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start;margin-bottom:10px">
+
+            <!-- 左列: オファー金額 + 目標 -->
+            <div>
+              <div class="input-group" style="margin-bottom:10px">
+                <label class="input-label">オファー金額</label>
+                <div class="input-wrap" style="max-width:160px">
+                  <input class="input" id="p-sim-offer" type="text" inputmode="decimal"
+                    placeholder="提示価格" style="text-align:right;border-right:none;border-radius:6px 0 0 6px">
+                  <div class="input-prefix" style="border-right:1px solid var(--border);border-radius:0 8px 8px 0">$</div>
+                </div>
+                <div id="p-sim-diff" style="font-size:12px;margin-top:4px;font-family:var(--font-mono);color:var(--text-secondary)">—</div>
+              </div>
+
+              <div class="input-group">
+                <label class="input-label">目標</label>
+                <div style="display:flex;border:1px solid var(--border);border-radius:6px;overflow:hidden;margin-bottom:8px;width:fit-content">
+                  <button id="p-sim-tab-pct" class="sim-tab-active" style="padding:5px 12px;font-size:11px;border:none;cursor:pointer;background:var(--brand);color:#fff;font-weight:500">粗利率 %</button>
+                  <button id="p-sim-tab-jpy" style="padding:5px 12px;font-size:11px;border:none;cursor:pointer;background:var(--card-bg);color:var(--text-secondary)">粗利額 ¥</button>
+                </div>
+                <div id="p-sim-target-pct-wrap">
+                  <div class="input-wrap" style="max-width:120px">
+                    <input class="input" id="p-sim-target-pct" type="number" min="0" max="100"
+                      step="0.1" value="${defPct}" style="text-align:right">
+                    <div class="input-prefix" style="border-left:none;border-right:1px solid var(--border);border-radius:0 3px 3px 0">%</div>
+                  </div>
+                </div>
+                <div id="p-sim-target-jpy-wrap" style="display:none">
+                  <div class="input-wrap" style="max-width:120px">
+                    <input class="input" id="p-sim-target-jpy" type="text" inputmode="numeric"
+                      value="${defJpy}" style="text-align:right;border-right:none;border-radius:6px 0 0 6px">
+                    <div class="input-prefix" style="border-right:1px solid var(--border);border-radius:0 8px 8px 0">¥</div>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div id="p-sim-diff" style="font-size:12px;margin-top:6px;
-              font-family:var(--font-mono);color:var(--text-muted)">—</div>
+
+            <!-- 右列: 4結果 (粗利益USD/JPY・粗利率・ROI) -->
+            <div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+                <div>
+                  <div style="font-size:10px;color:var(--text-secondary);margin-bottom:2px">粗利益 USD</div>
+                  <div style="font-size:17px;font-weight:700;font-family:var(--font-sans);font-variant-numeric:tabular-nums" id="p-sim-profit-usd">—</div>
+                </div>
+                <div>
+                  <div style="font-size:10px;color:var(--text-secondary);margin-bottom:2px">粗利益 JPY</div>
+                  <div style="font-size:17px;font-weight:700;font-family:var(--font-sans);font-variant-numeric:tabular-nums" id="p-sim-profit-jpy">—</div>
+                </div>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+                <div>
+                  <div style="font-size:10px;color:var(--text-secondary);margin-bottom:2px">粗利率</div>
+                  <div style="font-size:16px;font-weight:600;font-family:var(--font-sans);font-variant-numeric:tabular-nums" id="p-sim-rate">—</div>
+                </div>
+                <div>
+                  <div style="font-size:10px;color:var(--text-secondary);margin-bottom:2px">ROI</div>
+                  <div style="font-size:16px;font-weight:600;font-family:var(--font-sans);font-variant-numeric:tabular-nums" id="p-sim-roi">—</div>
+                </div>
+              </div>
+            </div>
+
           </div>
 
-          <div class="input-group" style="margin-bottom:14px">
-            <label class="input-label">目標</label>
-            <div style="display:flex;border:1px solid var(--border);
-              border-radius:6px;overflow:hidden;margin-bottom:10px">
-              <button id="p-sim-tab-pct" class="sim-tab-active" style="
-                flex:1;padding:7px 0;font-size:12px;border:none;cursor:pointer;
-                background:var(--brand);color:#fff;font-weight:500">粗利率 %</button>
-              <button id="p-sim-tab-jpy" style="
-                flex:1;padding:7px 0;font-size:12px;border:none;cursor:pointer;
-                background:var(--card-bg);color:var(--text-secondary)">粗利額 ¥</button>
-            </div>
-            <div id="p-sim-target-pct-wrap" style="display:flex;align-items:center;gap:6px">
-              <input class="input" id="p-sim-target-pct" type="number" min="0" max="100"
-                step="0.1" value="${defPct}" style="text-align:right">
-              <span style="font-size:13px;color:var(--text-muted)">%</span>
-            </div>
-            <div id="p-sim-target-jpy-wrap" style="display:none;align-items:center;gap:6px">
-              <span style="font-size:13px;color:var(--text-muted)">¥</span>
-              <input class="input" id="p-sim-target-jpy" type="text" inputmode="numeric"
-                value="${defJpy}" style="text-align:right">
-            </div>
-          </div>
-
-          <div style="border-top:1px solid var(--border);padding-top:12px">
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
-              <div>
-                <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);margin-bottom:2px">粗利益 USD</div>
-                <div style="font-size:20px;font-weight:700;font-family:var(--font-mono)" id="p-sim-profit-usd">—</div>
-              </div>
-              <div>
-                <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);margin-bottom:2px">粗利益 JPY</div>
-                <div style="font-size:20px;font-weight:700;font-family:var(--font-mono)" id="p-sim-profit-jpy">—</div>
-              </div>
-            </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
-              <div>
-                <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);margin-bottom:2px">粗利率</div>
-                <div style="font-size:18px;font-weight:600;font-family:var(--font-mono)" id="p-sim-rate">—</div>
-              </div>
-              <div>
-                <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);margin-bottom:2px">ROI</div>
-                <div style="font-size:18px;font-weight:600;font-family:var(--font-mono)" id="p-sim-roi">—</div>
-              </div>
-            </div>
-            <div style="border-top:1px solid var(--border);padding-top:10px">
-              <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);margin-bottom:4px">最低承認可能価格</div>
-              <div style="font-size:22px;font-weight:700;font-family:var(--font-mono)" id="p-sim-min-price">—</div>
-              <div style="font-size:10px;color:var(--text-muted);margin-top:2px">目標を満たす最小オファー価格</div>
-            </div>
+          <!-- 最低承認可能価格: フル幅 -->
+          <div style="border-top:1px solid var(--border);padding-top:10px">
+            <div style="font-size:10px;color:var(--text-secondary);margin-bottom:4px">最低承認可能価格</div>
+            <div style="font-size:18px;font-weight:700;font-family:var(--font-sans);font-variant-numeric:tabular-nums" id="p-sim-min-price">—</div>
+            <div style="font-size:10px;color:var(--text-secondary);margin-top:2px">目標を満たす最小オファー価格</div>
           </div>
         </div>
       </div>`;
@@ -864,10 +1203,11 @@
   }
 
   function _render(root) {
+    _initCostFee();
     root.innerHTML = `
       ${_tutorialBanner()}
-      <div style="background:var(--bg-elevated);border:1px solid var(--border);border-radius:12px;padding:16px 36px">
-        <div class="profit-3col" style="display:grid;grid-template-columns:1fr 1fr 1.4fr;gap:40px;align-items:start">
+      <div style="background:var(--bg-elevated);border:1px solid var(--border);border-radius:12px;padding:12px 36px">
+        <div class="profit-3col" style="display:grid;grid-template-columns:1fr 1.4fr 1.3fr;gap:32px;align-items:start">
 
         <!-- LEFT: 入力フォーム -->
         <div>
@@ -897,7 +1237,7 @@
             <div style="border-top:1px solid var(--border);padding-top:10px">
               <div style="display:flex;align-items:center;justify-content:space-between">
                 <div style="font-size:11px;color:var(--text-muted)">適用手数料率</div>
-                <div style="font-family:var(--font-mono);font-size:22px;font-weight:700;color:var(--amber)" id="p-fee-rate-display">—</div>
+                <div style="font-family:var(--font-sans);font-size:18px;font-weight:700;color:var(--amber);font-variant-numeric:tabular-nums" id="p-fee-rate-display">—</div>
               </div>
               <div style="font-size:11px;color:var(--text-muted);text-align:right;margin-top:2px" id="p-fee-rate-label">
                 プランとカテゴリを選択してください
@@ -1027,38 +1367,7 @@
 
         </div>
 
-        <!-- CENTER: シミュレーター・為替 -->
-        <div>
-
-          ${_renderSimulator()}
-
-          <!-- 為替レート（P-18 【4】【5】） -->
-          <div class="card" style="margin-bottom:16px">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-              <div class="card-title" style="margin:0">為替レート</div>
-              <button class="btn btn-ghost" id="p-refresh-rate" style="font-size:10px;padding:4px 8px">
-                ↻ 更新
-              </button>
-            </div>
-            <div style="display:flex;align-items:center;gap:12px">
-              <!-- P-18 【4】: 為替入力欄幅 160px -->
-              <div class="input-group" style="flex:none;width:160px">
-                <label class="input-label" for="p-rate">1 USD =</label>
-                <div class="input-wrap">
-                  <input class="input" id="p-rate" type="text" inputmode="decimal" value="150" style="text-align:right">
-                  <div class="input-prefix" style="border-left:none;border-right:1px solid var(--border);border-radius:0 3px 3px 0">JPY</div>
-                </div>
-              </div>
-              <!-- P-18 【5】: デフォルト時刻表示 -->
-              <div style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted);padding-top:20px;flex:1" id="p-rate-updated">
-                —
-              </div>
-            </div>
-          </div>
-
-        </div>
-
-        <!-- RIGHT: 結果系（P-18 【6】: 外枠一体化） -->
+        <!-- CENTER: 結果系（P-22【3】: 入れ替え） -->
         <div>
           <div style="background:var(--bg-elevated);border:1px solid var(--border);border-radius:12px;padding:16px">
 
@@ -1104,7 +1413,7 @@
               </div>
             </div>
 
-            <!-- 費用内訳 -->
+            <!-- 費用内訳（CENTER列・PPDの下） -->
             <div class="card">
               <div class="card-title">費用内訳</div>
               <table class="data-table" id="p-breakdown-table">
@@ -1115,7 +1424,42 @@
           </div>
         </div>
 
+        <!-- RIGHT: シミュレーター・為替・手数料（P-22【2】【3】: 入れ替え＋手数料移動） -->
+        <div>
+
+          ${_renderSimulator()}
+
+          <!-- 為替レート（P-18 【4】【5】） -->
+          <div class="card" style="margin-bottom:10px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+              <div class="card-title" style="margin:0">為替レート</div>
+              <button class="btn btn-ghost" id="p-refresh-rate" style="font-size:10px;padding:4px 8px">
+                ↻ 更新
+              </button>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px">
+              <!-- P-18 【4】: 為替入力欄幅 160px -->
+              <div class="input-group" style="flex:none;width:160px">
+                <label class="input-label" for="p-rate">1 USD =</label>
+                <div class="input-wrap">
+                  <input class="input" id="p-rate" type="text" inputmode="decimal" value="150" style="text-align:right">
+                  <div class="input-prefix" style="border-left:none;border-right:1px solid var(--border);border-radius:0 3px 3px 0">JPY</div>
+                </div>
+              </div>
+              <!-- P-18 【5】: デフォルト時刻表示 -->
+              <div style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted);padding-top:20px;flex:1" id="p-rate-updated">
+                —
+              </div>
+            </div>
+          </div>
+
+          <!-- 仕入れ手数料パネル（P-22【2】: 為替の直下に移動） -->
+          <div id="p-cost-fee-panel-wrap" style="margin-top:0"></div>
+
         </div>
+
+        </div>
+
       </div>
     `;
 
@@ -1127,6 +1471,7 @@
     _bindEvents(root);
     _bindPriceCalcEvents(root);
     _bindSimulatorEvents(root);
+    _bindCostFeeToggle(root);
     _update(root);
   }
 
@@ -1193,6 +1538,7 @@
 
     const price      = _parseNum(root.querySelector('#p-price')?.value  || '');
     const cost       = _parseNum(root.querySelector('#p-cost')?.value   || '');
+    const costFeeJpy = _calcCostFee(cost);
     const plan       = root.querySelector('#p-plan')?.value   || DEFAULTS.plan;
     const cat        = root.querySelector('#p-category')?.value || DEFAULTS.category;
     const promo      = (parseFloat(root.querySelector('#p-promoted')?.value) || 0) / 100;
@@ -1219,7 +1565,7 @@
 
     const result = _calculate({
       sellingPriceUsd: price,
-      costJpy: cost,
+      costJpy: cost + costFeeJpy,
       plan, category: cat,
       promotedRate: promo,
       payoneerRate: payRate,
@@ -1247,8 +1593,9 @@
 
     const roiEl = root.querySelector('#p-result-roi');
     if (roiEl) {
-      if (cost > 0) {
-        const roi = (profitJpy / cost) * 100;
+      const totalCostJpy = cost + costFeeJpy;
+      if (totalCostJpy > 0) {
+        const roi = (profitJpy / totalCostJpy) * 100;
         roiEl.textContent = `${roi.toFixed(2)}%`;
         roiEl.style.color = roi >= 0 ? 'var(--green)' : 'var(--red)';
       } else {
@@ -1270,6 +1617,8 @@
     const tbody = root.querySelector('#p-breakdown-table tbody');
     if (tbody && price > 0) {
       const b = result.breakdown;
+      const baseCostUsd = cost / rate;
+      const feeUsd      = costFeeJpy / rate;
       const rows = [
         ['販売価格',        `$${b.sellingUsd.toFixed(2)}`],
         ['eBay 手数料',     `-$${b.ebayFeeUsd.toFixed(2)}`],
@@ -1278,7 +1627,8 @@
         b.shippingUsd    > 0 ? ['送料',               `-$${b.shippingUsd.toFixed(2)}`]   : null,
         b.customsUsd     > 0 ? ['関税',               `-$${b.customsUsd.toFixed(2)}`]    : null,
         b.authServiceUsd > 0 ? ['真贋サービス送料',   `-$${b.authServiceUsd.toFixed(2)}`]: null,
-        b.costUsd        > 0 ? ['仕入れ原価',         `-$${b.costUsd.toFixed(2)}`]       : null,
+        baseCostUsd      > 0 ? ['仕入れ原価',         `-$${baseCostUsd.toFixed(2)}`]     : null,
+        feeUsd           > 0 ? ['仕入れ手数料',       `-$${feeUsd.toFixed(2)}`]          : null,
       ].filter(Boolean);
 
       tbody.innerHTML = rows.map(([label, val]) => `
