@@ -86,7 +86,7 @@
   // ─────────────────────────────────────
   const DEFAULTS = {
     plan:           'basic',
-    category:       'other',
+    category:       'handbags',
     payoneerRate:   0.02,
     authServiceJpy: 1500,
     promotedRate:   0,
@@ -443,9 +443,13 @@
     if (!profitTabBtn) return;
 
     const activateTab = (tab) => {
+      const priceCol  = root.querySelector('#p-price-col');
+      const targetCol = root.querySelector('#p-calc-target-col');
       if (tab === 'profit') {
         profitTabBtn.style.background = 'var(--brand)'; profitTabBtn.style.color = '#fff';
         priceTabBtn.style.background  = 'transparent';  priceTabBtn.style.color  = 'var(--text-secondary)';
+        if (priceCol)   priceCol.style.display  = '';
+        if (targetCol)  targetCol.style.display = 'none';
         if (profitWrap) profitWrap.style.display = 'block';
         if (priceWrap)  priceWrap.style.display  = 'none';
         const pi = root.querySelector('#p-price');
@@ -454,6 +458,8 @@
       } else {
         priceTabBtn.style.background  = 'var(--brand)'; priceTabBtn.style.color  = '#fff';
         profitTabBtn.style.background = 'transparent';  profitTabBtn.style.color = 'var(--text-secondary)';
+        if (priceCol)   priceCol.style.display  = 'none';
+        if (targetCol)  targetCol.style.display = '';
         if (priceWrap)  priceWrap.style.display  = 'block';
         if (profitWrap) profitWrap.style.display = 'none';
         _refreshCalcPrice(root);
@@ -555,18 +561,18 @@
           </div>
         </div>
 
-        <!-- 仕入原価: 常時表示 -->
-        <div class="input-group" style="margin-bottom:12px">
-          <label class="input-label" for="p-cost">仕入れ原価</label>
-          <div class="input-wrap">
-            <div class="input-prefix">¥</div>
-            <input class="input" id="p-cost" type="text" inputmode="numeric" placeholder="0" style="text-align:right">
+        <!-- 仕入原価 + 右セル(タブ依存) 横並び1行 -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+          <div class="input-group">
+            <label class="input-label" for="p-cost">仕入れ原価</label>
+            <div class="input-wrap">
+              <div class="input-prefix">¥</div>
+              <input class="input" id="p-cost" type="text" inputmode="numeric" placeholder="0" style="text-align:right">
+            </div>
           </div>
-        </div>
 
-        <!-- タブ②: 粗利を求める（デフォルト） -->
-        <div id="p-calc-tab-profit-wrap">
-          <div class="input-group" style="margin-bottom:12px">
+          <!-- タブ②: 販売価格 -->
+          <div id="p-price-col" class="input-group">
             <label class="input-label" for="p-price">販売価格</label>
             <div class="input-wrap">
               <div class="input-prefix">$</div>
@@ -574,6 +580,32 @@
             </div>
           </div>
 
+          <!-- タブ①: 目標トグル -->
+          <div id="p-calc-target-col" style="display:none">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+              <label class="input-label" style="margin:0">目標</label>
+              <div style="display:flex;border:1px solid var(--border);border-radius:6px;overflow:hidden">
+                <button id="p-calc-toggle-pct-btn" style="padding:3px 9px;font-size:11px;border:none;cursor:pointer;background:var(--brand);color:#fff;font-weight:500">%</button>
+                <button id="p-calc-toggle-jpy-btn" style="padding:3px 9px;font-size:11px;border:none;cursor:pointer;background:transparent;color:var(--text-secondary)">¥</button>
+              </div>
+            </div>
+            <div id="p-calc-target-pct-wrap">
+              <div class="input-wrap" style="max-width:130px">
+                <input class="input" id="p-calc-target-pct" type="number" min="0" max="100" step="0.01" placeholder="25.00" style="text-align:right">
+                <div class="input-prefix" style="border-left:none;border-right:1px solid var(--border);border-radius:0 3px 3px 0">%</div>
+              </div>
+            </div>
+            <div id="p-calc-target-jpy-wrap" style="display:none">
+              <div class="input-wrap" style="max-width:130px">
+                <div class="input-prefix">¥</div>
+                <input class="input" id="p-calc-target-jpy" type="text" inputmode="numeric" placeholder="20000" style="text-align:right">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- タブ②: 粗利率⇔粗利額トグルセクション -->
+        <div id="p-calc-tab-profit-wrap">
           <div style="border-top:1px solid var(--border);padding-top:12px">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
               <div style="font-size:11px;color:var(--text-muted)">粗利率 ⇔ 粗利額</div>
@@ -615,36 +647,8 @@
           </div>
         </div>
 
-        <!-- タブ①: 販売価格を求める -->
+        <!-- タブ①: 逆算結果 -->
         <div id="p-calc-tab-price-wrap" style="display:none">
-          <div style="margin-bottom:12px">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-              <div style="font-size:11px;color:var(--text-muted)">目標</div>
-              <div style="display:flex;border:1px solid var(--border);border-radius:6px;overflow:hidden">
-                <button id="p-calc-toggle-pct-btn" style="padding:4px 10px;font-size:11px;border:none;cursor:pointer;background:var(--brand);color:#fff;font-weight:500">粗利率 %</button>
-                <button id="p-calc-toggle-jpy-btn" style="padding:4px 10px;font-size:11px;border:none;cursor:pointer;background:transparent;color:var(--text-secondary)">粗利額 ¥</button>
-              </div>
-            </div>
-            <div id="p-calc-target-pct-wrap">
-              <div class="input-group">
-                <label class="input-label">目標粗利率</label>
-                <div class="input-wrap" style="max-width:130px">
-                  <input class="input" id="p-calc-target-pct" type="number" min="0" max="100" step="0.01" placeholder="25.00" style="text-align:right">
-                  <div class="input-prefix" style="border-left:none;border-right:1px solid var(--border);border-radius:0 3px 3px 0">%</div>
-                </div>
-              </div>
-            </div>
-            <div id="p-calc-target-jpy-wrap" style="display:none">
-              <div class="input-group">
-                <label class="input-label">目標粗利額</label>
-                <div class="input-wrap" style="max-width:130px">
-                  <div class="input-prefix">¥</div>
-                  <input class="input" id="p-calc-target-jpy" type="text" inputmode="numeric" placeholder="20000" style="text-align:right">
-                </div>
-              </div>
-            </div>
-          </div>
-
           <div style="border-top:1px solid var(--border);padding-top:12px">
             <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);margin-bottom:4px">販売価格（逆算）</div>
             <div id="p-calc-price-result" style="font-family:var(--font-mono);font-size:24px;font-weight:700;color:var(--text-primary)">—</div>
@@ -862,8 +866,8 @@
   function _render(root) {
     root.innerHTML = `
       ${_tutorialBanner()}
-      <div style="background:var(--bg-elevated);border:1px solid var(--border);border-radius:12px;padding:16px">
-        <div class="profit-3col" style="display:grid;grid-template-columns:1fr 1fr 1.4fr;gap:20px;align-items:start">
+      <div style="background:var(--bg-elevated);border:1px solid var(--border);border-radius:12px;padding:20px 36px">
+        <div class="profit-3col" style="display:grid;grid-template-columns:1fr 1fr 1.4fr;gap:40px;align-items:start">
 
         <!-- LEFT: 入力フォーム -->
         <div>
