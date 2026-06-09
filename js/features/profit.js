@@ -1172,8 +1172,8 @@
     const items = ['eBay手数料','Promoted','Payoneer','送料','関税','真贋サービス','仕入れ原価'];
     return items.map(label => `
       <tr>
-        <td style="color:#999999;font-size:14px;padding:8px 0">${label}</td>
-        <td style="color:#999999;font-size:14px;text-align:right;padding:8px 0">—</td>
+        <td style="color:var(--text-secondary);font-size:14px;padding:8px 0">${label}</td>
+        <td style="color:var(--text-muted);font-size:14px;text-align:right;padding:8px 0">—</td>
       </tr>
     `).join('');
   }
