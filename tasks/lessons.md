@@ -156,3 +156,14 @@ console.log('user:', BA.auth.getUser(), 'tier:', BA.auth.getTier())
   - セクション3：eBay接続管理（接続状態に応じてドット色・ボタン動的切替）
   - `BA.settings.get()` で他モジュールから設定値取得可能
   - index.html に `<script>` タグと `BA.settings?.init?.()` を追加済み
+
+### 2026-06-26
+- [全体] hallmark audit を全25ファイルに実施（過去セッションでスキルが自発的に呼ばれていなかった疑いがあったため、まずスキル発火自体を直接検証 → 正常に発火することを確認。原因はファイル配置ミスではなく、トリガー表に沿った自発呼び出しの運用ギャップだったと判断）
+- [admin.js] `STATUS_DOT` が `STATUS_COLOR` と別の生hex値を独自定義していた重複バグ → `STATUS_DOT = STATUS_COLOR` に統一
+- [settings.js] 接続状態ドットが `#22c55e`/`#ef4444` という実トークン（`--green`=#4ece8a・`--red`=#e85454）とは違う色を使っていたバグ → `var(--green)`/`var(--red)` に統一
+- [index.html] OAuth初期化処理に残っていた `console.log` ×3を削除（`console.error` は実エラー用なので残置）。`.connect-icon` の独自オレンジ（`#e66414`）→ `var(--accent-orange)` に統一。`.auth-input::placeholder` の生rgba → `var(--text-faint)` に統一
+- [js/ui/stepper.js] design-philosophy.md ③「＋／－ボタン数値入力の全廃」に違反するファイルが存在 → grep確認の結果どこからも読み込まれていない完全な孤立コードだったため削除
+- [js/ui/tutorial.js] `_show()` が冒頭で `return` し4ステップオンボーディング全体が到達不能なデッドコードだった（tour.jsへの移行済み・2026-05-29のlessons参照）→ ファイル削除＋index.htmlの`<script>`タグも削除
+- [auto-listing.js] CLAUDE.mdで「DeepL廃止・Claude APIに一本化済み」と確定済みにも関わらず、localStorageのDeepL APIキーを読み取りクライアント側からPOST送信するコードが現存（@security-critical対象） → DeepL呼び出しを `BA.claude.call('title', ...)` 経由のClaude API呼び出しに置き換え。ファイル先頭のマーカーを `@security-critical` → `@not-security-critical` に変更し、context/skills.md のトリガーB対象ファイル明示リストも同期（`npm run check:security`通過確認済み）
+- [profit.js] STAGE3着手前提条件（RES-01：`BA.profit.calculate(params)` 純粋関数化）を前倒しで一部実施 → 既存の内部関数 `_calculate`・`DEFAULTS`・`EBAY_FEE`・現在の為替レート取得用 `getExchangeRate()` を `window.BA.profit` に追加公開（既存ロジックは無変更、追加のみ）
+- [sourcing.js] CLAUDE.mdで「廃止：GO/NO-GO → 仕入れ可能価格帯 ¥X〜¥Y に置き換え」と確定していたにも関わらず、GO/NO-GO判定UIが実装されたまま残っていた → `_verdict()` を削除し `_calcPriceBand()` を新設。「想定販売価格（USD）」入力を追加し、`BA.profit.calculate()` を仕入れ原価0円で呼び出して仕入れ原価以外の手数料合計を求め、目標粗利率から仕入れ原価の上限を逆算する方式に変更。下限は¥0固定（最小マージン設定が存在しないため）。達成不能な目標の場合は「この目標は達成不可」を表示

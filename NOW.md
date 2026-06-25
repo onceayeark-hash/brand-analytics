@@ -1,10 +1,12 @@
 ﻿# BRAND ANALYTICS｜現在地ノート
-最終更新：2026/06/03（リサーチ機能保留確定・STAGE2本体に復帰）
+最終更新：2026/06/26（hallmark audit 全25ファイル実施・仕様矛盾5件対応完了）
 
 ---
 
 ## 今やっていること
-hallmark audit 対応中（UI品質修正）。利益計算機に新機能追加済み。
+hallmark audit 完了（全25ファイル）。トークン違反一括修正・stepper.js/tutorial.js削除・
+auto-listing.jsのDeepL→Claude API置換・sourcing.jsのGO/NO-GO→仕入れ可能価格帯置換まで完了。
+残りはsettings.jsの未実装2セクション（下記「未解決・保留中」参照）。
 
 ## ⚡ 次回セッション冒頭で必ずやること（優先度順）
 
@@ -162,12 +164,18 @@ Supabase Dashboard → Authentication → Users
 　- 対策②：Supabase SecretsのEBAY_CERT_IDをクリーンに再登録
 　- 副産物：ebay-token全体をtry-catchで包みCORSヘッダ付きエラー返却に改善
 　- 副産物：auth.jsの.single()→.maybeSingle()修正（ebay_tokens 0件時の406解消）
+✅ Supabaseキープアライブ設定済み（GitHub Actions・週2回SELECT・anonキー使用）
+　※2026年末までにレガシーanonキー→publishableキーへ差し替え要
 
 ## 未解決・保留中
 - X-10：為替レートEdge Function化（次アクション）
 - 自動出品STAGE2着手時：他社ツール参考画像確認後に設計
 - ZIK Analytics API統合：STAGE4検討
 - FedEx/DHL API申請：STAGE2後半着手時
+- **settings.js：CLAUDE.md必須仕様の未実装セクション2件**（2026-06-26 hallmark audit発見）
+  - 「送料・関税テーブル設定」（価格帯ごとの送料・関税補填額・行の追加削除編集可）
+  - 「販売対象国」（チェックボックス複数選択・競合リサーチのデフォルト検索対象国に連動）
+  - 仕様詳細：CLAUDE.md「設定ページ（settings）コンテンツ仕様」セクション参照
 
 ## 懸念点
 - D-02：tracking指標キー名（TRACKING_NOT_UPLOADED）→OAuth接続後に実機確認

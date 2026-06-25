@@ -1,9 +1,10 @@
+// @not-security-critical （2026-06-26・DeepL APIキーのlocalStorage読み取り/送信コードを撤去しClaude APIに置換済み）
 /**
  * BRAND ANALYTICS — auto-listing.js
  * 自動出品フォーム + リアルタイムリスティング品質スコア統合（STAGE2 MVP）
  *
  * - 引用元URL（eBay / ヤフオク / 楽天）→ サイト自動判別 → フィールド補完
- * - DeepL Free API: 日本語タイトル → 英語翻訳
+ * - Claude API: 日本語タイトル → 英語タイトル生成（Edge Function 経由・DeepLは廃止済み）
  * - ドラッグ&ドロップ画像（最大12枚・並び替え）
  * - BA.listingQuality.score() をリアルタイム呼び出し（入力内容から自動判定）
  * - $500境界ルール自動適用
@@ -18,7 +19,6 @@
   // ─── 定数 ─────────────────────────────────────────
   const MAX_IMAGES       = 24;
   const SCORE_DEBOUNCE   = 600;
-  const DEEPL_ENDPOINT   = 'https://api-free.deepl.com/v2/translate';
   const FVF_DEFAULT      = 0.1325;
   const PAYONEER_RATE    = 0.02;
   const AUTH_SERVICE_JPY = 1500;
@@ -201,23 +201,15 @@
     _debouncedScore(root);
   }
 
-  // ─── DeepL翻訳 ───────────────────────────────────
-  async function _translate(text, apiKey) {
-    const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), 10000);
-    try {
-      const res = await fetch(DEEPL_ENDPOINT, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({ auth_key: apiKey, text, source_lang: 'JA', target_lang: 'EN' }),
-        signal: ctrl.signal,
-      });
-      if (!res.ok) throw new Error(`DeepL API エラー (${res.status})`);
-      const json = await res.json();
-      return json.translations?.[0]?.text || '';
-    } finally {
-      clearTimeout(timer);
-    }
+  // ─── タイトル翻訳（Claude API） ───────────────────
+  async function _translate(text) {
+    const result = await BA.claude.call(
+      'title',
+      `次の日本語の商品タイトルを、eBayの検索アルゴリズム（Cassini）に適した英語の商品タイトルに翻訳してください。\n` +
+      `80文字以内・キーワードの自然な配置を意識し、翻訳結果のタイトル文字列のみを返してください（説明・前置き不要）。\n\n` +
+      `日本語タイトル: ${text}`
+    );
+    return (result.text || '').trim().replace(/^["「]|["」]$/g, '');
   }
 
   // ─── 下書き保存 ───────────────────────────────────
@@ -744,15 +736,10 @@
       const text    = _state.titleJa.trim();
       const statusEl = root.querySelector('#al-translate-status');
       if (!text) { statusEl.textContent = '日本語タイトルを入力してください'; return; }
-      const apiKey = localStorage.getItem('ba:deepl_key') || '';
-      if (!apiKey) {
-        statusEl.textContent = '設定パネル → DeepL APIキーを先に入力してください（無料取得可）';
-        return;
-      }
       const btn = root.querySelector('#al-translate-btn');
       btn.disabled = true; btn.textContent = '翻訳中...'; statusEl.textContent = '';
       try {
-        const result = await _translate(text, apiKey);
+        const result = await _translate(text);
         _state.titleEn = result.slice(0, 80);
         const enEl = root.querySelector('#al-title-en');
         enEl.value = _state.titleEn;

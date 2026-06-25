@@ -1,3 +1,4 @@
+// @not-security-critical （grep確認済み・認証情報/トークン/APIキーを扱わない・2026-06-25判断）
 /**
  * BRAND ANALYTICS — admin.js
  * 作成者専用管理者パネル
@@ -13,7 +14,7 @@
 
   const STATUS_LABEL = { ok: '正常', degraded: '低下', down: '障害', unknown: '未確認' };
   const STATUS_COLOR = { ok: 'var(--green)', degraded: 'var(--yellow)', down: 'var(--red)', unknown: 'var(--text-muted)' };
-  const STATUS_DOT   = { ok: '#4ece8a', degraded: '#f5c842', down: '#e85454', unknown: '#4a6080' };
+  const STATUS_DOT   = STATUS_COLOR;
 
   // ─── サービス死活カード ──────────────────────────
 
@@ -24,7 +25,7 @@
     container.innerHTML = results.map(svc => `
       <div class="card" style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px">
         <div style="display:flex;align-items:center;gap:10px">
-          <div style="width:10px;height:10px;border-radius:50%;background:${STATUS_DOT[svc.status] ?? '#4a6080'};flex-shrink:0"></div>
+          <div style="width:10px;height:10px;border-radius:50%;background:${STATUS_DOT[svc.status] ?? 'var(--text-muted)'};flex-shrink:0"></div>
           <span style="font-size:13px">${svc.label ?? svc.key}</span>
         </div>
         <div style="display:flex;align-items:center;gap:12px">

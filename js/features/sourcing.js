@@ -1,13 +1,15 @@
+// @not-security-critical （grep確認済み・認証情報/トークン/APIキーを扱わない・2026-06-25判断）
 /**
  * BRAND ANALYTICS — sourcing.js
- * 仕入れメーター：Go / No-Go 判定（FREE 機能）
+ * 仕入れメーター：仕入れ可能価格帯の提示（FREE 機能）
  *
- * 判定条件（UIで変更可）:
- *   条件① 粗利率    ≥ 25%（デフォルト）
- *   条件② 競合増加率 ≤ 15%（デフォルト）
- *   条件③ 成約率    > 30%（デフォルト・手動入力）
+ * GO/NO-GO判定は廃止（CLAUDE.md確定）。判断は常にセラーが行う。
+ * 想定販売価格・目標粗利率から、profit.jsと同じ手数料式で
+ * 「仕入れ可能価格帯 ¥0〜¥Y」を逆算して提示する。
  *
- * Terapeak API 未取得のため成約率は手動入力
+ * 補助指標（UIで変更可）:
+ *   競合増加率 ≤ 15%（デフォルト）
+ *   成約率    > 30%（デフォルト・手動入力・Terapeak API 未取得のため手動）
  */
 
 (function () {
@@ -23,17 +25,38 @@
 
   let _rendered = false;
 
-  function _verdict(params) {
-    const { profitRate, competitorGrowth, sellRate, thresholds } = params;
-    const t = thresholds;
-    const pass1 = profitRate      >= t.profit;
-    const pass2 = competitorGrowth <= t.competitor;
-    const pass3 = sellRate        >  t.sellRate;
-    const passed = [pass1, pass2, pass3].filter(Boolean).length;
+  // ─── 仕入れ可能価格帯（profit.js の手数料式で逆算） ──────
+  function _calcPriceBand(sellingPriceUsd, targetMarginPct) {
+    if (!(sellingPriceUsd > 0) || !window.BA.profit?.calculate) return null;
 
-    if (passed === 3) return 'go';
-    if (passed === 0) return 'no_go';
-    return 'caution';
+    const D      = window.BA.profit.DEFAULTS ?? {};
+    const usdJpy = window.BA.profit.getExchangeRate?.() ?? D.usdJpy ?? 150;
+
+    // 仕入れ原価0円時の粗利益 = 仕入れ原価以外の手数料を引いた残り
+    const base = window.BA.profit.calculate({
+      sellingPriceUsd,
+      costJpy:        0,
+      plan:           D.plan ?? 'basic',
+      category:       D.category ?? 'handbags',
+      promotedRate:   D.promotedRate ?? 0,
+      payoneerRate:   D.payoneerRate ?? 0.02,
+      shippingMode:   'manual',
+      shippingUsd:    0,
+      customsMode:    'zero',
+      customsUsd:     0,
+      customsPct:     0,
+      authServiceJpy: D.authServiceJpy ?? 1500,
+      usdJpy,
+      holdingDays:    0,
+    });
+
+    const targetProfitUsd = sellingPriceUsd * (targetMarginPct / 100);
+    const maxCostUsd       = base.grossProfitUsd - targetProfitUsd;
+
+    return {
+      achievable: maxCostUsd >= 0,
+      maxCostJpy: Math.max(0, maxCostUsd * usdJpy),
+    };
   }
 
   function _render(root) {
@@ -45,6 +68,14 @@
           <div class="card" style="margin-bottom:16px">
             <div class="card-title">商品データ</div>
             <div style="display:flex;flex-direction:column;gap:12px">
+
+              <div class="input-group">
+                <label class="input-label" for="s-sell-price">想定販売価格（USD）</label>
+                <div class="input-wrap">
+                  <div class="input-prefix">$</div>
+                  <input class="input" id="s-sell-price" type="number" min="0" step="0.01" value="0">
+                </div>
+              </div>
 
               <div class="input-group">
                 <label class="input-label" for="s-profit">粗利率（利益計算機から）</label>
@@ -108,15 +139,15 @@
         <!-- 右: 判定結果 -->
         <div>
           <div class="card" style="margin-bottom:16px">
-            <div class="card-title">判定結果</div>
+            <div class="card-title">仕入れ可能価格帯</div>
             <div id="s-verdict-guide" style="display:flex;flex-direction:column;align-items:center;
               justify-content:center;padding:24px 0;gap:10px;text-align:center">
               <div style="font-size:32px;line-height:1">⚡</div>
               <div style="font-size:12px;color:var(--text-muted);line-height:1.7">
-                粗利率・競合増加率・成約率を入力すると<br>Go / No-Go の判定が表示されます
+                想定販売価格を入力すると<br>目標粗利率を満たす仕入れ可能価格帯が表示されます
               </div>
             </div>
-            <div style="font-family:var(--font-mono);font-size:40px;font-weight:600;
+            <div style="font-family:var(--font-mono);font-size:32px;font-weight:600;
               text-align:center;padding:20px 0;display:none" id="s-verdict-label"></div>
             <div style="font-size:12px;color:var(--text-secondary);text-align:center;
               padding-bottom:8px;display:none" id="s-verdict-desc"></div>
@@ -155,10 +186,12 @@
   }
 
   function _updateVerdict(root) {
-    const profitInput = root.querySelector('#s-profit');
-    const compInput   = root.querySelector('#s-competitors');
-    const sellInput   = root.querySelector('#s-sellrate');
+    const sellPriceInput = root.querySelector('#s-sell-price');
+    const profitInput    = root.querySelector('#s-profit');
+    const compInput      = root.querySelector('#s-competitors');
+    const sellInput      = root.querySelector('#s-sellrate');
 
+    const sellingPriceUsd  = parseFloat(sellPriceInput?.value) ?? 0;
     const profitRate       = parseFloat(profitInput?.value)  ?? 0;
     const competitorGrowth = parseFloat(compInput?.value)    ?? 0;
     const sellRate         = parseFloat(sellInput?.value)    ?? 0;
@@ -172,24 +205,28 @@
       compInput?.dataset.touched    === '1' || competitorGrowth !== 0,
       sellInput?.dataset.touched    === '1' || sellRate    !== 0,
     ];
-    const anyTouched = touched.some(Boolean);
 
-    // 判定結果の表示切り替え
+    // 仕入れ可能価格帯の表示切り替え（想定販売価格が入力されているかどうかで判定）
     const guideEl   = root.querySelector('#s-verdict-guide');
     const verdictEl = root.querySelector('#s-verdict-label');
     const descEl    = root.querySelector('#s-verdict-desc');
+    const band       = _calcPriceBand(sellingPriceUsd, tProfit);
 
-    if (anyTouched) {
+    if (band) {
       if (guideEl)   guideEl.style.display   = 'none';
       if (verdictEl) verdictEl.style.display = 'block';
       if (descEl)    descEl.style.display    = 'block';
 
-      const v = _verdict({ profitRate, competitorGrowth, sellRate, thresholds: { profit: tProfit, competitor: tComp, sellRate: tSell } });
-      const COLORS = { go: 'var(--green)', no_go: 'var(--red)', caution: 'var(--yellow)' };
-      const LABELS = { go: 'GO', no_go: 'NO-GO', caution: '要検討' };
-      const DESCS  = { go: '3条件すべて通過 — 仕入れ推奨です', no_go: '条件未達 — 見送りを推奨します', caution: '一部条件未達 — 慎重に判断してください' };
-      if (verdictEl) { verdictEl.textContent = LABELS[v]; verdictEl.style.color = COLORS[v]; }
-      if (descEl)    descEl.textContent = DESCS[v];
+      if (band.achievable) {
+        if (verdictEl) {
+          verdictEl.textContent = `¥0 〜 ¥${Math.floor(band.maxCostJpy).toLocaleString('ja-JP')}`;
+          verdictEl.style.color = 'var(--text-primary)';
+        }
+        if (descEl) descEl.textContent = `目標粗利率 ${tProfit}% を満たす仕入れ原価の上限です（判断は常にセラー）`;
+      } else {
+        if (verdictEl) { verdictEl.textContent = 'この目標は達成不可'; verdictEl.style.color = 'var(--red)'; }
+        if (descEl)    descEl.textContent = '想定販売価格では目標粗利率を満たせません（販売価格を上げるか目標を見直してください）';
+      }
     } else {
       if (guideEl)   guideEl.style.display   = 'flex';
       if (verdictEl) verdictEl.style.display = 'none';

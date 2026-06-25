@@ -1,3 +1,4 @@
+// @security-critical （BA.auth.getEbayToken()/getEbayTokenExpiry()でトークンを直接参照・code-reviewer指摘）
 /**
  * BRAND ANALYTICS — settings.js
  * 設定ページ（手数料・閾値 / eBay接続管理）
@@ -119,9 +120,9 @@
     const connected = !!token;
 
     const statusDot = connected
-      ? `<span style="color:#22c55e;font-size:16px;line-height:1">●</span>
+      ? `<span style="color:var(--green);font-size:16px;line-height:1">●</span>
          <span style="font-size:14px;color:var(--text-primary)">接続済み ✓</span>`
-      : `<span style="color:#ef4444;font-size:16px;line-height:1">●</span>
+      : `<span style="color:var(--red);font-size:16px;line-height:1">●</span>
          <span style="font-size:14px;color:var(--text-primary)">未接続</span>`;
 
     const expiryRow = connected && expiry

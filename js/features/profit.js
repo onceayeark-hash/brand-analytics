@@ -1,3 +1,4 @@
+// @not-security-critical （grep確認済み・認証情報/トークン/APIキーを扱わない・2026-06-25判断）
 /**
  * BRAND ANALYTICS — profit.js
  * ④ 為替・仕入シミュレーター（FREE 機能）
@@ -1718,6 +1719,12 @@
   // ─────────────────────────────────────
 
   const profit = {
+    // RES-01: 仕入れ可能価格帯計算（sourcing.js）など他機能から再利用するための公開
+    calculate:      _calculate,
+    DEFAULTS,
+    EBAY_FEE,
+    getExchangeRate: () => _exchangeRate,
+
     async init() {
       try {
         _exchangeRate = await BA.api?.getExchangeRate?.() ?? DEFAULTS.usdJpy;

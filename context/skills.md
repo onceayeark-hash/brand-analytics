@@ -45,6 +45,51 @@
 | D | 「実装完了」「完了しました」と言う直前 | `superpowers:verification-before-completion` | 動作確認を完了宣言前に必ず実行 |
 | E | eBay API 仕様の不明点が出て調査が必要なとき | `Explore`（バックグラウンド） | 調査中もコーディングを止めない |
 
+### トリガーB 対象ファイル明示リスト（2026-06-25追加・check-security-coverageで同期保証）
+
+```
+背景：トリガーBの表記「auth.js / crypto.js / トークン・OAuth処理を変更したとき」は自然文の
+  判断頼みだったため、実際にOAuthトークン交換を行う supabase/functions/ebay-token/index.ts が
+  文字列一致せず対象漏れになっていた（仕入れインテリジェンスプロジェクトで発見した同型バグの
+  横展開検証で発覚）。以下は実在ファイルの明示列挙（グロブ・自然文推測のみに頼らない）。
+
+対象ファイル（@security-critical マーカー付与済み）：
+  js/core/auth.js
+  js/core/crypto.js
+  js/core/api.js          ← Authorization Bearerトークンをヘッダに直接付与する箇所を含む
+  js/core/claude.js       ← Supabaseセッションの access_token（JWT）を直接取得・送信する
+  js/core/monitor.js      ← エラーログ／通知メールに認証情報が混入するリーク経路の懸念
+  js/features/settings.js       ← 2026-06-25追加（code-reviewer指摘）。BA.auth.getEbayToken()でトークンを直接参照
+  supabase/functions/ebay-token/index.ts   ← EBAY_CERT_ID（Client Secret）を扱う実体。本リスト整備の発端
+  supabase/functions/call-claude/index.ts  ← ANTHROPIC_API_KEY を扱う
+
+対象外（@not-security-critical マーカー付与済み・認証情報を扱わないと判断）：
+  js/core/cache.js
+  js/core/i18n.js
+  js/features/admin.js / dashboard.js / finance.js / listing-quality.js /
+    profit.js / protection.js / sourcing.js / transactions.js
+    （2026-06-25・境界をjs/featuresに拡大した際にgrep確認済み・8ファイル一括）
+  js/features/auto-listing.js   ← 2026-06-26・DeepL APIキーのlocalStorage読み取り/送信コードを撤去し
+    Claude API（BA.claude.call経由・JWT認証はclaude.js側で処理）に置き換えたため対象外に変更
+  supabase/functions/exchange-rate/index.ts
+
+★2026-06-25・最初のcode-reviewerレビューで「境界ディレクトリがjs/core・supabase/functionsのみで
+  js/featuresが対象外になっており、auto-listing.js/settings.jsが漏れている」とHIGH指摘を受け、
+  境界をjs/featuresに拡大して対応した（同型バグの再発・検出の実例）。js/ui/配下は全ファイルgrep確認済みで
+  認証情報を扱うものが無かったため境界には含めていない（status-banner.jsの"token_expired"は状態名の
+  文字列であり実トークンではない）。
+
+★本リストは手書きのため単独では同期保証がない。`npm run check:security`
+  （scripts/check-security-coverage.js）で実態とこのリストを双方向に突き合わせる。
+  リストを更新する際は、対象ファイルへのマーカー付与とセットで行うこと（片方だけでは
+  ERRORで弾かれる・fail-closed）。
+
+★別件で発見した関連リスク（本リストの対象外・別途対応要）：
+  BRAND_ANALYTICS/files/auth.js・crypto.js 等は index.html が読み込んでいない死んだコピー。
+  誤って編集しても実際の挙動には反映されない。削除または明示的な「未使用」注記が望ましい
+  （今回はスコープ外として未対応）。
+```
+
 ### 実行順序（UIを含む機能実装の場合）
 
 ```
