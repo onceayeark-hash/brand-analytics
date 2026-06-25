@@ -1,3 +1,4 @@
+// @not-security-critical （grep確認済み・認証情報/トークン/APIキーを扱わない。「保護」はeBayアカウントの規約違反アラート監視を指し、認証処理ではない・2026-06-25判断）
 /**
  * BRAND ANALYTICS — protection.js
  * アカウント保護：アラートログ + フィードバックテンプレート（日英）
@@ -92,6 +93,21 @@
   // ─────────────────────────────────────
   // システム状態 HTML
   // ─────────────────────────────────────
+  const _STATUS_LABEL = { ok: '正常', degraded: '低下', unreachable: '障害中', unknown: '未確認' };
+  const _STATUS_COLOR = { ok: 'var(--green)', degraded: 'var(--yellow)', unreachable: 'var(--red)', unknown: 'var(--text-muted)' };
+
+  function _statusRowHtml(label, status) {
+    return `
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;
+        background:var(--bg-elevated);border-radius:6px" data-status-label="${label}">
+        <div class="prot-status-dot" style="width:6px;height:6px;border-radius:50%;flex-shrink:0;
+          background:${_STATUS_COLOR[status]}"></div>
+        <span style="font-size:12px;color:var(--text-secondary);flex:1">${label}</span>
+        <span class="prot-status-text" style="font-family:var(--font-mono);font-size:11px;font-weight:500;
+          color:${_STATUS_COLOR[status]}">${_STATUS_LABEL[status]}</span>
+      </div>`;
+  }
+
   function _systemStatusHtml() {
     const tier      = BA.auth?.getTier?.() ?? 'free';
     const connected = tier === 'connected' || tier === 'premium';
@@ -103,12 +119,7 @@
       : `<button class="btn btn-primary" style="font-size:11px;padding:4px 12px;min-height:28px"
            onclick="BA.nav?.showPanel?.('connect')">接続する</button>`;
 
-    const rows = [
-      { label: 'Supabase DB', ok: true,  okText: '正常',  ngText: 'エラー' },
-      { label: 'eBay API',    ok: true,  okText: '正常',  ngText: '障害中' },
-    ];
-
-    return `<div style="display:flex;flex-direction:column;gap:6px">
+    return `<div id="prot-system-status" style="display:flex;flex-direction:column;gap:6px">
       <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;
         background:var(--bg-elevated);border-radius:6px">
         <div style="width:6px;height:6px;border-radius:50%;flex-shrink:0;
@@ -116,18 +127,26 @@
         <span style="font-size:12px;color:var(--text-secondary);flex:1">eBay OAuth</span>
         ${oauthAction}
       </div>
-      ${rows.map(r => `
-        <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;
-          background:var(--bg-elevated);border-radius:6px">
-          <div style="width:6px;height:6px;border-radius:50%;flex-shrink:0;
-            background:${r.ok ? 'var(--green)' : 'var(--red)'}"></div>
-          <span style="font-size:12px;color:var(--text-secondary);flex:1">${r.label}</span>
-          <span style="font-family:var(--font-mono);font-size:11px;font-weight:500;
-            color:${r.ok ? 'var(--green)' : 'var(--red)'}">
-            ${r.ok ? r.okText : r.ngText}
-          </span>
-        </div>`).join('')}
+      ${_statusRowHtml('Supabase DB', 'unknown')}
+      ${_statusRowHtml('eBay API', 'unknown')}
     </div>`;
+  }
+
+  // 実際の死活確認結果で「未確認」プレースホルダーを置き換える
+  async function _updateSystemStatus(root) {
+    const results = await BA.monitor?.checkAllServices?.() ?? [];
+    const byLabel = { 'Supabase DB': 'supabase', 'eBay API': 'ebay_api' };
+
+    Object.entries(byLabel).forEach(([label, key]) => {
+      const row = root.querySelector(`[data-status-label="${label}"]`);
+      if (!row) return;
+      const res = results.find(r => r.key === key);
+      const status = res?.status ?? 'unknown';
+      const dot  = row.querySelector('.prot-status-dot');
+      const text = row.querySelector('.prot-status-text');
+      if (dot)  dot.style.background = _STATUS_COLOR[status];
+      if (text) { text.textContent = _STATUS_LABEL[status]; text.style.color = _STATUS_COLOR[status]; }
+    });
   }
 
   // ─────────────────────────────────────
@@ -256,7 +275,9 @@
       document.addEventListener('ba:panel-show', ({ detail }) => {
         if (detail.panelKey !== 'protection') return;
         const root = document.getElementById('protection-root');
-        if (root) _render(root);
+        if (!root) return;
+        _render(root);
+        _updateSystemStatus(root);
       });
     },
   };

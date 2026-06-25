@@ -31,8 +31,10 @@
       --z-base:    1;
       --z-sidebar: 10;
       --z-header:  20;
-      --z-toast:   100;
+      --z-tooltip: 100;
       --z-overlay: 200;
+      --z-auth-overlay: 2000;
+      --z-toast:   9000;
       --gold-line: rgba(200,146,78,0.15);
       --accent-orange:      #e06418;
       --accent-orange-dark: #c44e0c;
@@ -254,7 +256,7 @@
     @keyframes shimmer{from{background-position:200% 0}to{background-position:-200% 0}}
 
     /* TOAST */
-    #toast-container{position:fixed;bottom:24px;right:24px;display:flex;flex-direction:column;gap:8px;z-index:9000}
+    #toast-container{position:fixed;bottom:24px;right:24px;display:flex;flex-direction:column;gap:8px;z-index:var(--z-toast)}
     .toast{font-family:var(--font-sans);font-size:12px;padding:12px 20px;border-radius:6px;border:1px solid;background:var(--bg-card);backdrop-filter:var(--blur-card);box-shadow:var(--shadow-card);animation:toastIn 200ms var(--ease);max-width:360px}
     .toast.success{color:var(--green);border-color:var(--green-border)}.toast.error{color:var(--red);border-color:var(--red-border)}
     .toast.warning{color:var(--yellow);border-color:var(--yellow-border)}.toast.info{color:var(--blue);border-color:var(--blue-border)}
@@ -268,7 +270,7 @@
 
     /* TOOLTIP */
     [data-tip]{position:relative}
-    [data-tip]::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:var(--bg-card);border:1px solid var(--border);color:var(--text-secondary);font-family:var(--font-mono);font-size:11px;padding:4px 10px;border-radius:4px;white-space:nowrap;z-index:var(--z-toast);box-shadow:var(--shadow-card);pointer-events:none;opacity:0;transition:opacity var(--t-fast) var(--ease)}
+    [data-tip]::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:var(--bg-card);border:1px solid var(--border);color:var(--text-secondary);font-family:var(--font-mono);font-size:11px;padding:4px 10px;border-radius:4px;white-space:nowrap;z-index:var(--z-tooltip);box-shadow:var(--shadow-card);pointer-events:none;opacity:0;transition:opacity var(--t-fast) var(--ease)}
     [data-tip]:hover::after{opacity:1;transition-delay:800ms}
     [data-tip]:focus-visible::after{opacity:1;transition-delay:0ms}
 
@@ -359,6 +361,8 @@
     @media(max-width:1100px){:root{--sidebar-w:200px}}
     @media(max-width:960px){.profit-3col{grid-template-columns:1fr 1fr!important}}
     @media(max-width:600px){.profit-3col{grid-template-columns:1fr!important}}
+    @media(max-width:960px){.grid-4{grid-template-columns:repeat(2,1fr)}.grid-3{grid-template-columns:repeat(2,1fr)}}
+    @media(max-width:600px){.grid-4,.grid-3,.grid-2{grid-template-columns:1fr}}
     @media(max-width:860px){
       :root{--sidebar-w:52px}
       .nav-section-label,.nav-item span:not(.nav-icon),.logo-text,.sidebar-footer{display:none}
@@ -731,7 +735,7 @@
 <style>
   /* ── 認証オーバーレイ（8dp Grid） ──────────────────── */
   .auth-overlay{
-    position:fixed;inset:0;z-index:2000;
+    position:fixed;inset:0;z-index:var(--z-auth-overlay);
     display:flex;align-items:center;justify-content:center;
     padding:24px;
     /* 常にダーク背景なのでテーマに依存しない文字色を強制 */

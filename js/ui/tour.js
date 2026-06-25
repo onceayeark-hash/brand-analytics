@@ -20,6 +20,11 @@
   const GAP       = 16;   // スポットライトとカードの距離 (px)
   const Z         = 9000; // ベースz-index
 
+  // prefers-reduced-motion: reduce の場合は空間移動を行わず即時反映する
+  const REDUCED_MOTION = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches ?? false;
+  const SPOTLIGHT_TRANSITION = REDUCED_MOTION ? 'none' : 'top .25s ease, left .25s ease, width .25s ease, height .25s ease';
+  const CARD_TRANSITION      = REDUCED_MOTION ? 'none' : 'opacity .2s ease';
+
   // ─────────────────────────────────────
   // ツアーステップ定義
   // ─────────────────────────────────────
@@ -81,7 +86,7 @@
       zIndex:   `${Z}`,
       background: 'rgba(0,0,0,0.62)',
       pointerEvents: 'all',
-      transition: 'top .25s ease, left .25s ease, width .25s ease, height .25s ease',
+      transition: SPOTLIGHT_TRANSITION,
     };
 
     const frames = {};
@@ -104,7 +109,7 @@
       border:     '2px solid rgba(200,146,78,0.75)',
       boxShadow:  '0 0 0 4px rgba(200,146,78,0.10), 0 0 24px rgba(200,146,78,0.22)',
       pointerEvents: 'none',
-      transition: 'top .25s ease, left .25s ease, width .25s ease, height .25s ease',
+      transition: SPOTLIGHT_TRANSITION,
       display:    'none',
     });
     document.body.appendChild(ring);
@@ -133,7 +138,7 @@
       boxShadow: '0 24px 64px rgba(0,0,0,0.75)',
       fontFamily: 'var(--font-sans, "BIZ UDPGothic", sans-serif)',
       pointerEvents: 'all',
-      transition: 'opacity .2s ease',
+      transition: CARD_TRANSITION,
     });
     document.body.appendChild(card);
 

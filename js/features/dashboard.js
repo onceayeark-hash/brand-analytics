@@ -1,3 +1,4 @@
+// @not-security-critical （grep確認済み・認証情報/トークン/APIキーを扱わない・2026-06-25判断）
 /**
  * BRAND ANALYTICS — dashboard.js
  * eBay Seller Hub では見えないものを主役にする
@@ -153,7 +154,7 @@
     const ppdColor   = stats.ppd !== null && stats.ppd > 0 ? 'var(--green)' : stats.ppd !== null && stats.ppd < 0 ? 'var(--red)' : 'var(--text-primary)';
 
     return `
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px">
+      <div class="grid-4">
 
         <div class="card" style="text-align:center">
           <div class="card-title" style="font-size:10px;text-transform:uppercase;letter-spacing:.08em">${month}の粗利益</div>
