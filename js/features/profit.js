@@ -1753,8 +1753,8 @@
         if (!root || !_rendered) return;
         const payoneerEl = root.querySelector('#p-payoneer');
         const authSvcEl  = root.querySelector('#p-auth-service');
-        if (payoneerEl && detail.payoneerRate   != null) payoneerEl.value = Number(detail.payoneerRate).toFixed(2);
-        if (authSvcEl  && detail.authServiceJpy != null) authSvcEl.value  = detail.authServiceJpy;
+        if (payoneerEl && detail.payoneerRate   !== null) payoneerEl.value = Number(detail.payoneerRate).toFixed(2);
+        if (authSvcEl  && detail.authServiceJpy !== null) authSvcEl.value  = detail.authServiceJpy;
         _update(root);
       });
 

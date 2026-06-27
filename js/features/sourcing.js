@@ -279,9 +279,9 @@
         const tProfit = root.querySelector('#s-t-profit');
         const tComp   = root.querySelector('#s-t-comp');
         const tSell   = root.querySelector('#s-t-sell');
-        if (tProfit && detail.targetMargin    != null) tProfit.value = detail.targetMargin;
-        if (tComp   && detail.competitorLimit != null) tComp.value   = detail.competitorLimit;
-        if (tSell   && detail.minSellRate     != null) tSell.value   = detail.minSellRate;
+        if (tProfit && detail.targetMargin    !== null) tProfit.value = detail.targetMargin;
+        if (tComp   && detail.competitorLimit !== null) tComp.value   = detail.competitorLimit;
+        if (tSell   && detail.minSellRate     !== null) tSell.value   = detail.minSellRate;
         _updateVerdict(root);
       });
     },
