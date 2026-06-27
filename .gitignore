@@ -14,3 +14,9 @@ Thumbs.db
 # Editor
 .vscode/settings.json
 *.swp
+
+# Archive（旧バージョンの参照用コピー・本番コードではない）
+_archive/
+
+# Node
+node_modules/

@@ -4,6 +4,10 @@
   "private": true,
   "scripts": {
     "check:security": "node scripts/check-security-coverage.js",
-    "test:hook": "node scripts/test-security-hook.js"
+    "test:hook": "node scripts/test-security-hook.js",
+    "lint": "eslint js/ scripts/ --ext .js"
+  },
+  "devDependencies": {
+    "eslint": "^8.57.0"
   }
 }
