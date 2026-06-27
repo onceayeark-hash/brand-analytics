@@ -1,3 +1,4 @@
+// @not-security-critical （外部公開APIから為替レートを取得するだけ・認証情報を扱わない・2026-06-25判断）
 /**
  * Supabase Edge Function: exchange-rate
  *

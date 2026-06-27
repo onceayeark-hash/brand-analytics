@@ -228,3 +228,9 @@
 | BAN-01 | 🟠 | 障害バナーが file://・CORS・オフライン環境で誤表示される。monitor.jsのfetch失敗を 'down' でなく 'unreachable' として区別。status-banner.jsは 'down'/'degraded' のみバナー表示するため到達不能時はバナー非表示となる（A案+C案採用） | ✅ 修正済み（monitor.js catch → status:'unreachable'） |
 | UX-11 | ⚪ | **テーマ整合性チェック（ライト/ダークのズレ修正・全ページ対象）**。仕入シミュレーターに限らず**全ページ共通の問題**。ヘッダー・サイドバー等の全画面共通要素を含む。機能は正常だが、両テーマ間で文字位置・要素配置・余白等に微妙なズレあり。具体例：eBay連携ボタンの左右幅の差・文字の左右位置のズレ・粗利率⇔粗利額トグルの選択状態表示差・適用手数料率の文字間隔差等。**全機能の実装が一段落した後に「両テーマ並列確認」として一括対応する。** 理由：今修正しても後続の実装で再ズレが発生するため、最後にまとめて詰めるほうが効率的 | **保留・全機能実装完了後** |
 | UX-10 | 🔴 | プロダクトツアーがサインイン画面（ログイン前）に重なって表示されていた。原因①：テスト用の認証チェック無効化コードが残存。原因②：init()はページロード時のみ走るため初回ログイン後にツアーが起動しない構造だった。修正：認証チェック復活＋ba:auth-state-changeイベントをtour.jsが監視しログイン成功後に自動起動。「無料でツールを使う」（_user=null）ではツアーを出さない仕様を維持 | ✅ 修正済み（tour.js：認証チェック復活・ログインイベント監視追加） |
+
+## ガバナンス｜skills.mdトリガー整合性（2026-06-25）
+
+| # | 優先 | 内容 | 状態 |
+|---|---|---|---|
+| GOV-01 | 🔴 | context/skills.mdのトリガーB（security-review自動発動）が「auth.js / crypto.js / トークン・OAuth処理を変更したとき」という自然文判断頼みで書かれており、実際にOAuthトークン交換を行うsupabase/functions/ebay-token/index.ts等が文字列一致せず対象漏れになっていた（別プロジェクト「仕入れインテリジェンス」で発見した同型バグの横展開検証で発覚）。対応：`// @security-critical`マーカー方式へ移行し、scripts/check-security-coverage.js（`npm run check:security`）で実態とskills.mdの明示リストを双方向に突き合わせるfail-closed機構を新設。js/core・js/features・supabase/functions配下の全ファイルにマーカー付与済み（critical: auth.js/crypto.js/api.js/claude.js/monitor.js/auto-listing.js/settings.js/ebay-token/call-claude、not-critical: cache.js/i18n.js/exchange-rate/js/features他8件）。code-reviewerの2度のレビューで発覚した追加の穴（js/featuresが境界外だった・正規表現が地の文から偽マッチを誤抽出）も修正済み。CI/pre-commit未整備のため手動実行（`npm run check:security`）が前提。BRAND_ANALYTICS/files/配下のauth.js・crypto.js等の死んだコピー（index.htmlから読み込まれていない）は別件として未対応（スコープ外） | ✅ 実装済み（ERROR 0件・WARN 0件確認済み） |

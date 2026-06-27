@@ -1,3 +1,4 @@
+// @not-security-critical （grep確認済み・認証情報/トークン/APIキーを扱わない・2026-06-25判断）
 /**
  * BRAND ANALYTICS — transactions.js
  * 取引記録入力 + 学習型手数料計算エンジン（FREE 機能）

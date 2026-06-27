@@ -1,3 +1,4 @@
+// @security-critical （エラーログ・通知メールに認証情報が混入するリーク経路の懸念・2026-06-25判断）
 /**
  * BRAND ANALYTICS — monitor.js
  * 作成者向け監視モジュール

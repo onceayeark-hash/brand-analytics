@@ -167,3 +167,11 @@ console.log('user:', BA.auth.getUser(), 'tier:', BA.auth.getTier())
 - [auto-listing.js] CLAUDE.mdで「DeepL廃止・Claude APIに一本化済み」と確定済みにも関わらず、localStorageのDeepL APIキーを読み取りクライアント側からPOST送信するコードが現存（@security-critical対象） → DeepL呼び出しを `BA.claude.call('title', ...)` 経由のClaude API呼び出しに置き換え。ファイル先頭のマーカーを `@security-critical` → `@not-security-critical` に変更し、context/skills.md のトリガーB対象ファイル明示リストも同期（`npm run check:security`通過確認済み）
 - [profit.js] STAGE3着手前提条件（RES-01：`BA.profit.calculate(params)` 純粋関数化）を前倒しで一部実施 → 既存の内部関数 `_calculate`・`DEFAULTS`・`EBAY_FEE`・現在の為替レート取得用 `getExchangeRate()` を `window.BA.profit` に追加公開（既存ロジックは無変更、追加のみ）
 - [sourcing.js] CLAUDE.mdで「廃止：GO/NO-GO → 仕入れ可能価格帯 ¥X〜¥Y に置き換え」と確定していたにも関わらず、GO/NO-GO判定UIが実装されたまま残っていた → `_verdict()` を削除し `_calcPriceBand()` を新設。「想定販売価格（USD）」入力を追加し、`BA.profit.calculate()` を仕入れ原価0円で呼び出して仕入れ原価以外の手数料合計を求め、目標粗利率から仕入れ原価の上限を逆算する方式に変更。下限は¥0固定（最小マージン設定が存在しないため）。達成不能な目標の場合は「この目標は達成不可」を表示
+
+### 2026-06-28
+- [セキュリティhook基盤] PostToolUse hook を `.claude/settings.json` に登録。`scripts/security-hook.js` が Edit/Write 後に `@security-critical` マーカーを検知し exit(2) で security-reviewer 手動実行を強制フィードバック
+  - 「ブロック」ではなく「編集後のレビュー要求フィードバック」が正確な呼称（PostToolUse は編集後に走るため取り消し不可）
+  - Claude Code のフック機構はプロセスレベルで stdin を書き込む → PowerShell パイプでのドライランは信頼できない（exit 0 になる）。`npm run test:hook` が正規の検証コマンド
+  - `execSync` のシェル文字列構築は PostToolUse hook の security-guidance プラグイン指摘を受けて `spawnSync` + 引数配列に即変更（hook が自分で書いたコードのリスクを検知した実例）
+  - `.claude/hookify.security-review-warning.local.md` は hookify 独自フォーマット（Claude Code の hook 機構とは別システム）で実質無効だったため削除
+  - マーカー付与・check:security は 2026-06-25 セッションで完了済みのためスキップ

@@ -1,3 +1,4 @@
+// @security-critical
 /**
  * BRAND ANALYTICS — api.js
  * eBay API クライアント

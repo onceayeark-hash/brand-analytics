@@ -1,3 +1,4 @@
+// @not-security-critical （grep確認済み・認証情報/トークン/APIキーを扱わない・2026-06-25判断）
 /**
  * BRAND ANALYTICS — listing-quality.js
  * リスティング品質スコア・2026年新要件チェッカー・VeROリスクスキャン

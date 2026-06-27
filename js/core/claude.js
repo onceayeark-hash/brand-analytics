@@ -1,3 +1,4 @@
+// @security-critical
 /**
  * BRAND ANALYTICS — claude.js
  * Claude API 統合基盤（Supabase Edge Function プロキシ経由）

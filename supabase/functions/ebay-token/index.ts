@@ -1,3 +1,4 @@
+// @security-critical
 /**
  * Supabase Edge Function: ebay-token
  *

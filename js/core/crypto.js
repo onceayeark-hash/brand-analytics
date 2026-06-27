@@ -1,3 +1,4 @@
+// @security-critical
 /**
  * BRAND ANALYTICS — crypto.js
  * AES-GCM 256bit 暗号化・復号モジュール

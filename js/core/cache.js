@@ -1,3 +1,4 @@
+// @not-security-critical （キャッシュデータの読み書き・鮮度管理のみ・認証情報を扱わない・2026-06-25判断）
 /**
  * BRAND ANALYTICS — cache.js
  * Supabase キャッシュ読み書き・鮮度管理モジュール

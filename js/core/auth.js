@@ -1,3 +1,4 @@
+// @security-critical
 /**
  * BRAND ANALYTICS — auth.js
  * Supabase Auth + eBay OAuth 2.0 認証モジュール

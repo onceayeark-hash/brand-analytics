@@ -1,3 +1,4 @@
+// @not-security-critical （日英ローカライズのみ・認証情報を扱わない・2026-06-25判断）
 /**
  * BRAND ANALYTICS — i18n.js
  * 日英ローカライズモジュール

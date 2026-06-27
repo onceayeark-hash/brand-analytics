@@ -1,0 +1,9 @@
+{
+  "name": "brand-analytics",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "check:security": "node scripts/check-security-coverage.js",
+    "test:hook": "node scripts/test-security-hook.js"
+  }
+}
