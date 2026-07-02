@@ -16,6 +16,12 @@
 | 5 | `schema_stage2_claude.sql` | Claude API統合基盤（ebay_rules・call_log） | 未確認 |
 | 6 | `schema_auto_listing.sql` | 自動出品機能（STAGE2後半用） | **未適用** |
 
+## 個別マイグレーション（Claude Code MCP経由で適用済み）
+
+| 名前 | 内容 | 適用日 |
+|---|---|---|
+| `restrict_error_logs_select_to_admin` | error_logs の SELECT を管理者メール（kakuta@staygold-reuse.co.jp）のみに制限。従来は qual:true で誰でも全件読めた | 2026-07-02 |
+
 ---
 
 ## 適用手順

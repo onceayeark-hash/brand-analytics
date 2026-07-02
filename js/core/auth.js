@@ -5,8 +5,8 @@
  *
  * ・Supabase Auth でユーザー管理（email/password）
  * ・eBay OAuth 2.0 でトークン取得（Supabase Edge Function 経由）
- * ・access_token + refresh_token を AES-GCM 256bit で暗号化して Supabase に保存
- * ・セッションキー: メモリのみ、タブ終了時に破棄
+ * ・【A案・2026-07-02】トークンの暗号化・保存は ebay-token Edge Function がサーバー側で実施
+ *   フロントは refresh_token を受け取らず、access_token をメモリのみで保持する
  * ・tier（free / connected / premium）を nav.js に通知
  * ・Client Secret (EBAY_CERT_ID) はフロントエンドに置かず Edge Function のみで使用
  */
@@ -134,34 +134,16 @@
     return Array.from(arr, b => b.toString(16).padStart(2, '0')).join('');
   }
 
-  async function _saveEbayTokens(tokens) {
-    if (!_supabase || !_user) throw new Error('[auth] Supabase 未接続');
-    const encrypted = await BA.crypto.encrypt(JSON.stringify(tokens));
-    const { error } = await _supabase
-      .from('ebay_tokens')
-      .upsert(
-        { user_id: _user.id, token_data: encrypted, updated_at: new Date().toISOString() },
-        { onConflict: 'user_id' }
-      );
-    if (error) throw new Error(`[auth] トークン保存失敗: ${error.message}`);
-    _ebayTokens = tokens;
-  }
-
-  async function _loadEbayTokens() {
-    if (!_supabase || !_user) return null;
+  // トークンの保存・暗号化は ebay-token Edge Function が行う（A案）。
+  // フロントは「連携済みの行が存在するか」だけを確認する（token_data は復号しない）。
+  async function _hasEbayConnection() {
+    if (!_supabase || !_user) return false;
     const { data, error } = await _supabase
       .from('ebay_tokens')
-      .select('token_data')
+      .select('user_id')
       .eq('user_id', _user.id)
       .maybeSingle();
-    if (error || !data) return null;
-    try {
-      const decrypted = await BA.crypto.decrypt(data.token_data);
-      return JSON.parse(decrypted);
-    } catch {
-      console.warn('[auth] トークン復号失敗 — 再認証が必要です');
-      return null;
-    }
+    return !error && !!data;
   }
 
   async function _doRefresh() {
@@ -182,10 +164,8 @@
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${jwt}`,
           },
-          body: JSON.stringify({
-            type:         'refresh_token',
-            refreshToken: _ebayTokens.refreshToken,
-          }),
+          // refresh_token は Edge Function が DB から取得する（フロントは保持しない）
+          body: JSON.stringify({ type: 'refresh_token' }),
           signal: controller.signal,
         });
       } finally {
@@ -198,13 +178,11 @@
       const data = await response.json();
       const expiresIn = Number(data.expires_in);
       if (!expiresIn || expiresIn <= 0) throw new Error('不正な expires_in 値');
-      const newTokens = {
-        accessToken:  data.access_token,
-        refreshToken: data.refresh_token || _ebayTokens.refreshToken,
-        expiresAt:    Date.now() + expiresIn * 1000,
+      _ebayTokens = {
+        accessToken: data.access_token,
+        expiresAt:   Date.now() + expiresIn * 1000,
       };
-      await _saveEbayTokens(newTokens);
-      return newTokens.accessToken;
+      return _ebayTokens.accessToken;
     } catch (err) {
       console.error('[auth] トークンリフレッシュ失敗:', err);
       _fireAlert('OAUTH_EXPIRED');
@@ -266,15 +244,12 @@
         _user = session.user;
         _hideAuthOverlay();
 
-        const tokens = await _loadEbayTokens();
-        if (tokens) {
-          _ebayTokens = tokens;
-          if (Date.now() > tokens.expiresAt) {
-            // #2 #3 修正: リフレッシュ失敗時はnullが返る。
-            // nullの場合はuser_settings読み込みをスキップしてfree/disconnectedを維持する
-            const validToken = await _ensureValidToken();
-            if (!validToken) return;
-          }
+        if (await _hasEbayConnection()) {
+          // アクセストークンは保存せず、ロード毎に Edge Function 経由でリフレッシュ取得する。
+          // リフレッシュ失敗時は null が返る → free/disconnected を維持して終了（#2 #3）
+          _ebayTokens = { accessToken: null, expiresAt: 0 };
+          const validToken = await _ensureValidToken();
+          if (!validToken) return;
           const { data: settings } = await _supabase
             .from('user_settings')
             .select('access_tier')
@@ -304,13 +279,10 @@
       _setTier('free');
       _updateEbayStatusUI('disconnected');
       _hideAuthOverlay();
-      const tokens = await _loadEbayTokens();
-      if (tokens) {
-        _ebayTokens = tokens;
-        if (Date.now() > tokens.expiresAt) {
-          const validToken = await _ensureValidToken();
-          if (!validToken) return;
-        }
+      if (await _hasEbayConnection()) {
+        _ebayTokens = { accessToken: null, expiresAt: 0 };
+        const validToken = await _ensureValidToken();
+        if (!validToken) return;
         const { data: settings } = await _supabase
           .from('user_settings')
           .select('access_tier')
@@ -397,15 +369,13 @@
         throw new Error(`[auth] トークン交換失敗 (${response.status}): ${err.error || ''}`);
       }
       const data = await response.json();
-      if (!data.refresh_token) throw new Error('[auth] refresh_token がレスポンスに含まれていません');
       const expiresIn = Number(data.expires_in);
       if (!expiresIn || expiresIn <= 0) throw new Error('[auth] 不正な expires_in 値');
-      const tokens = {
-        accessToken:  data.access_token,
-        refreshToken: data.refresh_token,
-        expiresAt:    Date.now() + expiresIn * 1000,
+      // 保存（暗号化含む）は Edge Function 側で完了済み。フロントは access_token のみ保持
+      _ebayTokens = {
+        accessToken: data.access_token,
+        expiresAt:   Date.now() + expiresIn * 1000,
       };
-      await _saveEbayTokens(tokens);
       _setTier('connected');
       _updateEbayStatusUI('connected');
       BA.notify?.toast?.('eBay アカウントを連携しました', 'success');

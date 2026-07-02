@@ -107,11 +107,13 @@ DATA_STALE           // データ鮮度切れ
 SUPABASE_ERROR       // DB接続エラー
 ```
 
-## eBay OAuth仕様（確定）
+## eBay OAuth仕様（確定・2026-07-02 A案に改訂）
 - ユーザーが**各自のeBayアカウント**で認証（必須）
-- `access_token` + `refresh_token` を **AES-GCM 256bit** で暗号化保存
-- セッションキー: **メモリのみ**・タブ終了時破棄
-- トークン保存先: Supabase `ebay_tokens` テーブル（暗号化済み）
+- トークンの暗号化・保存は **ebay-token Edge Function がサーバー側で実施**（AES-GCM 256bit・鍵はSERVICE_ROLE_KEYからSHA-256導出）
+- `refresh_token` は**フロントエンドに一切渡さない**（Edge FunctionとDBのみが知る）
+- フロントは `access_token` を**メモリのみ**で保持（ページロード毎にEdge Function経由でリフレッシュ取得）
+- トークン保存先: Supabase `ebay_tokens` テーブル（サーバー側暗号化済み）
+- 旧方式（フロント暗号化）はセッションキー非永続のため保存トークンが復号不能になる設計欠陥があり廃止
 
 ## フラグ管理
 ```javascript

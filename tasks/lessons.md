@@ -180,6 +180,6 @@ console.log('user:', BA.auth.getUser(), 'tier:', BA.auth.getTier())
 - [index.html / monitor.js / admin.js] `window._supabaseClient` を誰もセットしておらず、error_logs 保存・閾値メール・管理者パネルのログ表示が全て無言で停止していた（空箱） → `BA.auth.init()` 直後に `window._supabaseClient = BA.auth?.getSupabase?.() ?? null;` を注入して修正
 - [settings.js] 存在しない `BA.auth.getEbayToken()` を呼んでおり、eBay接続状態が常に「未接続」表示だった → `isEbayConnected()` ＋ auth.js に新設した `getEbayTokenExpiry()`（有効期限msのみ返す・トークン素材は返さない）に置換
 - [sourcing.js] `parseFloat(x) ?? 0` は NaN をガードできない（parseFloatはnullを返さない）→ `|| 0` に修正。未入力時「NaN%」表示バグ解消
-- [設計課題・未修正] crypto.js のセッションキーはページロード毎にランダム再生成（永続化なし・extractable:false）のため、DBに保存した暗号化eBayトークンは次回ページロードで**絶対に復号できない**。eBay連携がリロードごとに消える構造。暗号化方式の再設計（Edge Function側での暗号化 or RLS依存への変更等）の方針決定が必要
-- [設計課題・未修正] Supabase `error_logs` の SELECT ポリシー `admin_read_all` が `qual: true`（管理者制限なし・anonでも全件読める）。管理者の識別方法を決めて `auth.jwt()->>'email'` 等で制限すること
+- [解決済み・同日A案実装] crypto.js のセッションキーはページロード毎にランダム再生成のため、DBに保存した暗号化eBayトークンは次回ページロードで復号不能だった → **A案採用**：ebay-token Edge Function（v7デプロイ済み）がサーバー側で暗号化・保存。refresh_tokenはフロントに一切返さない。auth.jsからクライアント暗号化を撤去。旧形式token_dataはEF側で検知→行削除→再連携誘導（既存ユーザーは1回だけeBay再連携が必要）。security-reviewer通過（必須指摘なし・将来改善：専用シークレットEBAY_TOKEN_ENC_KEYへの鍵分離）
+- [解決済み・同日適用] Supabase `error_logs` の SELECT ポリシー `admin_read_all` が `qual: true` だった → migration `restrict_error_logs_select_to_admin` で管理者メール（kakuta@staygold-reuse.co.jp）のみに制限・pg_policiesで検証済み
 - [未実装確認] monitor.js が呼ぶ `notify-admin` Edge Function は未作成（閾値メール通知は現状404で無言スキップ）
