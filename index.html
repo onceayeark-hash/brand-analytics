@@ -973,6 +973,8 @@
 
     // 3. Supabaseセッション復元・tier設定
     await BA.auth?.init?.();
+    // monitor.js / admin.js は window._supabaseClient 経由で error_logs にアクセスする
+    window._supabaseClient = BA.auth?.getSupabase?.() ?? null;
     BA.claude?.init?.();
 
     // 4. eBay OAuthコールバック検出（eBayからのリダイレクト後）

@@ -453,6 +453,8 @@
     getUser()         { return _user; },
     getSupabase()     { return _supabase; },
     isEbayConnected() { return _ebayTokens !== null; },
+    // トークン文字列は返さない（有効期限タイムスタンプのみ・settings.js の表示用）
+    getEbayTokenExpiry() { return _ebayTokens?.expiresAt ?? null; },
 
     async signOut() {
       await this.disconnectEbay().catch(() => {});

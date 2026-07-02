@@ -191,10 +191,11 @@
     const compInput      = root.querySelector('#s-competitors');
     const sellInput      = root.querySelector('#s-sellrate');
 
-    const sellingPriceUsd  = parseFloat(sellPriceInput?.value) ?? 0;
-    const profitRate       = parseFloat(profitInput?.value)  ?? 0;
-    const competitorGrowth = parseFloat(compInput?.value)    ?? 0;
-    const sellRate         = parseFloat(sellInput?.value)    ?? 0;
+    // parseFloat は NaN を返すため ?? ではフォールバックしない（|| で NaN も 0 に落とす）
+    const sellingPriceUsd  = parseFloat(sellPriceInput?.value) || 0;
+    const profitRate       = parseFloat(profitInput?.value)  || 0;
+    const competitorGrowth = parseFloat(compInput?.value)    || 0;
+    const sellRate         = parseFloat(sellInput?.value)    || 0;
     const tProfit   = parseFloat(root.querySelector('#s-t-profit')?.value) || DEFAULTS.profitThreshold;
     const tComp     = parseFloat(root.querySelector('#s-t-comp')?.value)   || DEFAULTS.competitorThreshold;
     const tSell     = parseFloat(root.querySelector('#s-t-sell')?.value)   || DEFAULTS.sellRateThreshold;

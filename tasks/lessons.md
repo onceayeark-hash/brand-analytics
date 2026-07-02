@@ -175,3 +175,11 @@ console.log('user:', BA.auth.getUser(), 'tier:', BA.auth.getTier())
   - `execSync` のシェル文字列構築は PostToolUse hook の security-guidance プラグイン指摘を受けて `spawnSync` + 引数配列に即変更（hook が自分で書いたコードのリスクを検知した実例）
   - `.claude/hookify.security-review-warning.local.md` は hookify 独自フォーマット（Claude Code の hook 機構とは別システム）で実質無効だったため削除
   - マーカー付与・check:security は 2026-06-25 セッションで完了済みのためスキップ
+
+### 2026-07-02（全体再監査）
+- [index.html / monitor.js / admin.js] `window._supabaseClient` を誰もセットしておらず、error_logs 保存・閾値メール・管理者パネルのログ表示が全て無言で停止していた（空箱） → `BA.auth.init()` 直後に `window._supabaseClient = BA.auth?.getSupabase?.() ?? null;` を注入して修正
+- [settings.js] 存在しない `BA.auth.getEbayToken()` を呼んでおり、eBay接続状態が常に「未接続」表示だった → `isEbayConnected()` ＋ auth.js に新設した `getEbayTokenExpiry()`（有効期限msのみ返す・トークン素材は返さない）に置換
+- [sourcing.js] `parseFloat(x) ?? 0` は NaN をガードできない（parseFloatはnullを返さない）→ `|| 0` に修正。未入力時「NaN%」表示バグ解消
+- [設計課題・未修正] crypto.js のセッションキーはページロード毎にランダム再生成（永続化なし・extractable:false）のため、DBに保存した暗号化eBayトークンは次回ページロードで**絶対に復号できない**。eBay連携がリロードごとに消える構造。暗号化方式の再設計（Edge Function側での暗号化 or RLS依存への変更等）の方針決定が必要
+- [設計課題・未修正] Supabase `error_logs` の SELECT ポリシー `admin_read_all` が `qual: true`（管理者制限なし・anonでも全件読める）。管理者の識別方法を決めて `auth.jwt()->>'email'` 等で制限すること
+- [未実装確認] monitor.js が呼ぶ `notify-admin` Edge Function は未作成（閾値メール通知は現状404で無言スキップ）

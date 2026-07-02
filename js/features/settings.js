@@ -1,4 +1,4 @@
-// @security-critical （BA.auth.getEbayToken()/getEbayTokenExpiry()でトークンを直接参照・code-reviewer指摘）
+// @security-critical （BA.auth.isEbayConnected()/getEbayTokenExpiry()でeBay接続状態・有効期限を参照）
 /**
  * BRAND ANALYTICS — settings.js
  * 設定ページ（手数料・閾値 / eBay接続管理）
@@ -115,9 +115,8 @@
   // セクション3：eBay接続管理
   // ─────────────────────────────────────
   function _renderSection3() {
-    const token     = BA.auth?.getEbayToken?.();
+    const connected = !!BA.auth?.isEbayConnected?.();
     const expiry    = BA.auth?.getEbayTokenExpiry?.();
-    const connected = !!token;
 
     const statusDot = connected
       ? `<span style="color:var(--green);font-size:16px;line-height:1">●</span>
