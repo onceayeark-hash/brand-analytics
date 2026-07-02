@@ -36,8 +36,11 @@ auto-listing.jsのDeepL→Claude API置換・sourcing.jsのGO/NO-GO→仕入れ�
 ### 【手順1】ウィンドウ①：Live Server起動（PowerShell）
 Windowsキー → 「PowerShell」と入力 → Enter
 ```
-cd "C:\Users\admin\OneDrive\Desktop\物販事業　一式\■会社関連\AI一式\claudcord一式\brand-analytics"
+cd "C:\dev\brand-analytics"
 ```
+※2026-07-02にOneDrive外へ移設（同期ロック・パス互換問題の回避）。旧パス
+`C:\Users\admin\OneDrive\Desktop\物販事業　一式\■会社関連\AI一式\claudcord一式\brand-analytics`
+は参照用アーカイブ。今後の作業・Claude Code起動は必ず C:\dev\brand-analytics で行う。
 Enterを押してから：
 ```
 npx live-server --port=5500
