@@ -29,6 +29,12 @@ auto-listing.jsのDeepL→Claude API置換・sourcing.jsのGO/NO-GO→仕入れ�
 ### 【2】hallmark audit 残件（ブラウザ確認後に着手）
 残り：M-1（:focus-visible）・M-3（easing tokens）・M-4（type scale）・m-3（reduced-motion）・m-4（!important）
 
+### 【3】次回 dashboard.js / transactions.js 改修時の検討事項（2026-07-18 code-review / hallmark audit で検出・今回は対応保留）
+- **カード3のフォント不統一**：`dashboard.js:148` のみ `font-size:1.6rem`・`var(--font-mono)` 無し（他3枚は 1.7rem + mono）。意図的な値か統一漏れかをブラウザ実画面で判断してから対応する（オーナー判断待ち）
+- **`.card-value` クラス不使用（構造改善候補）**：KPIカードの値ブロックが `index.html:166` の既存 `.card-value` を使わずインラインスタイルを3箇所に複製。1つの余白変更に4箇所の編集が必要な状態。dashboard.js 全体を触る際にクラス化を検討
+- **`_pct` / `_fmtRate` の重複**：`dashboard.js:116` と `transactions.js` に同一実装（`${(r * 100).toFixed(2)}%`）。片方だけ桁数を変えるとダッシュボードと取引記録で表示が食い違う
+- **optional chaining の非対称**：`dashboard.js:146` は `learned?.isFallback` だが `:148` の `learned.ebayFeeRate` は素参照。現状は `:334` の `??` が吸収するため到達確率は低い
+
 ## 🚀 前倒し実装3件（2026-07-02 オーナー承認・スペック向上枠）
 
 > 2026-07-02 全体監査後にオーナーが承認。既存ロードマップより前倒しで実装する。

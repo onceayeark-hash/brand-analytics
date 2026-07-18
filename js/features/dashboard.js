@@ -145,7 +145,7 @@
     const month  = new Date().toLocaleDateString('ja-JP', { month: 'long' });
     const feeRate = learned?.isFallback
       ? `<span style="color:var(--text-muted)">推定中</span>`
-      : `<span style="color:var(--gold-400);font-size:1.6rem;font-weight:600">${_pct(learned.ebayFeeRate)}</span>`;
+      : `<span style="color:var(--gold-400);font-size:1.6rem;font-weight:600;font-variant-numeric:tabular-nums">${_pct(learned.ebayFeeRate)}</span>`;
     const feeNote = learned?.isFallback
       ? `<div style="font-size:11px;color:var(--text-muted)">実績 ${learned.recordCount}件（5件で確定）</div>`
       : `<div style="font-size:11px;color:var(--text-muted)">実績 ${learned.recordCount}件の平均</div>`;
