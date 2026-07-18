@@ -158,7 +158,7 @@
 
         <div class="card" style="text-align:center">
           <div class="card-title" style="font-size:10px;text-transform:uppercase;letter-spacing:.08em">${month}の粗利益</div>
-          <div style="font-size:1.7rem;font-weight:600;margin:10px 0;font-family:var(--font-mono);
+          <div style="font-size:1.7rem;font-weight:600;margin:var(--space-2) 0;font-family:var(--font-mono);
             color:${grossColor};font-variant-numeric:tabular-nums">
             ${stats.count > 0 ? _jpy(stats.grossJpy) : '<span style="color:var(--text-muted)">—</span>'}
           </div>
@@ -167,7 +167,7 @@
 
         <div class="card" style="text-align:center">
           <div class="card-title" style="font-size:10px;text-transform:uppercase;letter-spacing:.08em">PPD（1日あたり）</div>
-          <div style="font-size:1.7rem;font-weight:600;margin:10px 0;font-family:var(--font-mono);
+          <div style="font-size:1.7rem;font-weight:600;margin:var(--space-2) 0;font-family:var(--font-mono);
             color:${ppdColor};font-variant-numeric:tabular-nums">
             ${stats.ppd !== null ? _jpy(stats.ppd) : '<span style="color:var(--text-muted)">—</span>'}
           </div>
@@ -176,13 +176,13 @@
 
         <div class="card" style="text-align:center">
           <div class="card-title" style="font-size:10px;text-transform:uppercase;letter-spacing:.08em">実績 eBay 手数料率</div>
-          <div style="margin:10px 0">${feeRate}</div>
+          <div style="margin:var(--space-2) 0">${feeRate}</div>
           ${feeNote}
         </div>
 
         <div class="card" style="text-align:center">
           <div class="card-title" style="font-size:10px;text-transform:uppercase;letter-spacing:.08em">${month}の取引件数</div>
-          <div style="font-size:1.7rem;font-weight:600;margin:10px 0;font-family:var(--font-mono);
+          <div style="font-size:1.7rem;font-weight:600;margin:var(--space-2) 0;font-family:var(--font-mono);
             color:var(--text-primary);font-variant-numeric:tabular-nums">
             ${stats.count}<span style="font-size:1rem;font-weight:400;color:var(--text-muted)"> 件</span>
           </div>
