@@ -7,6 +7,13 @@ APIキー　パスワード.docx
 *パスワード*.docx
 supabase/.temp/
 
+# UI確認用スクリーンショット（一時ファイル）
+screenshots/
+
+# 業務素材はリポジトリ外 ..\brand-analytics_資料\ に退避（2026-07-18）
+*.docx
+*.pdf
+
 # OS
 .DS_Store
 Thumbs.db
