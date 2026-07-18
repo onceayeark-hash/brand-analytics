@@ -10,6 +10,9 @@ supabase/.temp/
 # UI確認用スクリーンショット（一時ファイル）
 screenshots/
 
+# Playwright MCP がブラウザ確認のたびに自動生成するログ・スナップショット（2026-07-18）
+.playwright-mcp/
+
 # 業務素材はリポジトリ外 ..\brand-analytics_資料\ に退避（2026-07-18）
 *.docx
 *.pdf
