@@ -274,8 +274,8 @@
       </div>`).join('');
 
     return `
-      <div class="card" id="p-cost-fee-panel" style="margin-bottom:16px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div class="card card--form" id="p-cost-fee-panel">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-2)">
           <div class="card-title" style="margin:0">仕入れ手数料</div>
           <button id="p-fee-close-btn" style="background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:18px;padding:0;line-height:1">×</button>
         </div>
@@ -665,7 +665,7 @@
         .forEach(id => set(id, '—', ''));
     }
 
-    const mode = root.querySelector('#p-sim-tab-pct')?.classList.contains('sim-tab-active') ? 'pct' : 'jpy';
+    const mode = root.querySelector('#p-sim-tab-pct')?.classList.contains('active') ? 'pct' : 'jpy';
     const targetVal = mode === 'pct'
       ? parseFloat(root.querySelector('#p-sim-target-pct')?.value) || 0
       : _parseNum(root.querySelector('#p-sim-target-jpy')?.value || '');
@@ -696,14 +696,10 @@
       const jW   = root.querySelector('#p-sim-target-jpy-wrap');
       if (!pBtn) return;
       if (active === 'pct') {
-        pBtn.classList.add('sim-tab-active');     jBtn.classList.remove('sim-tab-active');
-        pBtn.style.background = 'var(--brand)';   pBtn.style.color = '#fff';
-        jBtn.style.background = 'var(--card-bg)'; jBtn.style.color = 'var(--text-secondary)';
+        pBtn.classList.add('active'); jBtn.classList.remove('active');
         if (pW) pW.style.display = ''; if (jW) jW.style.display = 'none';
       } else {
-        jBtn.classList.add('sim-tab-active');     pBtn.classList.remove('sim-tab-active');
-        jBtn.style.background = 'var(--brand)';   jBtn.style.color = '#fff';
-        pBtn.style.background = 'var(--card-bg)'; pBtn.style.color = 'var(--text-secondary)';
+        jBtn.classList.add('active'); pBtn.classList.remove('active');
         if (jW) jW.style.display = ''; if (pW) pW.style.display = 'none';
       }
       _updateSimulator(root);
@@ -777,8 +773,7 @@
       const priceCol  = root.querySelector('#p-price-col');
       const targetCol = root.querySelector('#p-calc-target-col');
       if (tab === 'profit') {
-        profitTabBtn.style.background = 'var(--brand)'; profitTabBtn.style.color = '#fff';
-        priceTabBtn.style.background  = 'transparent';  priceTabBtn.style.color  = 'var(--text-secondary)';
+        profitTabBtn.classList.add('active'); priceTabBtn.classList.remove('active');
         if (priceCol)   priceCol.style.display  = '';
         if (targetCol)  targetCol.style.display = 'none';
         if (profitWrap) profitWrap.style.display = 'block';
@@ -787,8 +782,7 @@
         if (pi) pi.value = '';
         _update(root);
       } else {
-        priceTabBtn.style.background  = 'var(--brand)'; priceTabBtn.style.color  = '#fff';
-        profitTabBtn.style.background = 'transparent';  profitTabBtn.style.color = 'var(--text-secondary)';
+        priceTabBtn.classList.add('active'); profitTabBtn.classList.remove('active');
         if (priceCol)   priceCol.style.display  = 'none';
         if (targetCol)  targetCol.style.display = '';
         if (priceWrap)  priceWrap.style.display  = 'block';
@@ -818,8 +812,7 @@
         const rev = getRevJpy();
         if (av >= 0 && rev > 0 && rateInput && amtInput.value !== '')
           rateInput.value = ((av / rev) * 100).toFixed(2);
-        rateBtn.style.background   = 'var(--brand)'; rateBtn.style.color   = '#fff';
-        amountBtn.style.background = 'transparent';  amountBtn.style.color = 'var(--text-secondary)';
+        rateBtn.classList.add('active'); amountBtn.classList.remove('active');
         if (rateWrap)   rateWrap.style.display   = 'block';
         if (amountWrap) amountWrap.style.display = 'none';
         _updateRateAmountToggle(root);
@@ -829,8 +822,7 @@
         const rev = getRevJpy();
         if (!isNaN(rv) && rv >= 0 && rev > 0 && amtInput && rateInput.value !== '')
           amtInput.value = Math.round((rv / 100) * rev).toLocaleString('en-US');
-        amountBtn.style.background = 'var(--brand)'; amountBtn.style.color = '#fff';
-        rateBtn.style.background   = 'transparent';  rateBtn.style.color   = 'var(--text-secondary)';
+        amountBtn.classList.add('active'); rateBtn.classList.remove('active');
         if (amountWrap) amountWrap.style.display = 'block';
         if (rateWrap)   rateWrap.style.display   = 'none';
         _updateRateAmountToggle(root);
@@ -852,15 +844,13 @@
     const calcJpyWrap = root.querySelector('#p-calc-target-jpy-wrap');
     if (calcPctBtn) {
       calcPctBtn.addEventListener('click', () => {
-        calcPctBtn.style.background = 'var(--brand)'; calcPctBtn.style.color = '#fff';
-        calcJpyBtn.style.background = 'transparent';  calcJpyBtn.style.color = 'var(--text-secondary)';
+        calcPctBtn.classList.add('active'); calcJpyBtn.classList.remove('active');
         if (calcPctWrap) calcPctWrap.style.display = 'block';
         if (calcJpyWrap) calcJpyWrap.style.display = 'none';
         _refreshCalcPrice(root); _update(root);
       });
       calcJpyBtn.addEventListener('click', () => {
-        calcJpyBtn.style.background = 'var(--brand)'; calcJpyBtn.style.color = '#fff';
-        calcPctBtn.style.background = 'transparent';  calcPctBtn.style.color = 'var(--text-secondary)';
+        calcJpyBtn.classList.add('active'); calcPctBtn.classList.remove('active');
         if (calcJpyWrap) calcJpyWrap.style.display = 'block';
         if (calcPctWrap) calcPctWrap.style.display = 'none';
         _refreshCalcPrice(root); _update(root);
@@ -883,20 +873,18 @@
 
   function _renderPriceCalcCard() {
     return `
-      <div class="card" style="margin-bottom:12px" id="p-calc-card">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-          <div style="display:flex;align-items:center;gap:10px">
-            <div class="card-title" style="margin:0">価格・原価・粗利</div>
-            <button id="p-fee-toggle-btn" style="font-size:11px;padding:3px 8px;border:1px solid var(--border);border-radius:4px;background:transparent;cursor:pointer;color:var(--text-muted);white-space:nowrap">仕入れ手数料 ▸</button>
-          </div>
-          <div style="display:flex;border:1px solid var(--border);border-radius:6px;overflow:hidden">
-            <button id="p-calc-tab-profit-btn" style="padding:5px 12px;font-size:11px;border:none;cursor:pointer;background:var(--brand);color:#fff;font-weight:500">粗利を求める</button>
-            <button id="p-calc-tab-price-btn"  style="padding:5px 12px;font-size:11px;border:none;cursor:pointer;background:transparent;color:var(--text-secondary)">販売価格を求める</button>
-          </div>
+      <div class="card card--form" id="p-calc-card">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:var(--space-2);margin-bottom:var(--space-2)">
+          <div class="card-title" style="margin:0">価格・原価・粗利</div>
+          <button id="p-fee-toggle-btn" style="font-size:11px;padding:3px 8px;border:1px solid var(--border);border-radius:4px;background:transparent;cursor:pointer;color:var(--text-muted);white-space:nowrap">仕入れ手数料 ▸</button>
+        </div>
+        <div class="seg" style="margin-bottom:var(--space-2)">
+          <button id="p-calc-tab-profit-btn" class="seg-btn active">粗利を求める</button>
+          <button id="p-calc-tab-price-btn"  class="seg-btn">販売価格を求める</button>
         </div>
 
         <!-- 仕入原価 + 右セル(タブ依存) 横並び1行（P-21: グリッドズレ修正） -->
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-2);margin-bottom:var(--space-2)">
           <div class="input-group">
             <label class="input-label" for="p-cost">仕入れ原価</label>
             <div class="input-wrap">
@@ -918,11 +906,11 @@
 
             <!-- タブ①: 目標トグル -->
             <div id="p-calc-target-col" style="display:none">
-              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-2)">
                 <label class="input-label" style="margin:0">目標</label>
-                <div style="display:flex;border:1px solid var(--border);border-radius:6px;overflow:hidden">
-                  <button id="p-calc-toggle-pct-btn" style="padding:5px 12px;font-size:11px;border:none;cursor:pointer;background:var(--brand);color:#fff;font-weight:500">%</button>
-                  <button id="p-calc-toggle-jpy-btn" style="padding:5px 12px;font-size:11px;border:none;cursor:pointer;background:transparent;color:var(--text-secondary)">¥</button>
+                <div class="seg">
+                  <button id="p-calc-toggle-pct-btn" class="seg-btn active">%</button>
+                  <button id="p-calc-toggle-jpy-btn" class="seg-btn">¥</button>
                 </div>
               </div>
               <div id="p-calc-target-pct-wrap">
@@ -943,42 +931,42 @@
 
         <!-- タブ②: 粗利率⇔粗利額トグルセクション -->
         <div id="p-calc-tab-profit-wrap">
-          <div style="border-top:1px solid var(--border);padding-top:12px">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-              <div style="font-size:11px;color:var(--text-muted)">粗利率 ⇔ 粗利額</div>
-              <div style="display:flex;border:1px solid var(--border);border-radius:6px;overflow:hidden">
-                <button id="p-toggle-rate-btn"   style="padding:5px 12px;font-size:11px;border:none;cursor:pointer;background:var(--brand);color:#fff;font-weight:500">粗利率 %</button>
-                <button id="p-toggle-amount-btn" style="padding:5px 12px;font-size:11px;border:none;cursor:pointer;background:transparent;color:var(--text-secondary)">粗利額 ¥</button>
+          <div style="border-top:1px solid var(--border);padding-top:var(--space-2)">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-2)">
+              <div style="font-size:11px;color:var(--text-muted);letter-spacing:.04em;white-space:nowrap">粗利率 ⇔ 粗利額</div>
+              <div class="seg">
+                <button id="p-toggle-rate-btn"   class="seg-btn active">粗利率 %</button>
+                <button id="p-toggle-amount-btn" class="seg-btn">粗利額 ¥</button>
               </div>
             </div>
 
             <!-- 粗利率トグル -->
             <div id="p-toggle-rate-wrap">
-              <div class="input-group" style="margin-bottom:8px">
+              <div class="input-group" style="margin-bottom:var(--space-2)">
                 <label class="input-label">粗利率（目標）</label>
                 <div class="input-wrap" style="max-width:130px">
                   <input class="input" id="p-toggle-rate-input" type="number" min="0" max="100" step="0.01" placeholder="25.00" style="text-align:right">
                   <div class="input-prefix" style="border-left:none;border-right:1px solid var(--border);border-radius:0 3px 3px 0">%</div>
                 </div>
               </div>
-              <div style="display:flex;justify-content:space-between;align-items:baseline">
-                <span style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted)">対応粗利額</span>
-                <span id="p-toggle-rate-result" style="font-family:var(--font-sans);font-size:18px;font-weight:700;color:var(--text-primary);font-variant-numeric:tabular-nums">—</span>
+              <div style="display:flex;justify-content:space-between;align-items:baseline;gap:var(--space-2)">
+                <span style="font-size:11px;color:var(--text-muted);letter-spacing:.04em;white-space:nowrap">対応粗利額</span>
+                <span id="p-toggle-rate-result" style="font-family:var(--font-sans);font-size:24px;font-weight:600;color:var(--text-primary);font-variant-numeric:tabular-nums;white-space:nowrap">—</span>
               </div>
             </div>
 
             <!-- 粗利額トグル -->
             <div id="p-toggle-amount-wrap" style="display:none">
-              <div class="input-group" style="margin-bottom:8px">
+              <div class="input-group" style="margin-bottom:var(--space-2)">
                 <label class="input-label">粗利額（目標）</label>
                 <div class="input-wrap" style="max-width:130px">
                   <input class="input" id="p-toggle-amount-input" type="text" inputmode="numeric" placeholder="20000" style="text-align:right;border-right:none;border-radius:6px 0 0 6px">
                   <div class="input-prefix" style="border-right:1px solid var(--border);border-radius:0 8px 8px 0">¥</div>
                 </div>
               </div>
-              <div style="display:flex;justify-content:space-between;align-items:baseline">
-                <span style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted)">対応粗利率</span>
-                <span id="p-toggle-amount-result" style="font-family:var(--font-sans);font-size:18px;font-weight:700;color:var(--text-primary);font-variant-numeric:tabular-nums">—</span>
+              <div style="display:flex;justify-content:space-between;align-items:baseline;gap:var(--space-2)">
+                <span style="font-size:11px;color:var(--text-muted);letter-spacing:.04em;white-space:nowrap">対応粗利率</span>
+                <span id="p-toggle-amount-result" style="font-family:var(--font-sans);font-size:24px;font-weight:600;color:var(--text-primary);font-variant-numeric:tabular-nums;white-space:nowrap">—</span>
               </div>
             </div>
           </div>
@@ -986,10 +974,10 @@
 
         <!-- タブ①: 逆算結果 -->
         <div id="p-calc-tab-price-wrap" style="display:none">
-          <div style="border-top:1px solid var(--border);padding-top:12px">
-            <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);margin-bottom:4px">販売価格（逆算）</div>
-            <div id="p-calc-price-result" style="font-family:var(--font-sans);font-size:24px;font-weight:700;color:var(--text-primary);font-variant-numeric:tabular-nums">—</div>
-            <div style="font-size:10px;color:var(--text-muted);margin-top:2px">手数料・送料・原価を考慮した逆算価格</div>
+          <div style="border-top:1px solid var(--border);padding-top:var(--space-2)">
+            <div style="font-size:11px;color:var(--text-muted);letter-spacing:.04em;white-space:nowrap;margin-bottom:4px">販売価格（逆算）</div>
+            <div id="p-calc-price-result" style="font-family:var(--font-sans);font-size:24px;font-weight:600;color:var(--text-primary);font-variant-numeric:tabular-nums;white-space:nowrap">—</div>
+            <div class="note" style="margin-top:2px">手数料・送料・原価を考慮した逆算価格</div>
           </div>
         </div>
       </div>
@@ -1006,86 +994,77 @@
     const defJpy = Number(s.targetProfitJpy ?? 0)  || 0;
 
     return `
-      <div class="card" style="margin-bottom:10px" id="p-sim-wrap">
+      <div class="card card--form" id="p-sim-wrap">
         <div class="card-title">ベストオファーシミュレーター</div>
 
-        <div id="p-sim-guide" style="font-size:13px;color:var(--text-muted);line-height:1.8">
-          先に利益計算機で販売価格または<br>仕入れ原価を入力してください。
+        <div id="p-sim-guide" class="note" style="font-size:13px;line-height:1.7">
+          先に仕入シミュレーターで販売価格または仕入れ原価を入力してください。
         </div>
 
         <div id="p-sim-content" style="display:none">
-          <!-- P-22【1】: 2列レイアウト — 左:入力 / 右:4結果 -->
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start;margin-bottom:10px">
-
-            <!-- 左列: オファー金額 + 目標 -->
-            <div>
-              <div class="input-group" style="margin-bottom:10px">
-                <label class="input-label">オファー金額</label>
-                <div class="input-wrap" style="max-width:160px">
-                  <input class="input" id="p-sim-offer" type="text" inputmode="decimal"
-                    placeholder="提示価格" style="text-align:right;border-right:none;border-radius:6px 0 0 6px">
-                  <div class="input-prefix" style="border-right:1px solid var(--border);border-radius:0 8px 8px 0">$</div>
-                </div>
-                <div id="p-sim-diff" style="font-size:12px;margin-top:4px;font-family:var(--font-mono);color:var(--text-secondary)">—</div>
-              </div>
-
-              <div class="input-group">
-                <label class="input-label">目標</label>
-                <div style="display:flex;border:1px solid var(--border);border-radius:6px;overflow:hidden;margin-bottom:8px;width:fit-content">
-                  <button id="p-sim-tab-pct" class="sim-tab-active" style="padding:5px 12px;font-size:11px;border:none;cursor:pointer;background:var(--brand);color:#fff;font-weight:500">粗利率 %</button>
-                  <button id="p-sim-tab-jpy" style="padding:5px 12px;font-size:11px;border:none;cursor:pointer;background:var(--card-bg);color:var(--text-secondary)">粗利額 ¥</button>
-                </div>
-                <div id="p-sim-target-pct-wrap">
-                  <div class="input-wrap" style="max-width:120px">
-                    <input class="input" id="p-sim-target-pct" type="number" min="0" max="100"
-                      step="0.1" value="${defPct}" style="text-align:right">
-                    <div class="input-prefix" style="border-left:none;border-right:1px solid var(--border);border-radius:0 3px 3px 0">%</div>
-                  </div>
-                </div>
-                <div id="p-sim-target-jpy-wrap" style="display:none">
-                  <div class="input-wrap" style="max-width:120px">
-                    <input class="input" id="p-sim-target-jpy" type="text" inputmode="numeric"
-                      value="${defJpy}" style="text-align:right;border-right:none;border-radius:6px 0 0 6px">
-                    <div class="input-prefix" style="border-right:1px solid var(--border);border-radius:0 8px 8px 0">¥</div>
-                  </div>
-                </div>
-              </div>
+          <!-- ㉑v2.0: 3spanカラム向け縦積み — 入力 → 4結果 → 最低承認価格 -->
+          <div class="input-group" style="margin-bottom:var(--space-2)">
+            <label class="input-label">オファー金額</label>
+            <div class="input-wrap" style="max-width:160px">
+              <input class="input" id="p-sim-offer" type="text" inputmode="decimal"
+                placeholder="提示価格" style="text-align:right;border-right:none;border-radius:6px 0 0 6px">
+              <div class="input-prefix" style="border-right:1px solid var(--border);border-radius:0 8px 8px 0">$</div>
             </div>
-
-            <!-- 右列: 4結果 (粗利益USD/JPY・粗利率・ROI) -->
-            <div>
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
-                <div>
-                  <div style="font-size:10px;color:var(--text-secondary);margin-bottom:2px">粗利益 USD</div>
-                  <div style="font-size:17px;font-weight:700;font-family:var(--font-sans);font-variant-numeric:tabular-nums" id="p-sim-profit-usd">—</div>
-                </div>
-                <div>
-                  <div style="font-size:10px;color:var(--text-secondary);margin-bottom:2px">粗利益 JPY</div>
-                  <div style="font-size:17px;font-weight:700;font-family:var(--font-sans);font-variant-numeric:tabular-nums" id="p-sim-profit-jpy">—</div>
-                </div>
-              </div>
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-                <div>
-                  <div style="font-size:10px;color:var(--text-secondary);margin-bottom:2px">粗利率</div>
-                  <div style="font-size:16px;font-weight:600;font-family:var(--font-sans);font-variant-numeric:tabular-nums" id="p-sim-rate">—</div>
-                </div>
-                <div>
-                  <div style="font-size:10px;color:var(--text-secondary);margin-bottom:2px">ROI</div>
-                  <div style="font-size:16px;font-weight:600;font-family:var(--font-sans);font-variant-numeric:tabular-nums" id="p-sim-roi">—</div>
-                </div>
-              </div>
-            </div>
-
+            <div id="p-sim-diff" style="font-size:11px;margin-top:4px;font-family:var(--font-mono);font-variant-numeric:tabular-nums;color:var(--text-secondary);white-space:nowrap">—</div>
           </div>
 
-          <!-- 最低承認可能価格: フル幅 -->
-          <div style="border-top:1px solid var(--border);padding-top:10px">
-            <div style="font-size:10px;color:var(--text-secondary);margin-bottom:4px">最低承認可能価格</div>
-            <div style="display:flex;align-items:baseline;gap:10px">
-              <div style="font-size:18px;font-weight:700;font-family:var(--font-sans);font-variant-numeric:tabular-nums" id="p-sim-min-price">—</div>
-              <div style="font-size:13px;font-family:var(--font-mono);font-variant-numeric:tabular-nums;color:var(--text-muted)" id="p-sim-min-price-jpy">—</div>
+          <div class="input-group" style="margin-bottom:var(--space-2)">
+            <label class="input-label">目標</label>
+            <div class="seg" style="margin-bottom:var(--space-2)">
+              <button id="p-sim-tab-pct" class="seg-btn active">粗利率 %</button>
+              <button id="p-sim-tab-jpy" class="seg-btn">粗利額 ¥</button>
             </div>
-            <div style="font-size:10px;color:var(--text-secondary);margin-top:2px">目標を満たす最小オファー価格</div>
+            <div id="p-sim-target-pct-wrap">
+              <div class="input-wrap" style="max-width:120px">
+                <input class="input" id="p-sim-target-pct" type="number" min="0" max="100"
+                  step="0.1" value="${defPct}" style="text-align:right">
+                <div class="input-prefix" style="border-left:none;border-right:1px solid var(--border);border-radius:0 3px 3px 0">%</div>
+              </div>
+            </div>
+            <div id="p-sim-target-jpy-wrap" style="display:none">
+              <div class="input-wrap" style="max-width:120px">
+                <input class="input" id="p-sim-target-jpy" type="text" inputmode="numeric"
+                  value="${defJpy}" style="text-align:right;border-right:none;border-radius:6px 0 0 6px">
+                <div class="input-prefix" style="border-right:1px solid var(--border);border-radius:0 8px 8px 0">¥</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 4結果 (粗利益USD/JPY・粗利率・ROI) -->
+          <div style="border-top:1px solid var(--border);padding-top:var(--space-2);margin-bottom:var(--space-2)">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-2)">
+              <div>
+                <div style="font-size:11px;color:var(--text-muted);letter-spacing:.04em;white-space:nowrap;margin-bottom:2px">粗利益 USD</div>
+                <div style="font-size:13px;font-weight:600;font-family:var(--font-sans);font-variant-numeric:tabular-nums;white-space:nowrap" id="p-sim-profit-usd">—</div>
+              </div>
+              <div>
+                <div style="font-size:11px;color:var(--text-muted);letter-spacing:.04em;white-space:nowrap;margin-bottom:2px">粗利益 JPY</div>
+                <div style="font-size:13px;font-weight:600;font-family:var(--font-sans);font-variant-numeric:tabular-nums;white-space:nowrap" id="p-sim-profit-jpy">—</div>
+              </div>
+              <div>
+                <div style="font-size:11px;color:var(--text-muted);letter-spacing:.04em;white-space:nowrap;margin-bottom:2px">粗利率</div>
+                <div style="font-size:13px;font-weight:600;font-family:var(--font-sans);font-variant-numeric:tabular-nums;white-space:nowrap" id="p-sim-rate">—</div>
+              </div>
+              <div>
+                <div style="font-size:11px;color:var(--text-muted);letter-spacing:.04em;white-space:nowrap;margin-bottom:2px">ROI</div>
+                <div style="font-size:13px;font-weight:600;font-family:var(--font-sans);font-variant-numeric:tabular-nums;white-space:nowrap" id="p-sim-roi">—</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 最低承認可能価格 -->
+          <div style="border-top:1px solid var(--border);padding-top:var(--space-2)">
+            <div style="font-size:11px;color:var(--text-muted);letter-spacing:.04em;white-space:nowrap;margin-bottom:2px">最低承認可能価格</div>
+            <div style="display:flex;align-items:baseline;gap:var(--space-2);flex-wrap:wrap">
+              <div style="font-size:24px;font-weight:600;font-family:var(--font-sans);font-variant-numeric:tabular-nums;white-space:nowrap" id="p-sim-min-price">—</div>
+              <div style="font-size:13px;font-family:var(--font-mono);font-variant-numeric:tabular-nums;color:var(--text-muted);white-space:nowrap" id="p-sim-min-price-jpy">—</div>
+            </div>
+            <div class="note" style="margin-top:2px">目標を満たす最小オファー価格</div>
           </div>
         </div>
       </div>`;
@@ -1182,9 +1161,9 @@
     const items = ['eBay手数料','Promoted','Payoneer','送料','関税','真贋サービス','仕入れ原価'];
     return items.map(label => `
       <tr>
-        <td style="color:var(--text-secondary);font-size:14px;padding:8px 0">${label}</td>
-        <td style="color:var(--text-muted);font-family:var(--font-mono);font-size:12px;text-align:right;padding:8px 0">—</td>
-        <td style="color:var(--text-muted);font-family:var(--font-mono);font-size:13px;text-align:right;padding:8px 0">—</td>
+        <td style="color:var(--text-secondary);padding:8px 0">${label}</td>
+        <td style="color:var(--text-muted);font-family:var(--font-mono);text-align:right;padding:8px 0">—</td>
+        <td style="color:var(--text-muted);font-family:var(--font-mono);text-align:right;padding:8px 0">—</td>
       </tr>
     `).join('');
   }
@@ -1199,11 +1178,11 @@
     try { if (localStorage.getItem(_HINT_KEY_PROFIT)) return ''; } catch {}
     return `
       <div id="profit-tut-banner" style="display:flex;align-items:flex-start;gap:12px;
-        padding:12px 16px;background:rgba(232,140,60,.08);
-        border:1px solid rgba(232,140,60,.2);border-radius:8px;margin-bottom:16px">
-        <span style="font-size:16px;color:var(--brand);flex-shrink:0;line-height:1.5">＋</span>
-        <div style="flex:1;font-size:13px;color:var(--text-secondary);line-height:1.7">
-          <strong style="color:var(--text-primary)">利益計算機の使い方</strong><br>
+        padding:12px 16px;background:var(--surface-2);
+        border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:var(--space-4)">
+        <span style="font-size:14px;color:var(--text-muted);flex-shrink:0;line-height:1.5">＋</span>
+        <div style="flex:1;font-size:13px;color:var(--text-secondary);line-height:1.7;text-wrap:balance">
+          <strong style="color:var(--text-primary)">仕入シミュレーターの使い方</strong><br>
           販売価格・手数料・送料・仕入原価を入力すると粗利益を自動計算します。
           取引記録を5件入力すると、手数料率が実績値に自動更新されます。
         </div>
@@ -1217,16 +1196,15 @@
     _initCostFee();
     root.innerHTML = `
       ${_tutorialBanner()}
-      <div style="background:var(--bg-elevated);border:1px solid var(--border);border-radius:12px;padding:12px 36px">
-        <div class="profit-3col" style="display:grid;grid-template-columns:1fr 1.4fr 1.3fr;gap:32px;align-items:start">
+      <div class="profit-grid">
 
-        <!-- LEFT: 入力フォーム -->
-        <div>
+        <!-- LEFT: 入力フォーム（4span・フォーム系 max480px） -->
+        <div class="profit-col profit-col-4">
 
           <!-- 基本設定 + 適用手数料率 一体化（P-18 【3】） -->
-          <div class="card" style="margin-bottom:12px">
+          <div class="card card--form">
             <div class="card-title">基本設定</div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:10px">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-2);margin-bottom:var(--space-2)">
               <div class="input-group">
                 <label class="input-label" for="p-plan">出品プラン</label>
                 <select class="select" id="p-plan">
@@ -1245,12 +1223,12 @@
               </div>
             </div>
             <!-- インライン手数料率表示（P-18 【3】） -->
-            <div style="border-top:1px solid var(--border);padding-top:10px">
-              <div style="display:flex;align-items:center;justify-content:space-between">
-                <div style="font-size:11px;color:var(--text-muted)">適用手数料率</div>
-                <div style="font-family:var(--font-sans);font-size:18px;font-weight:700;color:var(--amber);font-variant-numeric:tabular-nums" id="p-fee-rate-display">—</div>
+            <div style="border-top:1px solid var(--border);padding-top:var(--space-2)">
+              <div style="display:flex;align-items:baseline;justify-content:space-between">
+                <div style="font-size:11px;color:var(--text-muted);white-space:nowrap">適用手数料率</div>
+                <div style="font-family:var(--font-sans);font-size:24px;font-weight:600;color:var(--text-primary);font-variant-numeric:tabular-nums;white-space:nowrap" id="p-fee-rate-display">—</div>
               </div>
-              <div style="font-size:11px;color:var(--text-muted);text-align:right;margin-top:2px" id="p-fee-rate-label">
+              <div style="font-size:11px;color:var(--text-muted);text-align:right;margin-top:2px;white-space:nowrap" id="p-fee-rate-label">
                 プランとカテゴリを選択してください
               </div>
             </div>
@@ -1260,9 +1238,9 @@
           ${_renderPriceCalcCard()}
 
           <!-- PPD: 在庫保有日数 -->
-          <div class="card" style="margin-bottom:12px">
+          <div class="card card--form">
             <div class="card-title">PPD（1日あたり粗利益）</div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:end">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-2);align-items:end">
               <div class="input-group">
                 <label class="input-label" for="p-holding-days">在庫保有日数</label>
                 <div class="input-wrap">
@@ -1270,16 +1248,16 @@
                   <div class="input-prefix" style="border-left:none;border-right:1px solid var(--border);border-radius:0 3px 3px 0">日</div>
                 </div>
               </div>
-              <div style="font-size:10px;color:var(--text-muted);padding-bottom:4px;line-height:1.8">
-                仕入れから販売までの<br>平均日数を入力
+              <div class="note" style="padding-bottom:4px;line-height:1.7">
+                仕入れから販売までの平均日数を入力
               </div>
             </div>
           </div>
 
           <!-- 手数料 -->
-          <div class="card" style="margin-bottom:12px">
+          <div class="card card--form">
             <div class="card-title">手数料</div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-2)">
               <div class="input-group">
                 <label class="input-label" for="p-promoted">Promoted Listings</label>
                 <div class="input-wrap">
@@ -1298,15 +1276,15 @@
           </div>
 
           <!-- 送料・関税（$500境界で表示切替） -->
-          <div class="card" style="margin-bottom:16px" id="p-shipping-card">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <div class="card card--form" id="p-shipping-card">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-2)">
               <div class="card-title" style="margin:0">送料・関税</div>
               <span class="tag caution" id="p-boundary-tag">$500 未満</span>
             </div>
 
             <!-- $500未満: 送料2択 + 関税3択（固定$35削除） -->
             <div id="p-below500">
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-2);margin-bottom:var(--space-2)">
                 <div class="input-group">
                   <label class="input-label" for="p-ship-mode">送料</label>
                   <select class="select" id="p-ship-mode">
@@ -1323,7 +1301,7 @@
                 </div>
               </div>
 
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-2)">
                 <div class="input-group">
                   <label class="input-label" for="p-customs-mode">関税</label>
                   <select class="select" id="p-customs-mode">
@@ -1353,11 +1331,10 @@
 
             <!-- $500以上: 自動表示 -->
             <div id="p-above500" style="display:none">
-              <div style="background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.15);border-radius:4px;padding:10px 14px;font-size:12px;color:var(--text-secondary);line-height:1.8">
-                💡 $500以上のため<strong style="color:var(--amber)">国際送料・関税はバイヤー負担（$0）</strong>で計算します。<br>
-                真贋サービス国内送料のみセラー負担となります。
+              <div style="background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:var(--space-2) var(--space-3);font-size:13px;color:var(--text-secondary);line-height:1.7;text-wrap:balance">
+                $500以上のため<strong style="color:var(--text-primary)">国際送料・関税はバイヤー負担（$0）</strong>で計算します。真贋サービス国内送料のみセラー負担となります。
               </div>
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px">
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-2);margin-top:var(--space-2)">
                 <div class="input-group">
                   <label class="input-label">国際送料</label>
                   <div class="input-wrap">
@@ -1378,78 +1355,68 @@
 
         </div>
 
-        <!-- CENTER: 結果系（P-22【3】: 入れ替え） -->
-        <div>
-          <div style="background:var(--bg-elevated);border:1px solid var(--border);border-radius:12px;padding:16px">
+        <!-- CENTER: 結果系（5span・KPI系 max320px） -->
+        <div class="profit-col profit-col-5">
 
             <!-- 粗利益サマリー -->
-            <div class="card" style="margin-bottom:16px;border-color:var(--border-active)">
+            <div class="card card--kpi" style="border-color:var(--border-active)">
               <div class="card-title">粗利益（シミュレーション）</div>
-              <div style="margin-bottom:10px">
-                <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);margin-bottom:4px">JPY</div>
-                <div class="card-value" id="p-result-jpy" style="font-size:2.2rem">¥0</div>
+              <div style="margin-bottom:var(--space-2)">
+                <div class="card-value" id="p-result-jpy">¥0</div>
+                <div id="p-result-usd" style="font-size:13px;color:var(--text-secondary);font-variant-numeric:tabular-nums;white-space:nowrap;margin-top:2px">$0.00</div>
               </div>
-              <div style="margin-bottom:16px">
-                <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);margin-bottom:2px">USD</div>
-                <div class="card-value" id="p-result-usd" style="font-size:1.4rem">$0.00</div>
+              <div class="kpi-row" style="margin-bottom:var(--space-2)">
+                <div style="font-size:11px;color:var(--text-muted);letter-spacing:.04em;white-space:nowrap">粗利率</div>
+                <div class="v" id="p-result-rate">0.0%</div>
               </div>
-              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-                <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-secondary)">粗利率</div>
-                <div class="card-value" style="font-size:20px" id="p-result-rate">0.0%</div>
-              </div>
-              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-                <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-secondary)">ROI</div>
-                <div class="card-value" style="font-size:20px" id="p-result-roi">—</div>
+              <div class="kpi-row" style="margin-bottom:var(--space-2)">
+                <div style="font-size:11px;color:var(--text-muted);letter-spacing:.04em;white-space:nowrap">ROI</div>
+                <div class="v" id="p-result-roi">—</div>
               </div>
               <div class="meter">
                 <div class="meter-fill green" id="p-profit-meter" style="width:0%"></div>
               </div>
-              <div style="font-size:10px;color:var(--text-muted);margin-top:3px;text-align:right" id="p-profit-meter-label">目標達成度</div>
+              <div class="note" style="margin-top:3px;text-align:right;white-space:nowrap" id="p-profit-meter-label">目標達成度</div>
             </div>
 
             <!-- PPD 結果 -->
-            <div class="card" style="margin-bottom:16px">
+            <div class="card card--kpi">
               <div class="card-title">PPD（1日あたり粗利益）</div>
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:8px">
-                <div>
-                  <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);margin-bottom:4px">JPY / 日</div>
-                  <div class="card-value" style="font-size:20px" id="p-ppd-jpy">—</div>
-                </div>
-                <div>
-                  <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);margin-bottom:4px">USD / 日</div>
-                  <div class="card-value" style="font-size:20px" id="p-ppd-usd">—</div>
-                </div>
+              <div style="font-size:11px;color:var(--text-muted);letter-spacing:.04em;white-space:nowrap;margin-bottom:2px">JPY / 日</div>
+              <div class="card-value" id="p-ppd-jpy">—</div>
+              <div style="display:flex;align-items:baseline;gap:var(--space-1);margin-top:2px;margin-bottom:var(--space-2)">
+                <span style="font-size:11px;color:var(--text-muted);white-space:nowrap">USD / 日</span>
+                <span id="p-ppd-usd" style="font-size:13px;color:var(--text-secondary);font-variant-numeric:tabular-nums;white-space:nowrap">—</span>
               </div>
-              <div style="font-size:10px;color:var(--text-muted)">
-                ※ 在庫保有日数を入力すると計算されます
-              </div>
+              <div class="note">在庫保有日数を入力すると計算されます</div>
             </div>
 
             <!-- 費用内訳（CENTER列・PPDの下） -->
             <div class="card">
               <div class="card-title">費用内訳</div>
-              <table class="data-table" id="p-breakdown-table">
-                <tbody>${_emptyBreakdown()}</tbody>
-              </table>
+              <div style="overflow-x:auto">
+                <table class="data-table" id="p-breakdown-table">
+                  <tbody>${_emptyBreakdown()}</tbody>
+                </table>
+              </div>
             </div>
 
-          </div>
         </div>
 
-        <!-- RIGHT: シミュレーター・為替・手数料（P-22【2】【3】: 入れ替え＋手数料移動） -->
-        <div>
+        <!-- RIGHT: シミュレーター・為替・手数料（3span） -->
+        <div class="profit-col profit-col-3">
 
           ${_renderSimulator()}
 
           <!-- 為替レート（P-18 【4】【5】） -->
-          <div class="card" style="margin-bottom:10px">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <div class="card card--form">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-2)">
               <div class="card-title" style="margin:0">為替レート</div>
-              <button class="btn btn-ghost" id="p-refresh-rate" style="font-size:10px;padding:4px 8px">
+              <button class="btn btn-ghost" id="p-refresh-rate" style="font-size:11px;padding:4px 8px;min-height:0;white-space:nowrap">
                 ↻ 更新
               </button>
             </div>
-            <div style="display:flex;align-items:center;gap:12px">
+            <div style="display:flex;align-items:flex-end;gap:var(--space-2);flex-wrap:wrap">
               <!-- P-18 【4】: 為替入力欄幅 160px -->
               <div class="input-group" style="flex:none;width:160px">
                 <label class="input-label" for="p-rate">1 USD =</label>
@@ -1459,16 +1426,14 @@
                 </div>
               </div>
               <!-- P-18 【5】: デフォルト時刻表示 -->
-              <div style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted);padding-top:20px;flex:1" id="p-rate-updated">
+              <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);padding-bottom:12px;white-space:nowrap" id="p-rate-updated">
                 —
               </div>
             </div>
           </div>
 
           <!-- 仕入れ手数料パネル（P-22【2】: 為替の直下に移動） -->
-          <div id="p-cost-fee-panel-wrap" style="margin-top:0"></div>
-
-        </div>
+          <div id="p-cost-fee-panel-wrap"></div>
 
         </div>
 
@@ -1658,16 +1623,16 @@
         const col    = isDed ? 'var(--text-muted)' : 'var(--text-primary)';
         return `
           <tr>
-            <td style="font-size:14px;padding:8px 0">${label}</td>
-            <td style="font-family:var(--font-mono);font-size:12px;text-align:right;color:${col};padding:8px 0">${sign}¥${jpyAbs.toLocaleString()}</td>
-            <td style="font-family:var(--font-mono);font-size:13px;text-align:right;color:${col};padding:8px 0">${sign}$${usdAbs.toFixed(2)}</td>
+            <td style="padding:8px 0">${label}</td>
+            <td style="font-family:var(--font-mono);text-align:right;color:${col};padding:8px 0">${sign}¥${jpyAbs.toLocaleString()}</td>
+            <td style="font-family:var(--font-mono);text-align:right;color:${col};padding:8px 0">${sign}$${usdAbs.toFixed(2)}</td>
           </tr>
         `;
       }).join('') + `
         <tr style="border-top:1px solid var(--border-active)">
-          <td style="color:var(--text-primary);font-weight:500;font-size:14px;padding:8px 0">粗利益</td>
-          <td style="font-family:var(--font-mono);font-size:12px;text-align:right;color:${color};font-weight:500;padding:8px 0">¥${Math.round(profitJpy).toLocaleString()}</td>
-          <td style="font-family:var(--font-mono);font-size:13px;text-align:right;color:${color};font-weight:500;padding:8px 0">$${profitUsd.toFixed(2)}</td>
+          <td style="color:var(--text-primary);font-weight:600;padding:8px 0">粗利益</td>
+          <td style="font-family:var(--font-mono);text-align:right;color:${color};font-weight:600;padding:8px 0">¥${Math.round(profitJpy).toLocaleString()}</td>
+          <td style="font-family:var(--font-mono);text-align:right;color:${color};font-weight:600;padding:8px 0">$${profitUsd.toFixed(2)}</td>
         </tr>
       `;
     } else if (tbody) {

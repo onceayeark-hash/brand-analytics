@@ -57,6 +57,14 @@
       --border:        rgba(200,146,78,0.15);
       --border-hover:  rgba(200,146,78,0.35);
       --border-active: rgba(200,146,78,0.50);
+      /* ── ㉑v2.0 サーフェス3段（design-philosophy ㉑-D） ── */
+      --surface-0: var(--navy-900);
+      --surface-1: var(--bg-card);
+      --surface-2: var(--bg-input);
+      /* 未定義参照の互換エイリアス（profit.js/transactions.js/charts.jsが参照・㉑適用時に定義） */
+      --brand:   var(--accent-orange);
+      --amber:   var(--gold-400);
+      --card-bg: var(--bg-card);
       --sidebar-w: 240px;
       --header-h:  64px;
       --touch-target: 44px;
@@ -148,7 +156,6 @@
     .panel{display:none;padding:20px 40px;max-width:1160px;animation:fadeUp var(--t-base) var(--ease)}
     #panel-connect{padding:40px max(48px,calc((100% - 600px) / 2))}
     #panel-settings{padding:28px 40px;max-width:720px}
-    #panel-profit{max-width:none;}
     .panel.active{display:block}
     @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
     .panel-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px;gap:16px}
@@ -313,6 +320,8 @@
       --accent-orange:      #e06418;
       --accent-orange-dark: #c44e0c;
       --font-sans: Arial, 'Meiryo', 'メイリオ', sans-serif;
+      /* ㉑v2.0: ライトはカード=白・ネスト要素のみ薄グレーで3段を構成 */
+      --surface-2: #f7f7f7;
     }
     /* ライトモード: サイドバーは常にダーク維持 */
     [data-theme="light"] #sidebar {
@@ -357,10 +366,40 @@
     [data-theme="light"] .theme-toggle .icon-sun{display:block}
     [data-theme="light"] .theme-toggle .icon-moon{display:none}
 
+    /* ── ㉑ v2.0: 仕入シミュレーター（12カラムグリッド・タイポ・チップ・密度） ── */
+    .profit-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:var(--space-4);align-items:start}
+    .profit-col{display:flex;flex-direction:column;gap:var(--space-4);min-width:0}
+    .profit-col-4{grid-column:span 4}
+    .profit-col-5{grid-column:span 5}
+    .profit-col-3{grid-column:span 3}
+    #panel-profit{font-size:13px;line-break:strict}
+    #panel-profit .card{background:var(--surface-1);box-shadow:none;padding:var(--space-4)}
+    #panel-profit .card--form{width:100%;max-width:480px}
+    #panel-profit .card--kpi{width:100%;max-width:320px}
+    #panel-profit .card-title{font-family:var(--font-sans);font-size:13px;font-weight:600;letter-spacing:0;text-transform:none;color:var(--text-primary);margin-bottom:var(--space-2);white-space:nowrap}
+    #panel-profit .input-label{font-family:var(--font-sans);font-size:11px;font-weight:500;letter-spacing:.04em;text-transform:none;color:var(--text-muted);white-space:nowrap}
+    #panel-profit .input,#panel-profit .select{font-size:13px;background:var(--surface-2);font-variant-numeric:tabular-nums}
+    #panel-profit .input-prefix{background:var(--surface-2)}
+    #panel-profit .card-value{font-size:24px;font-weight:600}
+    #panel-profit .data-table th,#panel-profit .data-table td{white-space:nowrap;font-size:13px}
+    #panel-profit .seg{display:flex;border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden;background:var(--surface-2);width:fit-content;flex-shrink:0}
+    #panel-profit .seg-btn{padding:4px 12px;font-size:11px;font-weight:500;border:none;cursor:pointer;background:transparent;color:var(--text-muted);white-space:nowrap;font-family:var(--font-sans);line-height:1.6;transition:background-color var(--t-fast) var(--ease),color var(--t-fast) var(--ease)}
+    #panel-profit .seg-btn:hover:not(.active){color:var(--text-secondary)}
+    #panel-profit .seg-btn.active{background:var(--surface-1);color:var(--text-primary);font-weight:600}
+    #panel-profit .seg-btn:focus-visible{outline:2px solid var(--gold-400);outline-offset:-2px}
+    #panel-profit .tag{border:none;border-radius:999px;padding:3px 10px;font-size:11px;font-family:var(--font-sans);font-weight:500;white-space:nowrap}
+    /* ライトテーマ: チップ文字はdark系semanticでAAコントラスト確保（㉑-D） */
+    [data-theme="light"] #panel-profit .tag.go{color:var(--green-dark)}
+    [data-theme="light"] #panel-profit .tag.no-go{color:var(--red-dark)}
+    [data-theme="light"] #panel-profit .tag.caution{color:var(--gold-600)}
+    #panel-profit .note{font-size:11px;color:var(--text-muted);text-wrap:balance}
+    #panel-profit .kpi-row{display:flex;align-items:baseline;justify-content:space-between;gap:var(--space-2)}
+    #panel-profit .kpi-row .v{font-size:13px;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+
     /* RESPONSIVE */
     @media(max-width:1100px){:root{--sidebar-w:200px}}
-    @media(max-width:960px){.profit-3col{grid-template-columns:1fr 1fr!important}}
-    @media(max-width:600px){.profit-3col{grid-template-columns:1fr!important}}
+    @media(max-width:1100px){.profit-col-4,.profit-col-5{grid-column:span 6}.profit-col-3{grid-column:span 12}}
+    @media(max-width:700px){.profit-col-4,.profit-col-5,.profit-col-3{grid-column:span 12}}
     @media(max-width:960px){.grid-4{grid-template-columns:repeat(2,1fr)}.grid-3{grid-template-columns:repeat(2,1fr)}}
     @media(max-width:600px){.grid-4,.grid-3,.grid-2{grid-template-columns:1fr}}
     @media(max-width:860px){
