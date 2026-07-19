@@ -71,7 +71,7 @@ sold データの合法的自動取得手段が存在しないことが検証に
 | 任意の機能実装が完了したとき | `code-review:code-review` |
 | `auth.js` / `crypto.js` / トークン・OAuth 処理を変更したとき | `everything-claude-code:security-review` |
 | HTML / CSS / JS の UI 部分を変更・新規実装したとき | `hallmark audit <変更ファイル名>` |
-| UI変更の完了宣言前 | design-philosophy.md ㉑-F の Playwright 自己チェック4項目 |
+| UI変更の完了宣言前 | design-philosophy.md ㉑-F のUI自己チェック4項目（claude-in-chrome/Playwright-mcp） |
 | 「実装完了」「完了しました」と言う直前 | `superpowers:verification-before-completion` |
 
 **詳細な実行順序・結果処理ルールは `context/skills.md` の ⚡ 自動発動ルールセクションに定義されている。**
