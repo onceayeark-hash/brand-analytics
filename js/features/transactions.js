@@ -262,14 +262,14 @@
       const remaining = DEFAULTS.minRecords - learned.recordCount;
       return `
         <div style="font-family:var(--font-mono);font-size:11px;color:var(--yellow);
-          background:var(--yellow-dim);border:1px solid rgba(245,200,66,.22);
+          background:var(--yellow-dim);border:1px solid var(--yellow-border);
           border-radius:4px;padding:8px 12px;margin-bottom:16px">
           ⚠ ${learned.recordCount}件学習済み — あと${remaining}件でフォールバック解除（現在はデフォルト値を使用）
         </div>`;
     }
     return `
       <div style="font-family:var(--font-mono);font-size:11px;color:var(--green);
-        background:var(--green-dim);border:1px solid rgba(78,206,138,.22);
+        background:var(--green-dim);border:1px solid var(--green-border);
         border-radius:4px;padding:8px 12px;margin-bottom:16px">
         ✓ ${learned.recordCount}件の実績データから手数料率を自動推定中
       </div>`;
@@ -284,13 +284,14 @@
       { label: 'Payoneer手数料',  val: _fmtRate(learned.payoneerRate) },
       { label: '真贋サービス送料', val: `¥${learned.authServiceJpy.toLocaleString()}` },
     ];
+    // ㉑v2.0-B: ラベル11px/500/muted・数値24px/600/tabular-nums
     return `
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">
+      <div class="grid-4" style="margin-bottom:var(--space-4)">
         ${items.map(({ label, val }) => `
-          <div class="card" style="text-align:center;padding:12px 8px">
-            <div class="card-title" style="font-size:9px">${label}</div>
-            <div style="font-family:var(--font-mono);font-size:1.15rem;color:${col};margin:4px 0">${val}</div>
-            <div style="font-size:9px;color:var(--text-muted)">${tag}</div>
+          <div class="card card--kpi" style="text-align:center">
+            <div class="card-title" style="font-size:11px;font-weight:500;letter-spacing:.04em;color:var(--text-muted)">${label}</div>
+            <div style="font-family:var(--font-mono);font-size:24px;font-weight:600;color:${col};margin:var(--space-2) 0;font-variant-numeric:tabular-nums;white-space:nowrap">${val}</div>
+            <div class="note">${tag}</div>
           </div>`).join('')}
       </div>`;
   }
@@ -315,31 +316,31 @@
           </div>
         </div>
 
-        <div style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted);
-          background:var(--bg-elevated);border:1px solid var(--border);border-radius:4px;
-          padding:8px 12px;margin-bottom:12px">
+        <div style="font-size:13px;color:var(--text-muted);
+          background:var(--surface-2);border:1px solid var(--border);border-radius:4px;
+          padding:8px 12px;margin-bottom:12px;text-wrap:balance">
           ※ 手数料（任意）を入力すると学習精度が向上します。未入力の項目はデフォルト値を使用します。
         </div>
 
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px">
           <div class="input-group">
-            <label class="input-label" for="tx-ebay-fee">eBay成約手数料 <span style="color:var(--text-muted);font-size:9px">（任意）</span></label>
+            <label class="input-label" for="tx-ebay-fee">eBay成約手数料</label>
             <div class="input-wrap">
               <div class="input-prefix">$</div>
               <input class="input" id="tx-ebay-fee" type="number" min="0" step="0.01" placeholder="0.00">
             </div>
-            <div id="tx-ebay-ref" style="font-size:10px;color:var(--text-muted);margin-top:2px">参考（15.0%）: —</div>
+            <div id="tx-ebay-ref" class="note" style="margin-top:2px">参考（15.0%）: —</div>
           </div>
           <div class="input-group">
-            <label class="input-label" for="tx-promoted-fee">Promoted <span style="color:var(--text-muted);font-size:9px">（任意）</span></label>
+            <label class="input-label" for="tx-promoted-fee">Promoted</label>
             <div class="input-wrap">
               <div class="input-prefix">$</div>
               <input class="input" id="tx-promoted-fee" type="number" min="0" step="0.01" placeholder="0.00">
             </div>
-            <div id="tx-promoted-ref" style="font-size:10px;color:var(--text-muted);margin-top:2px">参考（2.0%）: —</div>
+            <div id="tx-promoted-ref" class="note" style="margin-top:2px">参考（2.0%）: —</div>
           </div>
           <div class="input-group">
-            <label class="input-label" for="tx-payoneer-fee">Payoneer手数料 <span style="color:var(--text-muted);font-size:9px">（任意）</span></label>
+            <label class="input-label" for="tx-payoneer-fee">Payoneer手数料</label>
             <div class="input-wrap">
               <div class="input-prefix">$</div>
               <input class="input" id="tx-payoneer-fee" type="number" min="0" step="0.01" placeholder="0.00">
@@ -349,26 +350,27 @@
 
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
           <div class="input-group">
-            <label class="input-label" for="tx-cost">仕入れ原価 <span style="color:var(--text-muted);font-size:9px">（任意）</span></label>
+            <label class="input-label" for="tx-cost">仕入れ原価</label>
             <div class="input-wrap">
               <div class="input-prefix">¥</div>
               <input class="input" id="tx-cost" type="number" min="0" step="1" placeholder="0">
             </div>
           </div>
           <div class="input-group">
-            <label class="input-label" for="tx-received">円受取額 <span style="color:var(--text-muted);font-size:9px">（任意・為替乖離計算用）</span></label>
+            <label class="input-label" for="tx-received">円受取額</label>
             <div class="input-wrap">
               <div class="input-prefix">¥</div>
               <input class="input" id="tx-received" type="number" min="0" step="1" placeholder="0">
             </div>
+            <div class="note" style="margin-top:2px">任意・為替乖離計算用</div>
           </div>
         </div>
 
         <!-- $500以上のみ: 真贋サービス -->
-        <div id="tx-auth-section" style="display:none;background:var(--bg-elevated);
+        <div id="tx-auth-section" style="display:none;background:var(--surface-2);
           border:1px solid var(--border);border-radius:6px;padding:12px;margin-bottom:12px">
-          <div style="font-family:var(--font-mono);font-size:9px;color:var(--gold-500);
-            letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px">
+          <div style="font-family:var(--font-sans);font-size:11px;font-weight:500;color:var(--text-muted);
+            letter-spacing:.04em;margin-bottom:8px;white-space:nowrap">
             $500以上 — 真贋サービス（国内送料）
           </div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
@@ -393,14 +395,14 @@
                   含めない
                 </label>
               </div>
-              <div style="font-size:10px;color:var(--text-muted);margin-top:2px">
+              <div class="note" style="margin-top:2px">
                 販管費として計上する場合は「含めない」
               </div>
             </div>
           </div>
         </div>
 
-        <div id="tx-form-msg" style="display:none;font-size:12px;margin-bottom:8px"></div>
+        <div id="tx-form-msg" style="display:none;font-size:13px;margin-bottom:8px"></div>
 
         <div style="display:flex;justify-content:flex-end">
           <button class="btn btn-primary" id="tx-submit">記録を追加</button>
@@ -412,7 +414,7 @@
     if (records.length === 0) {
       return `
         <div class="card" style="text-align:center;padding:32px;color:var(--text-muted);
-          font-family:var(--font-mono);font-size:11px">
+          font-size:13px">
           取引記録がありません。最初の取引を追加してください。
         </div>`;
     }
@@ -440,7 +442,7 @@
       <div class="card">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
           <div class="card-title" style="margin:0">取引記録（最新20件）</div>
-          <span style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted)">
+          <span style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);white-space:nowrap">
             全${records.length}件
           </span>
         </div>
@@ -487,21 +489,21 @@
     const learned = TransactionStore.getLearned();
     root.innerHTML = `
       <div id="tx-sync-bar" style="display:flex;align-items:center;gap:12px;
-        padding:10px 16px;background:var(--surface-2);
+        padding:8px 16px;background:var(--surface-2);
         border:1px solid var(--border);border-radius:8px;margin-bottom:16px">
-        <div style="flex:1;font-size:12px;color:var(--text-secondary)">
+        <div style="flex:1;font-size:13px;color:var(--text-secondary)">
           <span id="tx-sync-status">eBay取引データを自動取得できます</span>
         </div>
-        <button class="btn btn-secondary" id="tx-sync-btn" style="font-size:11px;padding:6px 12px">
+        <button class="btn btn-secondary" id="tx-sync-btn" style="font-size:11px;padding:6px 12px;white-space:nowrap">
           ↓ eBayと同期
         </button>
       </div>
       ${_tutorialBanner()}
       ${_renderStatusBanner(learned)}
       ${_renderLearnedRates(learned)}
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start">
-        <div>${_renderForm()}</div>
-        <div>${_renderList(_records)}</div>
+      <div class="grid-12">
+        <div class="col col-6">${_renderForm()}</div>
+        <div class="col col-6">${_renderList(_records)}</div>
       </div>`;
 
     root.querySelector('#tx-tut-close')?.addEventListener('click', () => {
