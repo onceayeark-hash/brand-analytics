@@ -1196,10 +1196,10 @@
     _initCostFee();
     root.innerHTML = `
       ${_tutorialBanner()}
-      <div class="profit-grid">
+      <div class="grid-12">
 
         <!-- LEFT: 入力フォーム（4span・フォーム系 max480px） -->
-        <div class="profit-col profit-col-4">
+        <div class="col col-4">
 
           <!-- 基本設定 + 適用手数料率 一体化（P-18 【3】） -->
           <div class="card card--form">
@@ -1356,7 +1356,7 @@
         </div>
 
         <!-- CENTER: 結果系（5span・KPI系 max320px） -->
-        <div class="profit-col profit-col-5">
+        <div class="col col-5">
 
             <!-- 粗利益サマリー -->
             <div class="card card--kpi" style="border-color:var(--border-active)">
@@ -1404,7 +1404,7 @@
         </div>
 
         <!-- RIGHT: シミュレーター・為替・手数料（3span） -->
-        <div class="profit-col profit-col-3">
+        <div class="col col-3">
 
           ${_renderSimulator()}
 

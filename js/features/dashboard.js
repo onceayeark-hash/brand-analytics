@@ -143,12 +143,15 @@
   // ─────────────────────────────────────
   function _summaryCards(stats, learned) {
     const month  = new Date().toLocaleDateString('ja-JP', { month: 'long' });
+    // ㉑v2.0-B: 主要数値24px/600/tabular-nums・ラベル11px/500/muted
+    const KPI_LABEL = 'font-family:var(--font-sans);font-size:11px;font-weight:500;letter-spacing:.04em;text-transform:none;color:var(--text-muted);white-space:nowrap';
+    const KPI_VALUE = 'font-size:24px;font-weight:600;margin:var(--space-2) 0;font-family:var(--font-mono);font-variant-numeric:tabular-nums;white-space:nowrap';
     const feeRate = learned?.isFallback
       ? `<span style="color:var(--text-muted)">推定中</span>`
-      : `<span style="color:var(--gold-400);font-size:1.6rem;font-weight:600;font-variant-numeric:tabular-nums">${_pct(learned.ebayFeeRate)}</span>`;
+      : `<span style="color:var(--gold-400);font-size:24px;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap">${_pct(learned.ebayFeeRate)}</span>`;
     const feeNote = learned?.isFallback
-      ? `<div style="font-size:11px;color:var(--text-muted)">実績 ${learned.recordCount}件（5件で確定）</div>`
-      : `<div style="font-size:11px;color:var(--text-muted)">実績 ${learned.recordCount}件の平均</div>`;
+      ? `<div class="note">実績 ${learned.recordCount}件（5件で確定）</div>`
+      : `<div class="note">実績 ${learned.recordCount}件の平均</div>`;
 
     const grossColor = stats.grossJpy > 0 ? 'var(--green)' : stats.grossJpy < 0 ? 'var(--red)' : 'var(--text-primary)';
     const ppdColor   = stats.ppd !== null && stats.ppd > 0 ? 'var(--green)' : stats.ppd !== null && stats.ppd < 0 ? 'var(--red)' : 'var(--text-primary)';
@@ -156,37 +159,34 @@
     return `
       <div class="grid-4">
 
-        <div class="card" style="text-align:center">
-          <div class="card-title" style="font-size:10px;text-transform:uppercase;letter-spacing:.08em">${month}の粗利益</div>
-          <div style="font-size:1.7rem;font-weight:600;margin:var(--space-2) 0;font-family:var(--font-mono);
-            color:${grossColor};font-variant-numeric:tabular-nums">
+        <div class="card card--kpi" style="text-align:center">
+          <div class="card-title" style="${KPI_LABEL}">${month}の粗利益</div>
+          <div style="${KPI_VALUE};color:${grossColor}">
             ${stats.count > 0 ? _jpy(stats.grossJpy) : '<span style="color:var(--text-muted)">—</span>'}
           </div>
-          <div style="font-size:11px;color:var(--text-muted)">eBay/Promoted/Payoneer・認証費・仕入差引後</div>
+          <div class="note">eBay/Promoted/Payoneer・認証費・仕入差引後</div>
         </div>
 
-        <div class="card" style="text-align:center">
-          <div class="card-title" style="font-size:10px;text-transform:uppercase;letter-spacing:.08em">PPD（1日あたり）</div>
-          <div style="font-size:1.7rem;font-weight:600;margin:var(--space-2) 0;font-family:var(--font-mono);
-            color:${ppdColor};font-variant-numeric:tabular-nums">
+        <div class="card card--kpi" style="text-align:center">
+          <div class="card-title" style="${KPI_LABEL}">PPD（1日あたり）</div>
+          <div style="${KPI_VALUE};color:${ppdColor}">
             ${stats.ppd !== null ? _jpy(stats.ppd) : '<span style="color:var(--text-muted)">—</span>'}
           </div>
-          <div style="font-size:11px;color:var(--text-muted)">粗利益 ÷ 経過日数</div>
+          <div class="note">粗利益 ÷ 経過日数</div>
         </div>
 
-        <div class="card" style="text-align:center">
-          <div class="card-title" style="font-size:10px;text-transform:uppercase;letter-spacing:.08em">実績 eBay 手数料率</div>
+        <div class="card card--kpi" style="text-align:center">
+          <div class="card-title" style="${KPI_LABEL}">実績 eBay 手数料率</div>
           <div style="margin:var(--space-2) 0">${feeRate}</div>
           ${feeNote}
         </div>
 
-        <div class="card" style="text-align:center">
-          <div class="card-title" style="font-size:10px;text-transform:uppercase;letter-spacing:.08em">${month}の取引件数</div>
-          <div style="font-size:1.7rem;font-weight:600;margin:var(--space-2) 0;font-family:var(--font-mono);
-            color:var(--text-primary);font-variant-numeric:tabular-nums">
-            ${stats.count}<span style="font-size:1rem;font-weight:400;color:var(--text-muted)"> 件</span>
+        <div class="card card--kpi" style="text-align:center">
+          <div class="card-title" style="${KPI_LABEL}">${month}の取引件数</div>
+          <div style="${KPI_VALUE};color:var(--text-primary)">
+            ${stats.count}<span style="font-size:13px;font-weight:400;color:var(--text-muted)"> 件</span>
           </div>
-          <div style="font-size:11px;color:var(--text-muted)">累計 ${stats.all}件</div>
+          <div class="note">累計 ${stats.all}件</div>
         </div>
 
       </div>`;
@@ -204,8 +204,8 @@
       return `
         <div class="card" style="${mb}">
           <div class="card-title">健全性シミュレーター</div>
-          <div style="margin-top:12px;padding:12px;border:1px dashed rgba(255,255,255,.08);
-            border-radius:6px;font-size:12px;color:var(--text-muted);font-family:var(--font-mono)">
+          <div style="margin-top:var(--space-2);padding:12px;border:1px dashed var(--border);
+            border-radius:6px;font-size:13px;color:var(--text-muted)">
             「アカウントパフォーマンス」タブで総取引件数を入力すると逆算が表示されます
           </div>
         </div>`;
@@ -234,15 +234,15 @@
 
       return `
         <div style="display:grid;grid-template-columns:100px 1fr auto;gap:10px;align-items:center;
-          padding:10px 14px;border-radius:6px;background:rgba(255,255,255,.02)">
-          <div style="font-size:12px;color:var(--text-secondary)">${m.label}</div>
+          padding:8px 14px;border-radius:6px;background:var(--surface-2)">
+          <div style="font-size:13px;color:var(--text-secondary);white-space:nowrap">${m.label}</div>
           <div>
             <div class="meter" style="margin-bottom:3px">
               <div class="meter-fill ${_meterColor(status)}" style="width:${meterPct}%"></div>
             </div>
             <div style="font-size:11px;color:var(--text-muted)">${simText}</div>
           </div>
-          <div style="font-family:var(--font-mono);font-size:12px;font-weight:600;
+          <div style="font-family:var(--font-mono);font-size:13px;font-weight:600;
             color:${_rateColor(status)};font-variant-numeric:tabular-nums;white-space:nowrap">
             ${total > 0 ? rate.toFixed(2) + '%' : '—'}
           </div>
@@ -293,19 +293,19 @@
     }
 
     const colors = {
-      error: { bg: 'var(--red-dim)',    border: 'rgba(232,84,84,.22)',    icon: '⚠', col: 'var(--red)'    },
-      warn:  { bg: 'var(--yellow-dim)', border: 'rgba(245,200,66,.22)',   icon: '⚠', col: 'var(--yellow)' },
-      info:  { bg: 'rgba(255,255,255,.02)', border: 'rgba(255,255,255,.08)', icon: 'ℹ', col: 'var(--text-muted)' },
-      ok:    { bg: 'var(--green-dim)',  border: 'rgba(78,206,138,.22)',   icon: '✓', col: 'var(--green)'  },
+      error: { bg: 'var(--red-dim)',    border: 'var(--red-border)',    icon: '⚠', col: 'var(--red)'    },
+      warn:  { bg: 'var(--yellow-dim)', border: 'var(--yellow-border)', icon: '⚠', col: 'var(--yellow)' },
+      info:  { bg: 'var(--surface-2)',  border: 'var(--border)',        icon: 'ℹ', col: 'var(--text-muted)' },
+      ok:    { bg: 'var(--green-dim)',  border: 'var(--green-border)',  icon: '✓', col: 'var(--green)'  },
     };
 
     const items = alerts.map(a => {
       const c = colors[a.level];
       return `
-        <div style="display:flex;align-items:flex-start;gap:10px;padding:10px 14px;
+        <div style="display:flex;align-items:flex-start;gap:10px;padding:8px 14px;
           background:${c.bg};border:1px solid ${c.border};border-radius:6px">
-          <span style="color:${c.col};font-size:14px;line-height:1.2">${c.icon}</span>
-          <span style="font-size:12px;color:var(--text-secondary)">${a.text}</span>
+          <span style="color:${c.col};font-size:14px;line-height:1.2;flex-shrink:0">${c.icon}</span>
+          <span style="font-size:13px;color:var(--text-secondary);text-wrap:balance">${a.text}</span>
         </div>`;
     }).join('');
 
@@ -337,9 +337,9 @@
 
     root.innerHTML =
       _summaryCards(stats, learned) +
-      `<div style="display:grid;grid-template-columns:1fr 360px;gap:14px;align-items:start">
-        <div>${_compactSimulator(health, true)}</div>
-        <div>${_alertsBox(health, learned)}</div>
+      `<div class="grid-12" style="margin-top:var(--space-4)">
+        <div class="col col-8">${_compactSimulator(health, true)}</div>
+        <div class="col col-4">${_alertsBox(health, learned)}</div>
       </div>`;
   }
 
@@ -365,7 +365,7 @@
         : `あと <strong style="color:var(--red)">${rem}件</strong> で不合格閾値(${metric.failPct}%)`
       );
     }
-    return lines.map(l => `<div style="font-size:12px;color:var(--text-secondary);line-height:1.8">${l}</div>`).join('');
+    return lines.map(l => `<div style="font-size:13px;color:var(--text-secondary);line-height:1.7">${l}</div>`).join('');
   }
 
   function _metricCard(metric, data, total) {
@@ -381,8 +381,8 @@
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">
               <span style="font-size:13px;font-weight:500;color:var(--text-primary)">${metric.label}</span>
               <span id="h-tag-${metric.key}">${_statusTag(status)}</span>
-              <span style="margin-left:auto;font-family:var(--font-mono);font-size:1.1rem;font-weight:600;
-                color:${_rateColor(status)};font-variant-numeric:tabular-nums" id="h-rate-${metric.key}">
+              <span style="margin-left:auto;font-family:var(--font-mono);font-size:16px;font-weight:600;
+                color:${_rateColor(status)};font-variant-numeric:tabular-nums;white-space:nowrap" id="h-rate-${metric.key}">
                 ${total > 0 ? rate.toFixed(2) + '%' : '—'}
               </span>
             </div>
@@ -391,7 +391,7 @@
                 style="width:${meterPct}%"></div>
             </div>
             <div style="display:flex;justify-content:space-between;
-              font-family:var(--font-mono);font-size:9px;color:var(--text-muted);margin-bottom:8px">
+              font-family:var(--font-mono);font-size:11px;color:var(--text-muted);margin-bottom:8px">
               <span>0%</span>
               ${metric.warnPct ? `<span style="color:var(--yellow)">警告 ${metric.warnPct}%</span>` : ''}
               <span style="color:var(--red)">不合格 ${metric.failPct}%</span>
@@ -399,8 +399,8 @@
             <div id="h-sim-${metric.key}">${_simLines(problems, total, metric)}</div>
           </div>
           <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
-            <label style="font-family:var(--font-mono);font-size:9px;color:var(--text-muted);
-              letter-spacing:.08em;text-transform:uppercase">問題件数</label>
+            <label style="font-family:var(--font-sans);font-size:11px;font-weight:500;color:var(--text-muted);
+              letter-spacing:.04em;white-space:nowrap">問題件数</label>
             <div style="display:flex;align-items:center;gap:6px">
               <input class="input h-metric" id="h-${metric.key}" type="text" inputmode="numeric" pattern="[0-9]*"
                 data-key="${metric.key}" placeholder="0"
@@ -428,10 +428,10 @@
       if (status === 'fail') {
         return `
           <div style="display:flex;justify-content:space-between;align-items:center;
-            padding:8px 12px;background:var(--red-dim);border:1px solid rgba(232,84,84,.22);
-            border-radius:6px;font-size:12px">
+            padding:8px 12px;background:var(--red-dim);border:1px solid var(--red-border);
+            border-radius:6px;font-size:13px">
             <span style="color:var(--text-primary)">${m.label}</span>
-            <span style="font-family:var(--font-mono);color:var(--red)">不合格超過中 ⚠</span>
+            <span style="font-family:var(--font-mono);color:var(--red);white-space:nowrap">不合格超過中 ⚠</span>
           </div>`;
       }
 
@@ -445,10 +445,10 @@
         if (rem !== null && rem >= 0) parts.push(`不合格まで <strong style="color:var(--red)">${rem}件</strong>`);
       }
 
-      const bg = status === 'warn' ? 'var(--yellow-dim)' : 'rgba(255,255,255,.02)';
+      const bg = status === 'warn' ? 'var(--yellow-dim)' : 'var(--surface-2)';
       return `
         <div style="display:flex;justify-content:space-between;align-items:center;
-          padding:8px 12px;background:${bg};border-radius:6px;font-size:12px;gap:12px">
+          padding:8px 12px;background:${bg};border-radius:6px;font-size:13px;gap:12px">
           <span style="color:var(--text-secondary)">${m.label}</span>
           <span style="font-family:var(--font-mono);color:var(--text-muted);text-align:right">
             ${parts.join(' / ') || '余裕あり'}
@@ -526,7 +526,7 @@
     const apiSourceNote = fromApi ? `
       <div style="font-size:11px;color:var(--green);font-family:var(--font-mono);
            margin-bottom:12px;padding:8px 12px;
-           background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2);
+           background:var(--green-dim);border:1px solid var(--green-border);
            border-radius:6px">✓ eBay APIから自動取得しました</div>` : '';
 
     root.innerHTML = `
