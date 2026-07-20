@@ -104,29 +104,24 @@
   // KPI カード（アイコンなし・すっきり版）
   // ─────────────────────────────────────
   function _renderKPI(kpi) {
+    // ㉑v2.0-B: 主要数値24px/600/tabular-nums・ラベル11px/500/muted
+    const KPI_LABEL = 'font-family:var(--font-sans);font-size:11px;font-weight:500;letter-spacing:.04em;text-transform:none;color:var(--text-muted);white-space:nowrap';
+    const KPI_VALUE = 'font-size:24px;font-weight:600;margin:var(--space-2) 0;font-family:var(--font-mono);font-variant-numeric:tabular-nums;white-space:nowrap';
+
     const cards = [
-      { label: '直近30日 売上',            sub: 'gross sales', val: _usd(kpi.totalSalesUsd),    color: 'var(--gold-400)' },
-      { label: 'eBay手数料合計',           sub: 'total fees',  val: _usd(kpi.totalFeesUsd),     color: 'var(--red)'      },
-      { label: '推定Payoneer入金額（概算）', sub: 'net payout',  val: _usd(kpi.netPayoutUsd),     color: 'var(--green)',   note: '※実際の着金額とは異なる場合があります' },
-      { label: '実効手数料率',             sub: '全費用/売上',  val: _pct(kpi.effectiveFeeRate), color: 'var(--text-primary)' },
+      { label: '直近30日 売上',            note: 'gross sales', val: _usd(kpi.totalSalesUsd),    color: 'var(--gold-400)' },
+      { label: 'eBay手数料合計',           note: 'total fees',  val: _usd(kpi.totalFeesUsd),     color: 'var(--red)'      },
+      { label: '推定Payoneer入金額（概算）', note: '※実際の着金額とは異なる場合があります', val: _usd(kpi.netPayoutUsd), color: 'var(--green)' },
+      { label: '実効手数料率',             note: '全費用 ÷ 売上',  val: _pct(kpi.effectiveFeeRate), color: 'var(--text-primary)' },
     ];
 
     return `
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px">
+      <div class="grid-4" style="margin-bottom:var(--space-4)">
         ${cards.map(c => `
-          <div class="card" style="position:relative;overflow:hidden;padding:20px 20px 24px">
-            <div style="font-size:10px;font-family:var(--font-mono);color:var(--text-muted);
-                        letter-spacing:.08em;text-transform:uppercase;margin-bottom:12px">
-              ${c.label}
-            </div>
-            <div style="font-family:var(--font-mono);font-size:1.7rem;font-weight:600;
-                        color:${c.color};line-height:1;margin-bottom:6px;letter-spacing:-.01em">
-              ${c.val}
-            </div>
-            <div style="font-size:10px;color:var(--text-muted)">${c.sub}</div>
-            ${c.note ? `<div style="font-size:9px;color:var(--text-muted);margin-top:4px;line-height:1.4;opacity:.8">${c.note}</div>` : ''}
-            <div style="position:absolute;bottom:0;left:0;right:0;height:3px;
-                        background:linear-gradient(90deg,${c.color},transparent);opacity:.4"></div>
+          <div class="card card--kpi" style="text-align:center">
+            <div class="card-title" style="${KPI_LABEL}">${c.label}</div>
+            <div style="${KPI_VALUE};color:${c.color}">${c.val}</div>
+            <div class="note">${c.note}</div>
           </div>`).join('')}
       </div>`;
   }
@@ -141,16 +136,14 @@
     // 2ヶ月未満は「データ不足」メッセージ
     if (activeSlots.length < 2) {
       return `
-        <div class="card" style="margin-bottom:16px">
+        <div class="card">
           <div class="card-title">月次売上 vs 手数料</div>
           <div style="height:120px;display:flex;flex-direction:column;align-items:center;
                       justify-content:center;gap:8px;margin-top:12px">
-            <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted)">
+            <div style="font-size:13px;color:var(--text-muted)">
               グラフ表示には2ヶ月以上のデータが必要です
             </div>
-            <div style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted);opacity:.6">
-              現在: ${activeSlots.length}ヶ月分 / 最低: 2ヶ月分
-            </div>
+            <div class="note">現在: ${activeSlots.length}ヶ月分 / 最低: 2ヶ月分</div>
           </div>
         </div>`;
     }
@@ -178,10 +171,10 @@
       const lbl = val >= 1000 ? `$${(val / 1000).toFixed(1)}k` : `$${val.toFixed(0)}`;
       return `
         <line x1="${padL}" y1="${y}" x2="${W - padR}" y2="${y}"
-              stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+              stroke="var(--border)" stroke-width="1"/>
         <text x="${padL - 6}" y="${y + 3.5}" text-anchor="end"
               font-family="var(--font-mono,monospace)" font-size="8"
-              fill="rgba(255,255,255,0.3)">${lbl}</text>`;
+              fill="var(--text-faint)">${lbl}</text>`;
     }).join('');
 
     const barGroups = displaySlots.map((m, i) => {
@@ -195,32 +188,32 @@
       const salesLabel = sH > 16
         ? `<text x="${cx - bW / 2 - gap / 2}" y="${sY - 3}" text-anchor="middle"
                 font-family="var(--font-mono,monospace)" font-size="7"
-                fill="rgba(232,201,106,.7)">$${m.salesUsd.toFixed(0)}</text>`
+                fill="var(--gold-400)">$${m.salesUsd.toFixed(0)}</text>`
         : '';
 
       return `
         <rect x="${cx - bW - gap}" y="${sY}" width="${bW}" height="${Math.max(sH, 2)}"
-              fill="rgba(232,201,106,.85)" rx="2"/>
+              fill="var(--gold-400)" fill-opacity=".85" rx="2"/>
         <rect x="${cx + gap}"      y="${fY}" width="${bW}" height="${Math.max(fH, m.feesUsd > 0 ? 2 : 0)}"
-              fill="rgba(229,62,62,.65)" rx="2"/>
+              fill="var(--red)" fill-opacity=".65" rx="2"/>
         ${salesLabel}
         <text x="${cx}" y="${H - 10}" text-anchor="middle"
               font-family="var(--font-mono,monospace)" font-size="9"
-              fill="rgba(255,255,255,.5)">${m.label}</text>`;
+              fill="var(--text-muted)">${m.label}</text>`;
     }).join('');
 
     const legend = `
-      <rect x="${padL}" y="4" width="8" height="8" rx="1" fill="rgba(232,201,106,.85)"/>
+      <rect x="${padL}" y="4" width="8" height="8" rx="1" fill="var(--gold-400)" fill-opacity=".85"/>
       <text x="${padL + 11}" y="11"
             font-family="var(--font-mono,monospace)" font-size="8"
-            fill="rgba(255,255,255,.5)">売上</text>
-      <rect x="${padL + 36}" y="4" width="8" height="8" rx="1" fill="rgba(229,62,62,.65)"/>
+            fill="var(--text-muted)">売上</text>
+      <rect x="${padL + 36}" y="4" width="8" height="8" rx="1" fill="var(--red)" fill-opacity=".65"/>
       <text x="${padL + 47}" y="11"
             font-family="var(--font-mono,monospace)" font-size="8"
-            fill="rgba(255,255,255,.5)">手数料</text>`;
+            fill="var(--text-muted)">手数料</text>`;
 
     return `
-      <div class="card" style="margin-bottom:16px">
+      <div class="card">
         <div class="card-title">月次売上 vs 手数料</div>
         <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block;margin-top:8px"
              aria-label="月次売上と手数料の棒グラフ">
@@ -237,25 +230,25 @@
   function _renderBreakdown(bd) {
     const maxRate = Math.max(bd.fvfRate, bd.promotedRate, bd.payoneerRate, 0.001);
     const items = [
-      { label: 'FVF（最終価格手数料）', rate: bd.fvfRate,      total: bd.fvfTotal,      color: 'rgba(232,201,106,.85)' },
-      { label: 'Promoted Listings',    rate: bd.promotedRate,  total: bd.promotedTotal,  color: 'rgba(168,130,0,.8)'    },
-      { label: 'Payoneer手数料',        rate: bd.payoneerRate,  total: bd.payoneerTotal,  color: 'rgba(78,206,138,.72)'  },
+      { label: 'FVF（最終価格手数料）', rate: bd.fvfRate,      total: bd.fvfTotal,      color: 'var(--gold-400)' },
+      { label: 'Promoted Listings',    rate: bd.promotedRate,  total: bd.promotedTotal,  color: 'var(--gold-600)' },
+      { label: 'Payoneer手数料',        rate: bd.payoneerRate,  total: bd.payoneerTotal,  color: 'var(--green)'    },
     ];
 
     const rows = items.map(it => {
       const barPct = (it.rate / maxRate) * 100;
       return `
-        <div style="margin-bottom:20px">
-          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px">
-            <span style="font-size:12px;color:var(--text-secondary)">${it.label}</span>
+        <div style="margin-bottom:var(--space-4)">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:var(--space-2)">
+            <span style="font-size:13px;color:var(--text-secondary);white-space:nowrap">${it.label}</span>
             <div style="display:flex;align-items:baseline;gap:12px">
-              <span style="font-family:var(--font-mono);font-size:13px;
-                           font-weight:500;color:var(--text-primary)">${_pct(it.rate)}</span>
+              <span style="font-family:var(--font-mono);font-size:13px;font-weight:600;
+                           font-variant-numeric:tabular-nums;color:var(--text-primary)">${_pct(it.rate)}</span>
               <span style="font-family:var(--font-mono);font-size:11px;
-                           color:var(--text-muted)">${_usd(it.total)}</span>
+                           font-variant-numeric:tabular-nums;color:var(--text-muted)">${_usd(it.total)}</span>
             </div>
           </div>
-          <div style="height:5px;background:rgba(255,255,255,.06);
+          <div style="height:5px;background:var(--surface-2);
                       border-radius:3px;overflow:hidden">
             <div style="height:100%;width:${barPct.toFixed(1)}%;
                         background:${it.color};border-radius:3px"></div>
@@ -268,12 +261,12 @@
     return `
       <div class="card">
         <div class="card-title">手数料内訳（全期間実績）</div>
-        <div style="margin-top:20px">${rows}</div>
-        <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);
-             border-top:1px solid var(--border);padding-top:16px;margin-top:8px;
+        <div style="margin-top:var(--space-4)">${rows}</div>
+        <div class="note" style="font-family:var(--font-mono);font-variant-numeric:tabular-nums;
+             border-top:1px solid var(--border);padding-top:var(--space-4);margin-top:var(--space-2);
              display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px">
-          <span>全期間売上: ${_usd(bd.totalSales)}</span>
-          <span>手数料合計: ${_usd(totalFees)}</span>
+          <span style="white-space:nowrap">全期間売上: ${_usd(bd.totalSales)}</span>
+          <span style="white-space:nowrap">手数料合計: ${_usd(totalFees)}</span>
         </div>
       </div>`;
   }
@@ -282,11 +275,11 @@
   // 2カラムレイアウト（グラフ + 内訳）
   // ─────────────────────────────────────
   function _renderChartRow(monthly, feeBreak) {
+    // ㉑v2.0-A: 12カラムグリッド（チャート8span・内訳4span）
     return `
-      <div style="display:grid;grid-template-columns:1fr 340px;gap:16px;margin-bottom:16px;
-                  align-items:start">
-        ${_renderChart(monthly)}
-        ${_renderBreakdown(feeBreak)}
+      <div class="grid-12" style="margin-bottom:var(--space-4)">
+        <div class="col col-8">${_renderChart(monthly)}</div>
+        <div class="col col-4">${_renderBreakdown(feeBreak)}</div>
       </div>`;
   }
 
@@ -304,11 +297,11 @@
           <rect x="34" y="10" width="8"  height="30" rx="1"/>
           <line x1="4" y1="42" x2="44" y2="42"/>
         </svg>
-        <div style="font-size:14px;color:var(--text-secondary);margin-bottom:8px;font-weight:500">
+        <div style="font-size:13px;color:var(--text-secondary);margin-bottom:8px;font-weight:600">
           取引記録がありません
         </div>
-        <div style="font-size:12px;color:var(--text-muted);margin-bottom:24px;
-                    max-width:280px;margin-inline:auto;line-height:1.7">
+        <div style="font-size:13px;color:var(--text-muted);margin-bottom:var(--space-6);
+                    max-width:280px;margin-inline:auto;line-height:1.7;text-wrap:balance">
           取引記録を追加すると、売上・手数料・粗利の推移が表示されます
         </div>
         <button class="btn btn-primary" onclick="BA.nav.showPanel('transactions')">
@@ -322,15 +315,15 @@
   // ─────────────────────────────────────
   function _renderCTABanner() {
     return `
-      <div style="margin-top:24px;padding:16px 20px;
-                  border:1px solid rgba(232,201,106,.15);border-radius:8px;
-                  background:rgba(232,201,106,.04);
+      <div style="margin-top:var(--space-6);padding:var(--space-4) var(--space-5);
+                  border:1px solid var(--gold-line);border-radius:var(--radius-sm);
+                  background:var(--gold-hover);
                   display:flex;align-items:center;justify-content:space-between;
-                  gap:16px;flex-wrap:wrap">
-        <span style="font-size:12px;color:var(--text-secondary)">
+                  gap:var(--space-4);flex-wrap:wrap;max-width:480px">
+        <span style="font-size:13px;color:var(--text-secondary);white-space:nowrap">
           eBayを連携すると自動取得できます
         </span>
-        <button class="btn btn-secondary" style="font-size:12px;padding:8px 20px;white-space:nowrap"
+        <button class="btn btn-secondary" style="font-size:13px;padding:8px 20px;white-space:nowrap"
                 onclick="BA.nav.showPanel('connect')">eBay連携 →</button>
       </div>`;
   }
@@ -340,8 +333,7 @@
   // ─────────────────────────────────────
   async function _render(root) {
     root.innerHTML = `
-      <div style="text-align:center;padding:32px 20px;color:var(--text-muted);
-        font-family:var(--font-mono);font-size:11px">読み込み中...</div>`;
+      <div class="note" style="text-align:center;padding:var(--space-6) var(--space-5)">読み込み中...</div>`;
 
     let records = [];
     try {
@@ -369,15 +361,14 @@
 
     root.innerHTML = `
       ${syncBar}
-      <div style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted);
-           margin-bottom:20px;letter-spacing:.06em">
+      <div class="note" style="font-family:var(--font-mono);font-variant-numeric:tabular-nums;
+           margin-bottom:var(--space-4);white-space:nowrap">
         全${records.length}件 · 直近30日: ${kpi.count}件
       </div>
       ${_renderKPI(kpi)}
       ${_renderChartRow(monthly, feeBreak)}
-      <p style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted);
-         text-align:center;margin-top:16px;padding:10px;
-         border:1px solid rgba(255,255,255,.04);border-radius:6px">
+      <p class="note" style="text-align:center;margin-top:var(--space-4);padding:var(--space-3);
+         border:1px solid var(--border);border-radius:var(--radius-sm)">
         ※ シミュレーション値・実際の損益は取引記録による
       </p>
       ${!connected ? _renderCTABanner() : ''}
