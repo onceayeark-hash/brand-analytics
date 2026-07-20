@@ -69,23 +69,23 @@
 
   function _alertListHtml() {
     if (!_log.length) {
-      return `<div style="padding:16px 0;text-align:center;font-size:12px;
-        color:var(--text-muted);font-family:var(--font-mono)">アラートなし</div>`;
+      return `<div style="padding:var(--space-4) 0;text-align:center;font-size:13px;
+        color:var(--text-muted)">アラートなし</div>`;
     }
     return _log.slice(0, 15).map(a => {
       const s    = SEV[a.severity] ?? SEV.info;
       const time = new Date(a.ts).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
       return `
-        <div style="display:flex;align-items:flex-start;gap:10px;padding:8px 12px;
+        <div style="display:flex;align-items:flex-start;gap:var(--space-2);padding:var(--space-2) var(--space-3);
           background:${s.bg};border-radius:6px">
           <div style="width:6px;height:6px;border-radius:50%;background:${s.dot};
-            flex-shrink:0;margin-top:5px"></div>
+            flex-shrink:0;margin-top:6px"></div>
           <div style="flex:1;min-width:0">
-            <div style="font-size:12px;color:var(--text-primary);font-weight:500">${a.type ?? '—'}</div>
-            ${a.message ? `<div style="font-size:11px;color:var(--text-muted);margin-top:2px">${a.message}</div>` : ''}
+            <div style="font-size:13px;color:var(--text-primary);font-weight:500">${a.type ?? '—'}</div>
+            ${a.message ? `<div class="note" style="margin-top:2px">${a.message}</div>` : ''}
           </div>
-          <div style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted);
-            white-space:nowrap;flex-shrink:0;padding-top:1px">${time}</div>
+          <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);
+            font-variant-numeric:tabular-nums;white-space:nowrap;flex-shrink:0;padding-top:1px">${time}</div>
         </div>`;
     }).join('');
   }
@@ -94,17 +94,15 @@
   // システム状態 HTML
   // ─────────────────────────────────────
   const _STATUS_LABEL = { ok: '正常', degraded: '低下', unreachable: '障害中', unknown: '未確認' };
-  const _STATUS_COLOR = { ok: 'var(--green)', degraded: 'var(--yellow)', unreachable: 'var(--red)', unknown: 'var(--text-muted)' };
+  // ㉑v2.0-D: ステータスはテキスト色でなくピル型チップ（.tag）で表現
+  const _STATUS_TAG = { ok: 'go', degraded: 'caution', unreachable: 'no-go', unknown: 'neutral' };
 
   function _statusRowHtml(label, status) {
     return `
-      <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;
-        background:var(--bg-elevated);border-radius:6px" data-status-label="${label}">
-        <div class="prot-status-dot" style="width:6px;height:6px;border-radius:50%;flex-shrink:0;
-          background:${_STATUS_COLOR[status]}"></div>
-        <span style="font-size:12px;color:var(--text-secondary);flex:1">${label}</span>
-        <span class="prot-status-text" style="font-family:var(--font-mono);font-size:11px;font-weight:500;
-          color:${_STATUS_COLOR[status]}">${_STATUS_LABEL[status]}</span>
+      <div style="display:flex;align-items:center;gap:var(--space-2);padding:var(--space-2) var(--space-3);
+        background:var(--surface-2);border-radius:6px" data-status-label="${label}">
+        <span style="font-size:13px;color:var(--text-secondary);flex:1">${label}</span>
+        <span class="tag ${_STATUS_TAG[status]} prot-status-tag">${_STATUS_LABEL[status]}</span>
       </div>`;
   }
 
@@ -114,17 +112,14 @@
 
     // eBay OAuth行：状態により動的スタイル
     const oauthAction = connected
-      ? `<span style="font-family:var(--font-mono);font-size:11px;font-weight:500;
-           color:var(--text-muted)">接続済み ✓</span>`
+      ? `<span class="tag go">接続済み ✓</span>`
       : `<button class="btn btn-primary" style="font-size:11px;padding:4px 12px;min-height:28px"
            onclick="BA.nav?.showPanel?.('connect')">接続する</button>`;
 
     return `<div id="prot-system-status" style="display:flex;flex-direction:column;gap:6px">
-      <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;
-        background:var(--bg-elevated);border-radius:6px">
-        <div style="width:6px;height:6px;border-radius:50%;flex-shrink:0;
-          background:${connected ? 'var(--green)' : 'var(--yellow)'}"></div>
-        <span style="font-size:12px;color:var(--text-secondary);flex:1">eBay OAuth</span>
+      <div style="display:flex;align-items:center;gap:var(--space-2);padding:var(--space-2) var(--space-3);
+        background:var(--surface-2);border-radius:6px">
+        <span style="font-size:13px;color:var(--text-secondary);flex:1">eBay OAuth</span>
         ${oauthAction}
       </div>
       ${_statusRowHtml('Supabase DB', 'unknown')}
@@ -142,10 +137,11 @@
       if (!row) return;
       const res = results.find(r => r.key === key);
       const status = res?.status ?? 'unknown';
-      const dot  = row.querySelector('.prot-status-dot');
-      const text = row.querySelector('.prot-status-text');
-      if (dot)  dot.style.background = _STATUS_COLOR[status];
-      if (text) { text.textContent = _STATUS_LABEL[status]; text.style.color = _STATUS_COLOR[status]; }
+      const tag = row.querySelector('.prot-status-tag');
+      if (tag) {
+        tag.className = `tag ${_STATUS_TAG[status]} prot-status-tag`;
+        tag.textContent = _STATUS_LABEL[status];
+      }
     });
   }
 
@@ -154,35 +150,34 @@
   // ─────────────────────────────────────
   function _templateCard(t) {
     return `
-      <div class="card" style="display:flex;flex-direction:column;gap:10px">
-        <div style="display:flex;align-items:center;gap:8px">
-          <span style="font-family:var(--font-mono);font-size:10px;color:var(--gold-400);
-            font-weight:600;background:rgba(200,146,78,.1);padding:2px 8px;
-            border-radius:4px;flex-shrink:0">${t.no}</span>
-          <span style="font-size:13px;font-weight:500;color:var(--text-primary)">${t.label}</span>
+      <div class="card" style="display:flex;flex-direction:column;gap:var(--space-2)">
+        <div style="display:flex;align-items:center;gap:var(--space-2)">
+          <span class="tag neutral" style="font-family:var(--font-mono);flex-shrink:0;
+            font-variant-numeric:tabular-nums">${t.no}</span>
+          <span style="font-size:13px;font-weight:600;color:var(--text-primary);white-space:nowrap">${t.label}</span>
         </div>
 
         <div style="border:1px solid var(--border);border-radius:6px;overflow:hidden">
           <div style="padding:6px 12px;border-bottom:1px solid var(--border);
             font-size:13px;font-weight:500;color:var(--text-secondary);
-            background:var(--bg-elevated)">日本語</div>
-          <div style="padding:10px 12px;font-size:11px;color:var(--text-secondary);
+            background:var(--surface-2)">日本語</div>
+          <div style="padding:var(--space-2) var(--space-3);font-size:13px;color:var(--text-secondary);
             line-height:1.8">${t.ja}</div>
         </div>
 
         <div style="border:1px solid var(--border);border-radius:6px;overflow:hidden">
           <div style="padding:6px 12px;border-bottom:1px solid var(--border);
             font-size:13px;font-weight:500;color:var(--text-secondary);
-            background:var(--bg-elevated)">English</div>
-          <div style="padding:10px 12px;font-size:11px;color:var(--text-secondary);
+            background:var(--surface-2)">English</div>
+          <div style="padding:var(--space-2) var(--space-3);font-size:13px;color:var(--text-secondary);
             line-height:1.8">${t.en}</div>
         </div>
 
-        <div style="display:flex;gap:8px">
+        <div style="display:flex;gap:var(--space-2)">
           <button class="btn btn-primary prot-save" data-no="${t.no}"
-            style="flex:1;font-size:12px">定型文を保存</button>
+            style="flex:1;font-size:13px;white-space:nowrap">定型文を保存</button>
           <button class="btn btn-secondary prot-copy" data-lang="en" data-no="${t.no}"
-            style="flex:1;font-size:12px">English をコピー</button>
+            style="flex:1;font-size:13px;white-space:nowrap">English をコピー</button>
         </div>
       </div>`;
   }
@@ -191,14 +186,15 @@
   // メインレンダー
   // ─────────────────────────────────────
   function _render(root) {
+    // ㉑v2.0-A: 12カラムグリッド（左 col-4: アラート+システム状態 / 右 col-8: テンプレート）
     root.innerHTML = `
-      <div style="display:grid;grid-template-columns:360px 1fr;gap:16px;align-items:start">
+      <div class="grid-12">
 
-        <div style="display:flex;flex-direction:column;gap:16px">
+        <div class="col col-4">
 
           <div class="card">
             <div style="display:flex;align-items:center;justify-content:space-between;
-              margin-bottom:12px">
+              margin-bottom:var(--space-3)">
               <div class="card-title" style="margin:0">アラートログ</div>
               <button class="btn btn-ghost" id="prot-clear-btn"
                 style="font-size:11px;padding:4px 10px;min-height:28px">クリア</button>
@@ -209,16 +205,16 @@
           </div>
 
           <div class="card">
-            <div class="card-title" style="margin-bottom:12px">システム状態</div>
+            <div class="card-title" style="margin-bottom:var(--space-3)">システム状態</div>
             ${_systemStatusHtml()}
           </div>
 
         </div>
 
-        <div style="display:flex;flex-direction:column;gap:12px">
-          <div class="card-title" style="padding:0 4px">フィードバックテンプレート</div>
+        <div class="col col-8">
+          <div class="card-title" style="padding:0 4px;margin:0">フィードバックテンプレート</div>
           ${TEMPLATES.map(_templateCard).join('')}
-          <p style="font-size:10px;color:var(--text-muted);text-align:center;margin-top:4px">
+          <p class="note" style="text-align:center;margin-top:0">
             ※ eBay 返信時にコピーしてご利用ください
           </p>
         </div>

@@ -183,3 +183,6 @@ console.log('user:', BA.auth.getUser(), 'tier:', BA.auth.getTier())
 - [解決済み・同日A案実装] crypto.js のセッションキーはページロード毎にランダム再生成のため、DBに保存した暗号化eBayトークンは次回ページロードで復号不能だった → **A案採用**：ebay-token Edge Function（v7デプロイ済み）がサーバー側で暗号化・保存。refresh_tokenはフロントに一切返さない。auth.jsからクライアント暗号化を撤去。旧形式token_dataはEF側で検知→行削除→再連携誘導（既存ユーザーは1回だけeBay再連携が必要）。security-reviewer通過（必須指摘なし・将来改善：専用シークレットEBAY_TOKEN_ENC_KEYへの鍵分離）
 - [解決済み・同日適用] Supabase `error_logs` の SELECT ポリシー `admin_read_all` が `qual: true` だった → migration `restrict_error_logs_select_to_admin` で管理者メール（kakuta@staygold-reuse.co.jp）のみに制限・pg_policiesで検証済み
 - [未実装確認] monitor.js が呼ぶ `notify-admin` Edge Function は未作成（閾値メール通知は現状404で無言スキップ）
+
+### 2026-07-20
+- [protection.js] eBay OAuth接続済み表示：2026-05-24の「接続済み=グレーテキスト表示」は ㉑v2.0-D（ステータスはピル型チップに統一）により上書き → 現在は `<span class="tag go">接続済み ✓</span>`（グリーンチップ）が正。システム状態の 正常/低下/障害中/未確認 も同様にチップ化（未確認用に `.tag.neutral` グレーチップを index.html に追加）
