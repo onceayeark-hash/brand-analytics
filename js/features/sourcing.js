@@ -61,13 +61,13 @@
 
   function _render(root) {
     root.innerHTML = `
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start">
+      <div class="grid-12">
 
-        <!-- 左: 入力 -->
-        <div>
-          <div class="card" style="margin-bottom:16px">
+        <!-- 左: 入力（5span・フォーム系 max480px） -->
+        <div class="col col-5">
+          <div class="card card--form" style="margin-bottom:var(--space-4)">
             <div class="card-title">商品データ</div>
-            <div style="display:flex;flex-direction:column;gap:12px">
+            <div style="display:flex;flex-direction:column;gap:var(--space-3)">
 
               <div class="input-group">
                 <label class="input-label" for="s-sell-price">想定販売価格（USD）</label>
@@ -99,7 +99,7 @@
                   <input class="input" id="s-sellrate" type="number" min="0" max="100" step="1" value="0">
                   <div class="input-prefix" style="border-left:none;border-right:1px solid var(--border);border-radius:0 3px 3px 0">%</div>
                 </div>
-                <div style="font-size:10px;color:var(--text-muted);margin-top:4px">
+                <div class="note" style="margin-top:var(--space-1)">
                   ※ Terapeak API 未取得のため手動入力
                 </div>
               </div>
@@ -108,9 +108,9 @@
           </div>
 
           <!-- 閾値設定 -->
-          <div class="card">
+          <div class="card card--form">
             <div class="card-title">判定閾値（変更可）</div>
-            <div style="display:flex;flex-direction:column;gap:12px">
+            <div style="display:flex;flex-direction:column;gap:var(--space-3)">
               <div class="input-group">
                 <label class="input-label" for="s-t-profit">目標粗利率 ≥</label>
                 <div class="input-wrap">
@@ -136,27 +136,21 @@
           </div>
         </div>
 
-        <!-- 右: 判定結果 -->
-        <div>
-          <div class="card" style="margin-bottom:16px">
+        <!-- 右: 判定結果（5span） -->
+        <div class="col col-5">
+          <div class="card card--form" style="border-color:var(--border-active);margin-bottom:var(--space-4)">
             <div class="card-title">仕入れ可能価格帯</div>
-            <div id="s-verdict-guide" style="display:flex;flex-direction:column;align-items:center;
-              justify-content:center;padding:24px 0;gap:10px;text-align:center">
-              <div style="font-size:32px;line-height:1">⚡</div>
-              <div style="font-size:12px;color:var(--text-muted);line-height:1.7">
-                想定販売価格を入力すると<br>目標粗利率を満たす仕入れ可能価格帯が表示されます
-              </div>
+            <div id="s-verdict-guide" class="note" style="line-height:1.7;padding:var(--space-2) 0">
+              想定販売価格を入力すると、目標粗利率を満たす仕入れ可能価格帯が表示されます
             </div>
-            <div style="font-family:var(--font-mono);font-size:32px;font-weight:600;
-              text-align:center;padding:20px 0;display:none" id="s-verdict-label"></div>
-            <div style="font-size:12px;color:var(--text-secondary);text-align:center;
-              padding-bottom:8px;display:none" id="s-verdict-desc"></div>
+            <div class="card-value" style="display:none;white-space:nowrap;margin-top:var(--space-1)" id="s-verdict-label"></div>
+            <div class="note" style="display:none;margin-top:var(--space-1);line-height:1.6" id="s-verdict-desc"></div>
           </div>
 
           <!-- 条件チェックリスト -->
-          <div class="card">
+          <div class="card card--form">
             <div class="card-title">条件チェック</div>
-            <div style="display:flex;flex-direction:column;gap:10px" id="s-conditions">
+            <div style="display:flex;flex-direction:column;gap:var(--space-2)" id="s-conditions">
               ${_conditionRow('s-c1', '粗利率')}
               ${_conditionRow('s-c2', '競合増加率')}
               ${_conditionRow('s-c3', '成約率')}
@@ -174,13 +168,9 @@
 
   function _conditionRow(id, label) {
     return `
-      <div style="display:flex;align-items:center;gap:10px" id="${id}">
-        <div class="s-dot" style="width:16px;height:16px;border-radius:50%;
-          background:var(--bg-elevated);border:1.5px solid var(--border);
-          flex-shrink:0;display:flex;align-items:center;justify-content:center;
-          font-size:9px;color:transparent;transition:background-color .15s,border-color .15s"></div>
-        <div style="flex:1;font-size:12px;color:var(--text-secondary)">${label}</div>
-        <div class="s-val" style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted)">未入力</div>
+      <div class="kpi-row" id="${id}" style="padding:var(--space-1) 0">
+        <span style="color:var(--text-secondary);white-space:nowrap">${label}</span>
+        <span class="s-val"><span class="tag neutral">未入力</span></span>
       </div>
     `;
   }
@@ -234,7 +224,7 @@
       if (descEl)    descEl.style.display    = 'none';
     }
 
-    // 条件ドット（未入力=グレー、入力済み=オレンジ）
+    // 条件チェック（㉑-D: 未入力=グレーのピル型チップ / 入力済み=tabular値。オレンジは使わない）
     const inputValues = [
       `${profitRate.toFixed(1)}% (≥${tProfit}%)`,
       `${competitorGrowth.toFixed(1)}% (≤${tComp}%)`,
@@ -243,24 +233,19 @@
     ['s-c1', 's-c2', 's-c3'].forEach((id, i) => {
       const row = root.querySelector(`#${id}`);
       if (!row) return;
-      const dot = row.querySelector('.s-dot');
       const val = row.querySelector('.s-val');
+      if (!val) return;
+      val.textContent = '';
       if (touched[i]) {
-        if (dot) {
-          dot.style.background   = 'var(--gold-400)';
-          dot.style.borderColor  = 'var(--gold-400)';
-          dot.style.color        = '#fff';
-          dot.textContent        = '✓';
-        }
-        if (val) { val.textContent = inputValues[i]; val.style.color = 'var(--text-secondary)'; }
+        const v = document.createElement('span');
+        v.className   = 'v';
+        v.textContent = inputValues[i];
+        val.appendChild(v);
       } else {
-        if (dot) {
-          dot.style.background  = 'var(--bg-elevated)';
-          dot.style.borderColor = 'var(--border)';
-          dot.style.color       = 'transparent';
-          dot.textContent       = '';
-        }
-        if (val) { val.textContent = '未入力'; val.style.color = 'var(--text-muted)'; }
+        const chip = document.createElement('span');
+        chip.className   = 'tag neutral';
+        chip.textContent = '未入力';
+        val.appendChild(chip);
       }
     });
   }
