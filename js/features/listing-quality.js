@@ -407,9 +407,9 @@
           'background:none;border:none;border-bottom:1px solid var(--border);' +
           `color:var(--text-secondary);font-family:var(--font-sans);font-size:13px;cursor:pointer;gap:8px`;
         if (isHistory) {
-          item.innerHTML = `<span style="font-family:var(--font-mono);font-size:9px;color:var(--text-muted)">履歴</span>${brand}`;
+          item.innerHTML = `<span style="font-size:10px;color:var(--text-muted)">履歴</span>${brand}`;
         }
-        item.addEventListener('mouseenter', () => { item.style.background = 'rgba(200,168,76,.08)'; item.style.color = 'var(--text-primary)'; });
+        item.addEventListener('mouseenter', () => { item.style.background = 'var(--gold-hover)'; item.style.color = 'var(--text-primary)'; });
         item.addEventListener('mouseleave', () => { item.style.background = 'none'; item.style.color = 'var(--text-secondary)'; });
         item.addEventListener('mousedown', (e) => {
           e.preventDefault();
@@ -475,8 +475,8 @@
             style="transition:stroke-dashoffset .8s cubic-bezier(.4,0,.2,1)"/>
         </svg>
         <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center">
-          <span style="font-family:var(--font-sans);font-size:26px;font-weight:700;color:${color};line-height:1">${score}</span>
-          <span style="font-family:var(--font-mono);font-size:9px;color:var(--text-muted);margin-top:2px">${_scoreLabel(score)}</span>
+          <span style="font-family:var(--font-sans);font-size:26px;font-weight:600;color:${color};line-height:1;font-variant-numeric:tabular-nums">${score}</span>
+          <span style="font-size:11px;color:var(--text-muted);margin-top:2px">${_scoreLabel(score)}</span>
         </div>
       </div>`;
   }
@@ -488,10 +488,10 @@
       const pct   = Math.round((val / maxes[key]) * 100);
       const color = _scoreColor(pct);
       return `
-        <div style="margin-bottom:10px">
-          <div style="display:flex;justify-content:space-between;margin-bottom:4px">
-            <span style="font-size:12px;color:var(--text-secondary)">${labels[key]}</span>
-            <span style="font-family:var(--font-mono);font-size:11px;color:${color}">${val}/${maxes[key]}</span>
+        <div style="margin-bottom:var(--space-2)">
+          <div style="display:flex;justify-content:space-between;margin-bottom:var(--space-1)">
+            <span style="font-size:13px;color:var(--text-secondary)">${labels[key]}</span>
+            <span style="font-size:13px;font-weight:600;color:${color};font-variant-numeric:tabular-nums">${val}/${maxes[key]}</span>
           </div>
           <div class="meter"><div class="meter-fill" style="width:${pct}%;background:${color}"></div></div>
         </div>`;
@@ -504,11 +504,11 @@
     const icon  = { critical: '⚠', warning: '○', info: 'ℹ' };
     const color = { critical: 'var(--red)', warning: 'var(--yellow)', info: 'var(--blue)' };
     return checks.map(c => `
-      <div style="display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)">
+      <div style="display:flex;align-items:flex-start;gap:var(--space-2);padding:var(--space-3) 0;border-bottom:1px solid var(--border)">
         <span style="font-size:13px;flex-shrink:0;margin-top:1px;color:${c.pass ? 'var(--green)' : color[c.level]}">${c.pass ? '✓' : icon[c.level]}</span>
         <div>
-          <div style="font-size:12px;font-weight:600;color:${c.pass ? 'var(--green)' : color[c.level]}">${c.label}</div>
-          ${!c.pass ? `<div style="font-size:11px;color:var(--text-muted);margin-top:3px">${c.desc}</div>` : ''}
+          <div style="font-size:13px;font-weight:600;color:${c.pass ? 'var(--green)' : color[c.level]}">${c.label}</div>
+          ${!c.pass ? `<div class="note" style="margin-top:var(--space-1)">${c.desc}</div>` : ''}
         </div>
       </div>`).join('');
   }
@@ -517,23 +517,24 @@
 
   function _render(root) {
     root.innerHTML = `
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start">
+      <div class="grid-12">
 
-        <!-- 左: 入力フォーム -->
-        <div class="card">
+        <!-- 左: 入力フォーム（6span） -->
+        <div class="col col-6">
+        <div class="card card--form">
           <div class="card-title">リスティング情報を入力</div>
 
-          <div class="input-group" style="margin-bottom:14px">
+          <div class="input-group" style="margin-bottom:var(--space-4)">
             <label class="input-label">タイトル（英語）</label>
             <input type="text" id="lq-title" class="input"
               placeholder="例: Louis Vuitton Neverfull MM Monogram Tote Bag Used Authentic">
-            <div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:10px;color:var(--text-muted);margin-top:3px">
+            <div class="note" style="display:flex;justify-content:space-between;margin-top:var(--space-1);font-variant-numeric:tabular-nums">
               <span><span id="lq-title-count">0</span>/80文字（推奨: 75〜80）</span>
               <span><span id="lq-word-count">0</span>語（推奨: 15〜18語）</span>
             </div>
           </div>
 
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-3);margin-bottom:var(--space-4)">
             <div class="input-group">
               <label class="input-label">ブランド名</label>
               <div style="position:relative">
@@ -541,7 +542,7 @@
                   placeholder="ルイヴィトン / Lou / LV"
                   autocomplete="off">
               </div>
-              <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-muted);margin-top:2px">
+              <div class="note" style="margin-top:var(--space-1)">
                 大文字小文字・スペース不問・カタカナ可・スペルミスOK
               </div>
             </div>
@@ -552,23 +553,23 @@
           </div>
 
           <!-- 画像 -->
-          <div class="input-group" style="margin-bottom:6px">
+          <div class="input-group" style="margin-bottom:var(--space-1)">
             <label class="input-label">画像枚数（最大24枚）</label>
             <input type="number" id="lq-images" class="input" placeholder="0" min="0" max="24">
           </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
-            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:var(--text-secondary)">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-2);margin-bottom:var(--space-4)">
+            <label style="display:flex;align-items:center;gap:var(--space-2);cursor:pointer;font-size:13px;color:var(--text-secondary)">
               <input type="checkbox" id="lq-highres" style="accent-color:var(--gold-400)">
               1600px以上の高解像度
             </label>
-            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:var(--text-secondary)">
+            <label style="display:flex;align-items:center;gap:var(--space-2);cursor:pointer;font-size:13px;color:var(--text-secondary)">
               <input type="checkbox" id="lq-angles" style="accent-color:var(--gold-400)">
               全角度撮影済み
             </label>
           </div>
 
           <!-- Item Specifics -->
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-3);margin-bottom:var(--space-4)">
             <div class="input-group">
               <label class="input-label">Item Specifics 入力数</label>
               <input type="number" id="lq-specs" class="input" placeholder="0" min="0">
@@ -576,63 +577,63 @@
             <div class="input-group">
               <label class="input-label">カテゴリ総項目数（任意）</label>
               <input type="number" id="lq-specs-total" class="input" placeholder="入力で%計算">
-              <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-muted);margin-top:2px">入力すると完了率95%で評価</div>
+              <div class="note" style="margin-top:var(--space-1)">入力すると完了率95%で評価</div>
             </div>
           </div>
 
           <!-- 説明文 -->
-          <div class="input-group" style="margin-bottom:6px">
+          <div class="input-group" style="margin-bottom:var(--space-1)">
             <label class="input-label">説明文の文字数（推奨: 200〜800）</label>
             <input type="number" id="lq-desc" class="input" placeholder="0" min="0">
           </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
-            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:var(--text-secondary)">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-2);margin-bottom:var(--space-4)">
+            <label style="display:flex;align-items:center;gap:var(--space-2);cursor:pointer;font-size:13px;color:var(--text-secondary)">
               <input type="checkbox" id="lq-structured" style="accent-color:var(--gold-400)">
               構造化済み（見出し・箇条書き）
             </label>
-            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:var(--text-secondary)">
+            <label style="display:flex;align-items:center;gap:var(--space-2);cursor:pointer;font-size:13px;color:var(--text-secondary)">
               <input type="checkbox" id="lq-mobile" style="accent-color:var(--gold-400)">
               モバイル最適化（短段落）
             </label>
           </div>
 
           <!-- VeRO・その他 -->
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px">
-            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:var(--text-secondary)">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-2);margin-bottom:var(--space-5)">
+            <label style="display:flex;align-items:center;gap:var(--space-2);cursor:pointer;font-size:13px;color:var(--text-secondary)">
               <input type="checkbox" id="lq-authorized" style="accent-color:var(--gold-400)">
               正規認定ディーラー
             </label>
-            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:var(--text-secondary)">
+            <label style="display:flex;align-items:center;gap:var(--space-2);cursor:pointer;font-size:13px;color:var(--text-secondary)">
               <input type="checkbox" id="lq-identifier" style="accent-color:var(--gold-400)">
               商品識別子あり（UPC/EAN）
             </label>
-            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:var(--text-secondary)">
+            <label style="display:flex;align-items:center;gap:var(--space-2);cursor:pointer;font-size:13px;color:var(--text-secondary)">
               <input type="checkbox" id="lq-return" style="accent-color:var(--gold-400)">
               30日返品ポリシーあり
             </label>
-            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:var(--text-secondary)">
+            <label style="display:flex;align-items:center;gap:var(--space-2);cursor:pointer;font-size:13px;color:var(--text-secondary)">
               <input type="checkbox" id="lq-condition" style="accent-color:var(--gold-400)">
               状態詳細説明あり
             </label>
-            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:var(--text-secondary)">
+            <label style="display:flex;align-items:center;gap:var(--space-2);cursor:pointer;font-size:13px;color:var(--text-secondary)">
               <input type="checkbox" id="lq-gpsr" style="accent-color:var(--gold-400)">
               GPSR対応済み（EU向け）
             </label>
           </div>
 
-          <button class="btn btn-primary" id="lq-check" style="margin-top:8px">品質をチェック</button>
+          <button class="btn btn-primary" id="lq-check">品質をチェック</button>
+        </div>
         </div>
 
-        <!-- 右: 結果 -->
-        <div id="lq-result" style="display:flex;flex-direction:column">
-          <div class="card" style="flex:1;display:flex;align-items:center;justify-content:center;min-height:400px">
-            <div style="text-align:center;color:var(--text-muted)">
-              <div style="font-size:32px;margin-bottom:12px">✏️</div>
-              <div style="font-family:var(--font-mono);font-size:11px;line-height:1.8">
-                左のフォームに入力して<br>「品質をチェック」を押してください
-              </div>
+        <!-- 右: 結果（6span） -->
+        <div class="col col-6">
+        <div id="lq-result">
+          <div class="card" style="display:flex;align-items:center;justify-content:center;min-height:400px">
+            <div class="note" style="text-align:center;line-height:1.8;text-wrap:balance">
+              左のフォームに入力して「品質をチェック」を押してください
             </div>
           </div>
+        </div>
         </div>
 
       </div>
@@ -680,36 +681,34 @@
       const passCount = checks.filter(c => c.pass).length;
 
       root.querySelector('#lq-result').innerHTML = `
-        <div class="card" style="margin-bottom:16px">
+        <div class="card" style="margin-bottom:var(--space-4)">
           <div class="card-title">品質スコア</div>
-          <div style="display:flex;align-items:center;gap:20px;margin-bottom:${(issues.length || suggestions.length) ? '16px' : '0'}">
+          <div style="display:flex;align-items:center;gap:var(--space-5);margin-bottom:${(issues.length || suggestions.length) ? 'var(--space-4)' : '0'}">
             ${_renderScoreRing(total)}
             <div style="flex:1">${_renderSubScores(scores)}</div>
           </div>
           ${issues.map(i => `
-            <div style="display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-top:1px solid var(--border);font-size:12px">
+            <div style="display:flex;align-items:flex-start;gap:var(--space-2);padding:var(--space-2) 0;border-top:1px solid var(--border);font-size:13px">
               <span style="color:var(--red);flex-shrink:0">✗</span>
-              <span style="color:var(--text-secondary)">${i}</span>
+              <span style="color:var(--text-secondary);text-wrap:balance">${i}</span>
             </div>`).join('')}
           ${suggestions.map(s => `
-            <div style="display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-top:1px solid var(--border);font-size:12px">
+            <div style="display:flex;align-items:flex-start;gap:var(--space-2);padding:var(--space-2) 0;border-top:1px solid var(--border);font-size:13px">
               <span style="color:var(--yellow);flex-shrink:0">→</span>
-              <span style="color:var(--text-secondary)">${s}</span>
+              <span style="color:var(--text-secondary);text-wrap:balance">${s}</span>
             </div>`).join('')}
           ${!issues.length && !suggestions.length ? `
-            <div style="color:var(--green);font-size:12px;text-align:center;padding:8px 0;border-top:1px solid var(--border)">
+            <div style="color:var(--green);font-size:13px;text-align:center;padding:var(--space-2) 0;border-top:1px solid var(--border)">
               すべての品質要件を満たしています ✓
             </div>` : ''}
         </div>
 
         <div class="card">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:var(--space-2);margin-bottom:var(--space-2)">
             <div class="card-title" style="margin:0">2026年 eBay 新要件チェック</div>
-            <span style="font-family:var(--font-mono);font-size:10px;color:${passCount === checks.length ? 'var(--green)' : 'var(--yellow)'}">
-              ${passCount}/${checks.length} クリア
-            </span>
+            <span class="tag ${passCount === checks.length ? 'go' : 'caution'}" style="font-variant-numeric:tabular-nums">${passCount}/${checks.length} クリア</span>
           </div>
-          <div style="margin-top:8px">${_renderChecklist(checks)}</div>
+          <div style="margin-top:var(--space-2)">${_renderChecklist(checks)}</div>
         </div>
       `;
     });
