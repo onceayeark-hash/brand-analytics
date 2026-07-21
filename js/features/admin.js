@@ -15,39 +15,36 @@
   const STATUS_LABEL = { ok: '正常', degraded: '低下', down: '障害', unknown: '未確認' };
   const STATUS_COLOR = { ok: 'var(--green)', degraded: 'var(--yellow)', down: 'var(--red)', unknown: 'var(--text-muted)' };
   const STATUS_DOT   = STATUS_COLOR;
+  // ㉑-D: ステータスはピル型チップで表現
+  const STATUS_TAG   = { ok: 'go', degraded: 'caution', down: 'no-go', unknown: 'neutral' };
 
   // ─── サービス死活カード ──────────────────────────
 
   async function _renderServices(container) {
-    container.innerHTML = `<div style="color:var(--text-muted);font-size:12px">確認中...</div>`;
+    container.innerHTML = `<div class="note">確認中…</div>`;
     const results = await BA.monitor?.checkAllServices?.() ?? [];
 
     container.innerHTML = results.map(svc => `
-      <div class="card" style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px">
-        <div style="display:flex;align-items:center;gap:10px">
-          <div style="width:10px;height:10px;border-radius:50%;background:${STATUS_DOT[svc.status] ?? 'var(--text-muted)'};flex-shrink:0"></div>
-          <span style="font-size:13px">${svc.label ?? svc.key}</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:12px">
-          <span style="font-size:12px;color:${STATUS_COLOR[svc.status] ?? 'var(--text-muted)'}">
-            ${STATUS_LABEL[svc.status] ?? '不明'}
-          </span>
+      <div class="card" style="display:flex;align-items:center;justify-content:space-between;gap:var(--space-3);padding:var(--space-3) var(--space-4)">
+        <span style="font-size:13px">${svc.label ?? svc.key}</span>
+        <div style="display:flex;align-items:center;gap:var(--space-3)">
+          <span class="tag ${STATUS_TAG[svc.status] ?? 'neutral'}">${STATUS_LABEL[svc.status] ?? '不明'}</span>
           ${svc.statusUrl ? `<a href="${svc.statusUrl}" target="_blank" rel="noopener"
-              style="font-size:10px;color:var(--text-muted);font-family:var(--font-mono)">ステータスページ →</a>` : ''}
+              style="font-size:11px;color:var(--text-muted);white-space:nowrap">ステータスページ →</a>` : ''}
         </div>
       </div>
-    `).join('') || `<div style="color:var(--text-muted);font-size:12px">サービス情報なし</div>`;
+    `).join('') || `<div class="note">サービス情報なし</div>`;
   }
 
   // ─── エラーログ一覧 ─────────────────────────────
 
   async function _renderLogs(container) {
-    container.innerHTML = `<div style="color:var(--text-muted);font-size:12px">読み込み中...</div>`;
+    container.innerHTML = `<div class="note">読み込み中…</div>`;
 
     try {
       const sb = window._supabaseClient;
       if (!sb) {
-        container.innerHTML = `<div style="color:var(--text-muted);font-size:12px">Supabase未接続</div>`;
+        container.innerHTML = `<div class="note">Supabase未接続</div>`;
         return;
       }
 
@@ -60,12 +57,12 @@
       if (error) throw error;
 
       if (!data?.length) {
-        container.innerHTML = `<div style="color:var(--text-muted);font-size:12px;padding:16px 0;text-align:center">エラーログはありません ✓</div>`;
+        container.innerHTML = `<div class="note" style="padding:var(--space-4) 0;text-align:center">エラーログはありません ✓</div>`;
         return;
       }
 
       container.innerHTML = `
-        <table class="data-table" style="width:100%;font-size:11px">
+        <table class="data-table" style="width:100%">
           <thead>
             <tr>
               <th style="text-align:left;padding:8px 12px;color:var(--text-muted)">時刻</th>
@@ -96,7 +93,7 @@
         </table>
       `;
     } catch (err) {
-      container.innerHTML = `<div style="color:var(--red);font-size:12px">ログ取得エラー: ${err.message}</div>`;
+      container.innerHTML = `<div style="color:var(--red);font-size:13px">ログ取得エラー: ${err.message}</div>`;
     }
   }
 
@@ -105,7 +102,7 @@
   async function _renderStats(container) {
     try {
       const sb = window._supabaseClient;
-      if (!sb) { container.innerHTML = `<span style="color:var(--text-muted)">---</span>`; return; }
+      if (!sb) { container.innerHTML = `<span class="note">—</span>`; return; }
 
       const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
       const { data } = await sb
@@ -118,21 +115,21 @@
       const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
 
       if (!sorted.length) {
-        container.innerHTML = `<div style="color:var(--text-muted);font-size:12px;text-align:center;padding:8px 0">過去24時間エラーなし ✓</div>`;
+        container.innerHTML = `<div class="note" style="text-align:center;padding:var(--space-2) 0">過去24時間エラーなし ✓</div>`;
         return;
       }
 
       container.innerHTML = sorted.map(([code, cnt]) => `
-        <div style="display:flex;justify-content:space-between;align-items:center;
-                    padding:8px 0;border-bottom:1px solid var(--border);font-size:12px">
-          <span style="font-family:var(--font-mono);color:var(--text-secondary)">${code}</span>
-          <span style="font-family:var(--font-mono);color:${cnt >= 5 ? 'var(--red)' : 'var(--yellow)'};font-weight:600">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:var(--space-3);
+                    padding:var(--space-2) 0;border-bottom:1px solid var(--border);font-size:13px">
+          <span style="color:var(--text-secondary)">${code}</span>
+          <span style="color:${cnt >= 5 ? 'var(--red)' : 'var(--yellow)'};font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap">
             ${cnt}件
           </span>
         </div>
       `).join('');
     } catch {
-      container.innerHTML = `<span style="color:var(--text-muted)">---</span>`;
+      container.innerHTML = `<span class="note">—</span>`;
     }
   }
 
@@ -145,11 +142,11 @@
     const BANNERS = sb?.BANNERS ?? {};
 
     const statusText = active
-      ? `<span style="color:var(--yellow);font-family:var(--font-mono);font-size:11px">表示中: ${active}</span>`
-      : `<span style="color:var(--green);font-family:var(--font-mono);font-size:11px">非表示</span>`;
+      ? `<span class="tag caution">表示中: ${active}</span>`
+      : `<span class="tag go">非表示</span>`;
 
     const lockBadge = locked
-      ? `<span style="font-family:var(--font-mono);font-size:9px;color:var(--red);background:var(--red-dim);border:1px solid rgba(232,84,84,.22);padding:1px 6px;border-radius:3px;margin-left:8px">手動設定中</span>`
+      ? `<span class="tag no-go" style="margin-left:var(--space-2)">手動設定中</span>`
       : '';
 
     container.innerHTML = `
@@ -171,7 +168,7 @@
           非表示
         </button>
       </div>
-      <p style="font-size:11px;color:var(--text-muted);margin-top:8px">
+      <p class="note" style="margin-top:var(--space-2)">
         ボタンを押すとセラー画面のバナーを手動設定します。
         「手動設定を解除」すると自動検知に戻ります。
       </p>
@@ -195,29 +192,32 @@
 
   async function _render(root) {
     root.innerHTML = `
-      <div class="card" style="margin-bottom:20px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div class="card" style="margin-bottom:var(--space-5)">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:var(--space-2);margin-bottom:var(--space-3)">
           <div class="card-title" style="margin:0">セラー向けバナー管理</div>
-          <span style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted)">管理者専用</span>
+          <span class="tag neutral">管理者専用</span>
         </div>
         <div id="admin-announcement"></div>
       </div>
 
-      <div style="margin-bottom:20px">
-        <div class="card-title" style="margin-bottom:12px">サービス死活状態</div>
-        <div id="admin-services" style="display:flex;flex-direction:column;gap:8px">確認中...</div>
+      <div style="margin-bottom:var(--space-5)">
+        <div class="card-title" style="margin-bottom:var(--space-3)">サービス死活状態</div>
+        <div id="admin-services" style="display:flex;flex-direction:column;gap:var(--space-2)"><div class="note">確認中…</div></div>
       </div>
 
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
+      <div class="grid-12" style="margin-bottom:var(--space-5)">
 
+        <div class="col col-6">
         <div class="card">
           <div class="card-title">過去24時間 エラー集計</div>
-          <div id="admin-stats" style="margin-top:12px"></div>
+          <div id="admin-stats" style="margin-top:var(--space-3)"></div>
+        </div>
         </div>
 
+        <div class="col col-6">
         <div class="card">
           <div class="card-title">クイックリンク</div>
-          <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px">
+          <div style="display:flex;flex-direction:column;gap:var(--space-2);margin-top:var(--space-3)">
             ${[
               ['Supabase Dashboard',      'https://supabase.com/dashboard/project/pvleyieegzqkwpqbpiax'],
               ['Supabase ステータス',      'https://status.supabase.com'],
@@ -225,21 +225,22 @@
               ['eBay Developer サポート',  'https://developer.ebay.com/support'],
             ].map(([label, url]) => `
               <a href="${url}" target="_blank" rel="noopener"
-                 style="font-size:12px;color:var(--text-secondary);display:flex;align-items:center;gap:6px;
-                        padding:8px 10px;border-radius:4px;background:rgba(255,255,255,.03);
+                 style="font-size:13px;color:var(--text-secondary);display:flex;align-items:center;gap:var(--space-2);
+                        padding:var(--space-2) var(--space-3);border-radius:var(--radius-sm);background:var(--surface-2);
                         text-decoration:none;transition:background .15s">
                 <span style="opacity:.5">↗</span>${label}
               </a>
             `).join('')}
           </div>
         </div>
+        </div>
 
       </div>
 
       <div class="card">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:var(--space-2);margin-bottom:var(--space-3)">
           <div class="card-title" style="margin:0">最新エラーログ（直近30件）</div>
-          <button class="btn btn-ghost" id="admin-refresh" style="font-size:11px;padding:4px 10px">↻ 更新</button>
+          <button class="btn btn-ghost" id="admin-refresh" style="font-size:11px;padding:4px 10px;white-space:nowrap">↻ 更新</button>
         </div>
         <div id="admin-logs"></div>
       </div>
