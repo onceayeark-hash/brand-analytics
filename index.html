@@ -325,14 +325,13 @@
       --border-active:  rgba(0,0,0,0.35);
       --accent-orange:      #e06418;
       --accent-orange-dark: #c44e0c;
-      --font-sans: Arial, 'Meiryo', 'メイリオ', sans-serif;
+      /* ㉑v2.0: ライト/ダークでフォント・行間を統一（ダーク基準の BIZ UDPGothic を継承） */
       /* ㉑v2.0: ライトはカード=白・ネスト要素のみ薄グレーで3段を構成 */
       --surface-2: #f7f7f7;
     }
     /* ライトモード: サイドバーは常にダーク維持 */
     [data-theme="light"] #sidebar {
       background: rgba(16,17,18,.98);
-      --font-sans: 'BIZ UDPGothic', 'Meiryo', 'メイリオ', system-ui, sans-serif;
       --text-primary:   #e4e4e4;
       --text-secondary: #c8b4a0;
       --text-muted:     #8a7a6a;
@@ -346,9 +345,8 @@
       --gold-active:  rgba(200,146,78,0.08);
     }
     [data-theme="light"] body {
-      font-family: Arial, 'Meiryo', 'メイリオ', sans-serif;
       font-size: 14px;
-      line-height: 1.5;
+      line-height: 1.6;
     }
     [data-theme="light"] body::before {
       background: none;
@@ -534,7 +532,7 @@
       <div class="panel-header">
         <div>
           <h1 class="panel-title" id="panel-sourcing-title">仕入れメーター</h1>
-          <p class="panel-subtitle">成約率・競合出品数・利益率から Go / No-Go を判定</p>
+          <p class="panel-subtitle">想定販売価格・目標粗利率から仕入れ可能価格帯を逆算</p>
         </div>
         <div class="disclaimer" data-tip="デフォルト値は設定から変更可能">暫定デフォルト値・実績に応じて変更推奨</div>
       </div>
