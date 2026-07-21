@@ -272,8 +272,8 @@
     const color = total >= 80 ? 'var(--green)' : total >= 55 ? 'var(--yellow)' : 'var(--red)';
     const circ  = Math.round(2 * Math.PI * 26);
 
-    const SUB_LABELS = { title: 'タイトル', images: '画像', description: '説明文', specs: 'スペック', trust: '信頼性' };
-    const SUB_MAX    = { title: 25, images: 25, description: 20, specs: 20, trust: 10 };
+    const SUB_LABELS = { title: 'タイトル', images: '画像', description: '説明文', specifics: 'スペック', vero: 'VeRO' };
+    const SUB_MAX    = { title: 25, images: 25, description: 20, specifics: 20, vero: 10 };
 
     const subRows = Object.entries(scores || {}).map(([k, v]) => {
       const max = SUB_MAX[k] || 20;
@@ -284,7 +284,7 @@
         <div style="flex:1;height:4px;background:var(--border);border-radius:2px">
           <div style="width:${pct}%;height:100%;background:${bc};border-radius:2px;transition:width .4s"></div>
         </div>
-        <span style="width:32px;text-align:right;font-family:var(--font-mono);font-size:11px;color:${bc}">${v}/${max}</span>
+        <span style="width:36px;text-align:right;font-size:11px;font-weight:600;color:${bc};font-variant-numeric:tabular-nums">${v}/${max}</span>
       </div>`;
     }).join('');
 
@@ -298,7 +298,7 @@
               style="transition:stroke-dashoffset .5s"/>
           </svg>
           <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
-            font-family:var(--font-mono);font-size:18px;font-weight:700;color:${color}">${total}</div>
+            font-size:18px;font-weight:600;color:${color};font-variant-numeric:tabular-nums">${total}</div>
         </div>
         <div style="flex:1">${subRows}</div>
       </div>
@@ -318,9 +318,9 @@
         </div>` : ''}
       ${checks?.length ? `
         <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-            <span style="font-size:11px;font-weight:600;color:var(--text-primary)">2026年新要件</span>
-            <span style="font-family:var(--font-mono);font-size:10px;color:${passCount===checks.length?'var(--green)':'var(--yellow)'}">${passCount}/${checks.length}</span>
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:var(--space-2);margin-bottom:var(--space-2)">
+            <span style="font-size:13px;font-weight:600;color:var(--text-primary)">2026年新要件</span>
+            <span class="tag ${passCount===checks.length?'go':'caution'}" style="font-variant-numeric:tabular-nums">${passCount}/${checks.length}</span>
           </div>
           ${checks.map(c => `
             <div style="display:flex;gap:5px;padding:3px 0;font-size:11px;color:var(--text-secondary)">
@@ -434,8 +434,8 @@
     <style>
       #auto-listing-root .al-g2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
       #auto-listing-root .al-g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
-      #auto-listing-root .al-lbl{display:block;font-size:11px;font-weight:600;color:var(--text-muted);
-        letter-spacing:.04em;text-transform:uppercase;margin-bottom:5px}
+      #auto-listing-root .al-lbl{display:block;font-size:11px;font-weight:500;color:var(--text-muted);
+        letter-spacing:.04em;text-transform:none;margin-bottom:var(--space-1);white-space:nowrap}
       #auto-listing-root .al-crow{display:flex;gap:20px;flex-wrap:wrap}
       #auto-listing-root .al-clbl{display:flex;align-items:center;gap:7px;cursor:pointer;
         font-size:13px;color:var(--text-secondary)}
@@ -458,7 +458,7 @@
           <div style="margin-bottom:12px">
             <label class="al-lbl">引用元URL（eBay / ヤフオク / 楽天）</label>
             <div style="display:flex;gap:8px">
-              <input id="al-source-url" type="url" class="form-input" placeholder="https://..." value="${_esc(_state.sourceUrl)}" style="flex:1">
+              <input id="al-source-url" type="url" class="input" placeholder="https://..." value="${_esc(_state.sourceUrl)}" style="flex:1">
               <div id="al-site-badge" style="display:flex;align-items:center;padding:0 10px;border-radius:4px;
                 font-size:11px;font-weight:700;background:var(--bg-input);min-width:64px;
                 justify-content:center;color:var(--text-muted);white-space:nowrap">未入力</div>
@@ -468,7 +468,7 @@
 
           <div style="margin-bottom:12px">
             <label class="al-lbl">商品タイトル（日本語）</label>
-            <input id="al-title-ja" type="text" class="form-input" maxlength="100"
+            <input id="al-title-ja" type="text" class="input" maxlength="100"
               placeholder="例: ナイキ エアフォース1 ホワイト 28cm 新品タグ付き" value="${_esc(_state.titleJa)}">
           </div>
 
@@ -478,7 +478,7 @@
               &nbsp;<span id="al-title-en-count" style="font-family:var(--font-mono);color:var(--text-muted);font-weight:400">${_state.titleEn.length}/80</span>
             </label>
             <div style="display:flex;gap:8px">
-              <input id="al-title-en" type="text" class="form-input" maxlength="80" style="flex:1"
+              <input id="al-title-en" type="text" class="input" maxlength="80" style="flex:1"
                 placeholder="例: Nike Air Force 1 White Men US10 New with Tags Japan"
                 value="${_esc(_state.titleEn)}">
               <button id="al-translate-btn" type="button" class="btn-secondary"
@@ -491,16 +491,16 @@
             <div>
               <label class="al-lbl">カテゴリー</label>
               <div style="display:flex;gap:6px">
-                <input id="al-category-name" type="text" class="form-input"
+                <input id="al-category-name" type="text" class="input"
                   placeholder="例: T-Shirts" value="${_esc(_state.categoryName)}" style="flex:1">
-                <input id="al-category-id" type="text" class="form-input"
+                <input id="al-category-id" type="text" class="input"
                   placeholder="ID" value="${_esc(_state.categoryId)}"
                   style="width:68px;font-family:var(--font-mono);font-size:12px">
               </div>
             </div>
             <div>
               <label class="al-lbl">SKU</label>
-              <input id="al-sku" type="text" class="form-input" value="${_esc(_state.sku)}">
+              <input id="al-sku" type="text" class="input" value="${_esc(_state.sku)}">
             </div>
           </div>
         </div>
@@ -513,7 +513,7 @@
             </span>
           </div>
           <div id="al-drop-zone" style="border:2px dashed var(--border);border-radius:8px;padding:28px;
-            text-align:center;color:var(--text-muted);font-size:12px;margin-bottom:12px;
+            text-align:center;color:var(--text-muted);font-size:13px;margin-bottom:12px;
             cursor:pointer;transition:border-color .2s,background .2s">
             ここにドラッグ&amp;ドロップ、またはクリックして追加
             <input id="al-drop-input" type="file" accept="image/*" multiple hidden>
@@ -528,7 +528,7 @@
           <div class="al-g2" style="margin-bottom:12px">
             <div>
               <label class="al-lbl">状態</label>
-              <select id="al-condition" class="form-input">
+              <select id="al-condition" class="select">
                 <option value="New"${_state.condition==='New'?' selected':''}>New（新品）</option>
                 <option value="New with tags"${_state.condition==='New with tags'?' selected':''}>New with tags</option>
                 <option value="New without tags"${_state.condition==='New without tags'?' selected':''}>New without tags</option>
@@ -538,21 +538,21 @@
             </div>
             <div>
               <label class="al-lbl">ブランド</label>
-              <input id="al-brand" type="text" class="form-input"
+              <input id="al-brand" type="text" class="input"
                 placeholder="例: Nike" value="${_esc(_state.brand)}" autocomplete="off">
             </div>
           </div>
           <div class="al-g2" style="margin-bottom:12px">
             <div>
               <label class="al-lbl">商品重量（g）</label>
-              <input id="al-weight" type="number" class="form-input"
+              <input id="al-weight" type="number" class="input"
                 placeholder="例: 350" min="1" value="${_state.weightG||''}">
-              <div id="al-shipping-policy"
-                style="font-size:11px;color:var(--gold-400);margin-top:4px">${_shippingLabel(_state.weightG)}</div>
+              <div id="al-shipping-policy" class="note"
+                style="margin-top:var(--space-1)">${_shippingLabel(_state.weightG)}</div>
             </div>
             <div>
               <label class="al-lbl">UPC / EAN</label>
-              <input id="al-upc" type="text" class="form-input"
+              <input id="al-upc" type="text" class="input"
                 placeholder="例: 0123456789012 / Does not apply"
                 value="${_esc(_state.upc)}">
             </div>
@@ -582,24 +582,24 @@
           <div class="al-g3" style="margin-bottom:12px">
             <div>
               <label class="al-lbl">仕入価格（円）</label>
-              <input id="al-cost-jpy" type="number" class="form-input"
+              <input id="al-cost-jpy" type="number" class="input"
                 placeholder="例: 8000" min="0" value="${_state.costJpy||''}">
             </div>
             <div>
               <label class="al-lbl">目標利益率（%）</label>
-              <input id="al-margin" type="number" class="form-input"
+              <input id="al-margin" type="number" class="input"
                 value="${_state.targetMargin}" min="0" max="90">
             </div>
             <div>
               <label class="al-lbl">販売価格（USD）</label>
-              <input id="al-price-usd" type="number" class="form-input"
+              <input id="al-price-usd" type="number" class="input"
                 placeholder="自動計算 or 手動" min="0" step="0.01"
                 value="${_state.priceUsd||''}">
             </div>
           </div>
           <div id="al-price-summary"
-            style="background:var(--bg-input);border-radius:6px;padding:11px 14px;
-              font-size:12px;display:flex;gap:14px;flex-wrap:wrap;align-items:center">
+            style="background:var(--surface-2);border-radius:6px;padding:11px 14px;
+              font-size:13px;display:flex;gap:14px;flex-wrap:wrap;align-items:center;font-variant-numeric:tabular-nums">
             <span style="color:var(--text-muted)">価格・利益を入力すると計算結果が表示されます</span>
           </div>
           <div id="al-boundary-notice" style="margin-top:7px;font-size:11px"></div>
@@ -622,7 +622,7 @@
             <button type="button" id="al-tmpl-btn" class="btn-secondary"
               style="padding:3px 8px;font-size:11px;margin-left:8px">テンプレ挿入</button>
           </div>
-          <textarea id="al-desc-en" class="form-input" rows="9"
+          <textarea id="al-desc-en" class="input" rows="9"
             placeholder="英語説明文（HTML可）&#10;例: &lt;h2&gt;Product Description&lt;/h2&gt;&lt;p&gt;...&lt;/p&gt;"
             style="font-family:var(--font-mono);font-size:12px;resize:vertical">${_esc(_state.descEn)}</textarea>
           <div style="display:flex;gap:14px;font-size:11px;color:var(--text-muted);margin-top:4px;flex-wrap:wrap">
@@ -633,7 +633,7 @@
 
           <div style="margin-top:12px">
             <label class="al-lbl">Condition Description（状態説明）</label>
-            <textarea id="al-condition-desc" class="form-input" rows="3"
+            <textarea id="al-condition-desc" class="input" rows="3"
               placeholder="例: Brand new with original tags. No flaws, scratches, or signs of use."
               style="font-size:12px;resize:vertical">${_esc(_state.conditionDesc)}</textarea>
             <div style="font-size:11px;color:var(--text-muted);margin-top:3px">
@@ -660,7 +660,7 @@
           </div>
           <div id="al-best-offer-row" style="${_state.bestOffer?'':'display:none'}">
             <label class="al-lbl">自動承認最低価格（USD）</label>
-            <input id="al-best-offer-min" type="number" class="form-input"
+            <input id="al-best-offer-min" type="number" class="input"
               placeholder="例: 40" min="0" step="0.01"
               value="${_state.bestOfferMin||''}" style="max-width:160px">
           </div>
