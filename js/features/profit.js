@@ -95,6 +95,19 @@
     threshold500:   500,
   };
 
+  // ★G1/G2 手数料（決定194・単一ソース）＝scripts/sync-ebay-fees.js が正本 config/fees/ebay.json から
+  //   生成した window.BA.ebayFees（js/config/ebay-fees.generated.js）を call 時に読む。
+  //   G1＝International fee（率・selling基準）／G2＝per_order（固定USD・注文単位）。
+  //   ★ツール(ceilingEngine)と同一ソース＝穴が2箇所に開くのを防ぐ。未ロードは 0 扱い＋警告で継続（UIは非安全クリティカル）。
+  function _ebayFeeRates() {
+    const f = (typeof window !== 'undefined' && window.BA && window.BA.ebayFees) || null;
+    if (!f || !Number.isFinite(f.international_payment_rate) || !Number.isFinite(f.per_order_fixed_usd)) {
+      if (typeof console !== 'undefined') console.warn('[profit] window.BA.ebayFees 未ロード＝G1/G2 未適用（0扱い）。scripts/sync-ebay-fees.js の生成物 js/config/ebay-fees.generated.js を index.html で profit.js の前に読み込むこと。');
+      return { intlRate: 0, perOrderUsd: 0 };
+    }
+    return { intlRate: f.international_payment_rate, perOrderUsd: f.per_order_fixed_usd };
+  }
+
   let _exchangeRate    = DEFAULTS.usdJpy;
   let _rendered        = false;
   let _costFeeProfiles = [];
@@ -506,6 +519,8 @@
     const costUsd = inputs.costJpy / inputs.usdJpy;
     const authUsd = inputs.authServiceJpy / inputs.usdJpy;
     const fvfCapP = FVF_CAP / feeRate;
+    // ★G1(率・selling基準)/G2(固定USD)＝決定194・単一ソース(window.BA.ebayFees)。逆算でも順算と同じ減算対象に含める。
+    const { intlRate: _intlRate, perOrderUsd: _perOrderUsd } = _ebayFeeRates();
 
     // 送料: manual / buyer のみ（固定$35削除）
     const ship1 = inputs.shippingMode === 'manual' ? (inputs.shippingUsd || 0) : 0;
@@ -515,8 +530,8 @@
     const candidates = [];
 
     // 区間1: P < $500
-    const fixed1 = ship1 + cust1 + costUsd;
-    const varR1  = feeRate + promo + pay + custPctRate;
+    const fixed1 = ship1 + cust1 + costUsd + _perOrderUsd;
+    const varR1  = feeRate + promo + pay + custPctRate + _intlRate;
     {
       let p;
       if (mode === 'pct') {
@@ -533,8 +548,8 @@
     }
 
     // 区間2: $500 ≤ P < fvfCapP
-    const fixed2 = authUsd + costUsd;
-    const varR2  = feeRate + promo + pay;
+    const fixed2 = authUsd + costUsd + _perOrderUsd;
+    const varR2  = feeRate + promo + pay + _intlRate;
     {
       let p;
       if (mode === 'pct') {
@@ -548,8 +563,8 @@
     }
 
     // 区間3: P ≥ fvfCapP
-    const fixed3 = FVF_CAP + authUsd + costUsd;
-    const varR3  = promo + pay;
+    const fixed3 = FVF_CAP + authUsd + costUsd + _perOrderUsd;
+    const varR3  = promo + pay + _intlRate;
     {
       let p;
       if (mode === 'pct') {
@@ -1102,6 +1117,11 @@
     const promotedUsd = selling * (promotedRate || 0);
     const payoneerUsd = selling * (payoneerRate ?? DEFAULTS.payoneerRate);
 
+    // ★G1 International fee（率・selling基準）／G2 per_order（固定USD）＝決定194・単一ソース(window.BA.ebayFees)
+    const { intlRate: _intlRate, perOrderUsd: _perOrderUsd } = _ebayFeeRates();
+    const intlFeeUsd  = selling * _intlRate;
+    const perOrderUsd = _perOrderUsd;
+
     // 送料: manual / buyer のみ（固定$35削除）
     let effectiveShippingUsd = 0;
     if (!above500) {
@@ -1122,7 +1142,7 @@
 
     const totalDeductions = ebayFeeUsd + promotedUsd + payoneerUsd
                           + effectiveShippingUsd + effectiveCustomsUsd
-                          + authServiceUsd + costUsd;
+                          + authServiceUsd + intlFeeUsd + perOrderUsd + costUsd;
     const grossProfitUsd = selling - totalDeductions;
     const grossProfitJpy = grossProfitUsd * usdJpy;
     const profitRate     = selling > 0 ? (grossProfitUsd / selling) * 100 : 0;
